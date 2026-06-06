@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SettingsSeeder::class,
             UserSeeder::class,
+            DemoDataSeeder::class,
         ]);
 
         // You can keep or remove the default test user below
