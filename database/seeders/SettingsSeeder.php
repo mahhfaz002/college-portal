@@ -11,14 +11,14 @@ class SettingsSeeder extends Seeder
     {
         $defaults = [
             // Branding
-            'school_name'        => ['Excellence Academy', 'branding'],
+            'school_name'        => ['MAHHFAZ School System', 'branding'],
             'school_tagline'     => ['Knowledge • Integrity • Excellence', 'branding'],
             'school_logo'        => [null, 'branding'],
             'primary_color'      => ['#2563eb', 'branding'],
             'school_address'     => ['123 School Road, Jalingo, Taraba', 'branding'],
             'school_phone'       => ['+234 800 000 0000', 'branding'],
-            'school_email'       => ['info@excellence.edu', 'branding'],
-            'staff_email_domain' => ['excellence.edu', 'branding'],
+            'school_email'       => ['info@mahhfaz.edu', 'branding'],
+            'staff_email_domain' => ['mahhfaz.edu', 'branding'],
 
             // Academic
             'currency_symbol'    => ['₦', 'academic'],

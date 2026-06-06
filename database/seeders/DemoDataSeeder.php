@@ -21,16 +21,16 @@ class DemoDataSeeder extends Seeder
             ->map(fn ($name) => Subject::firstOrCreate(['name' => $name]));
 
         // A student with a linked login (so the student dashboard shows data)
-        $demoStudentEmail = 'student@excellence.edu';
+        $demoStudentEmail = 'student@mahhfaz.edu';
         $names = [
             ['Aisha Bello', 'JSS1A'], ['Chinedu Okafor', 'JSS1A'], ['Fatima Sani', 'JSS1A'],
             ['Emeka Obi', 'JSS2A'], ['Grace Adeyemi', 'JSS2A'], ['Yusuf Musa', 'JSS2A'],
         ];
 
         foreach ($names as $i => [$fullName, $class]) {
-            $email = $i === 0 ? $demoStudentEmail : strtolower(str_replace(' ', '.', $fullName)) . '@student.excellence.edu';
+            $email = $i === 0 ? $demoStudentEmail : strtolower(str_replace(' ', '.', $fullName)) . '@student.mahhfaz.edu';
             $student = Student::firstOrCreate(
-                ['admission_number' => 'EXC/2025/' . str_pad($i + 1, 3, '0', STR_PAD_LEFT)],
+                ['admission_number' => 'MAH/2025/' . str_pad($i + 1, 3, '0', STR_PAD_LEFT)],
                 [
                     'full_name' => $fullName,
                     'email' => $email,

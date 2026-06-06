@@ -36,13 +36,13 @@ Visit http://127.0.0.1:8000.
 
 | Role         | Email                       |
 |--------------|-----------------------------|
-| Proprietor   | proprietor@excellence.edu   |
-| Principal    | principal@excellence.edu    |
-| Admin        | admin@excellence.edu        |
-| ICT          | ict@excellence.edu          |
-| Accountant   | bursar@excellence.edu       |
-| Exam Officer | exams@excellence.edu        |
-| Teacher      | teacher@excellence.edu      |
+| Proprietor   | proprietor@mahhfaz.edu   |
+| Principal    | principal@mahhfaz.edu    |
+| Admin        | admin@mahhfaz.edu        |
+| ICT          | ict@mahhfaz.edu          |
+| Accountant   | bursar@mahhfaz.edu       |
+| Exam Officer | exams@mahhfaz.edu        |
+| Teacher      | teacher@mahhfaz.edu      |
 
 ## Customising for a new school
 
