@@ -10,13 +10,13 @@
 
         <div class="relative max-w-7xl mx-auto px-6 text-center">
             <span class="inline-block bg-white/20 text-white text-sm font-semibold px-4 py-1.5 rounded-full mb-4 backdrop-blur-sm">
-                Excellence • Integrity • Innovation
+                {{ $school['tagline'] ?? 'Knowledge • Integrity • Excellence' }}
             </span>
             <h2 class="text-6xl md:text-7xl font-extrabold mb-6 leading-tight tracking-tight">
-                Welcome to <span class="text-yellow-300">Excellence</span><br> International Academy
+                Welcome to <span class="text-yellow-300">{{ $school['name'] ?? 'Our School' }}</span>
             </h2>
             <p class="text-xl md:text-2xl mb-12 max-w-3xl mx-auto text-indigo-100">
-                Empowering the next generation of leaders in Jalingo through world-class education, state-of-the-art facilities, and holistic character development.
+                Empowering the next generation through world-class education, modern facilities, and holistic character development.
             </p>
 
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -33,7 +33,7 @@
     <div id="about" class="py-24 bg-gray-50">
         <div class="max-w-7xl mx-auto px-6">
             <div class="text-center mb-16">
-                <h3 class="text-4xl font-bold text-gray-900 mb-4">Why Choose EIA Jalingo?</h3>
+                <h3 class="text-4xl font-bold text-gray-900 mb-4">Why Choose {{ $school['name'] ?? 'Us' }}?</h3>
                 <p class="text-lg text-gray-600 max-w-2xl mx-auto">We provide a nurturing environment where every child is challenged to achieve their highest potential.</p>
             </div>
 

@@ -3,8 +3,8 @@
         <div class="max-w-4xl mx-auto bg-white p-10 shadow-lg border-t-8 border-blue-600" id="report-card">
 
             <div class="text-center mb-8">
-                <h1 class="text-3xl font-black uppercase text-blue-800">YOUR SCHOOL NAME HERE</h1>
-                <p class="font-bold text-gray-600 italic">Motto: Excellence and Integrity</p>
+                <h1 class="text-3xl font-black uppercase text-blue-800">{{ $school['name'] ?? 'School Portal' }}</h1>
+                <p class="font-bold text-gray-600 italic">{{ $school['tagline'] ?? '' }}</p>
                 <p class="text-sm">Continuous Assessment & Terminal Report Sheet</p>
                 <div class="inline-block bg-blue-100 px-4 py-1 rounded-full mt-2 font-bold text-blue-800">
                     {{ $term }} | {{ $session }} Session

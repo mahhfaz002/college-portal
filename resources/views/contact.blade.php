@@ -21,12 +21,12 @@
     <div class="space-y-8">
         <div>
             <h3 class="text-xl font-bold text-gray-800 mb-4">Visit Us</h3>
-            <p class="text-gray-600">No. 45 Bypass Road, Jalingo, Taraba State, Nigeria.</p>
+            <p class="text-gray-600">{{ setting('school_address', '—') }}</p>
         </div>
         <div>
             <h3 class="text-xl font-bold text-gray-800 mb-4">Call/Email</h3>
-            <p class="text-gray-600">📞 +234 800 000 0000</p>
-            <p class="text-gray-600">✉️ info@excellence.edu.ng</p>
+            <p class="text-gray-600">📞 {{ setting('school_phone', '—') }}</p>
+            <p class="text-gray-600">✉️ {{ setting('school_email', '—') }}</p>
         </div>
         <div class="h-64 bg-gray-200 rounded-2xl overflow-hidden flex items-center justify-center border">
             <span class="text-gray-500">Google Map Placeholder</span>

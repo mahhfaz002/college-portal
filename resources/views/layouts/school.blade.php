@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-<a href="{{ route('login') }}" class="text-gray-600 hover:text-indigo-600">Student Login</a>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excellence International Academy, Jalingo</title>
+    <title>{{ $school['name'] ?? 'School Portal' }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .hero-bg {
@@ -18,7 +17,10 @@
 
 <nav class="bg-white shadow-md">
     <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-        <a href="{{ route('home') }}" class="text-2xl font-bold text-indigo-900">EIA Jalingo</a>
+        <a href="{{ route('home') }}" class="text-2xl font-bold text-indigo-900 flex items-center gap-2">
+            @if(!empty($school['logo']))<img src="{{ media_url($school['logo']) }}" class="h-8 w-8 object-contain">@endif
+            {{ $school['name'] ?? 'School Portal' }}
+        </a>
 
         <div class="space-x-4 flex items-center">
             <a href="{{ route('home') }}" class="text-gray-600 hover:text-indigo-600">Home</a>
@@ -35,7 +37,7 @@
 
     <footer class="bg-indigo-900 text-white py-8 mt-12">
         <div class="max-w-7xl mx-auto px-6 text-center">
-            <p>&copy; 2026 Excellence International Academy, Jalingo. All rights reserved.</p>
+            <p>&copy; {{ date('Y') }} {{ $school['name'] ?? 'School Portal' }}. All rights reserved.</p>
         </div>
     </footer>
 

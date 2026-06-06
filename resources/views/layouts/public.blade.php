@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $schoolName ?? 'Excellence International Academy' }}</title>
+    <title>{{ $school['name'] ?? 'School Portal' }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -13,7 +13,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-20 items-center">
                 <div class="flex-shrink-0 flex items-center">
-                    <span class="text-2xl font-bold text-indigo-800 tracking-tight">EXCELLENCE</span>
+                    <span class="text-2xl font-bold text-indigo-800 tracking-tight">{{ $school['name'] ?? 'School Portal' }}</span>
                 </div>
 
                 <nav class="hidden md:flex space-x-8 font-medium text-gray-700">
@@ -39,8 +39,8 @@
 
     <footer class="bg-gray-900 text-white py-12">
         <div class="max-w-7xl mx-auto px-6 text-center">
-            <h3 class="text-xl font-bold mb-4">Excellence International Academy, Jalingo</h3>
-            <p class="text-gray-400 mb-6">Moulding the leaders of tomorrow with character and knowledge.</p>
+            <h3 class="text-xl font-bold mb-4">{{ $school['name'] ?? 'School Portal' }}</h3>
+            <p class="text-gray-400 mb-6">{{ $school['tagline'] ?? 'Moulding the leaders of tomorrow with character and knowledge.' }}</p>
             <div class="flex justify-center space-x-6 text-2xl mb-6">
                 <a href="#" class="hover:text-blue-400"><i class="fa-brands fa-facebook"></i></a>
                 <a href="#" class="hover:text-pink-400"><i class="fa-brands fa-instagram"></i></a>

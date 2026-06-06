@@ -6,7 +6,7 @@
 
     <div class="bg-indigo-50 p-6 rounded-lg mb-8 border border-indigo-200">
         <h2 class="text-xl font-semibold text-indigo-950">Application Guidelines & Requirements</h2>
-        <p class="mt-2 text-gray-700">Welcome to Excellence International Academy. Please review our programs and requirements below before applying.</p>
+        <p class="mt-2 text-gray-700">Welcome to {{ $school['name'] ?? 'our school' }}. Please review our programs and requirements below before applying.</p>
         <ul class="list-disc pl-5 mt-4 text-gray-700 space-y-1">
             <li><strong>Programs:</strong> Nursery, Primary, and Junior/Senior Secondary School.</li>
             <li><strong>Entry Requirement:</strong> Students must meet the age requirement for their desired class.</li>

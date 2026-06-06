@@ -38,7 +38,7 @@
     <div>
         <h2 class="text-3xl font-bold text-gray-900 mb-6">Moulding Future Leaders</h2>
         <p class="text-gray-600 leading-relaxed mb-6">
-            Excellence International Academy was established to bridge the gap between academic theory and practical life skills. Our environment is tailored to foster curiosity, critical thinking, and character development.
+            {{ $school['name'] ?? 'Our school' }} was established to bridge the gap between academic theory and practical life skills. Our environment is tailored to foster curiosity, critical thinking, and character development.
         </p>
         <div class="space-y-4">
             <div class="flex items-start">

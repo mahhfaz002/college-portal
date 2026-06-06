@@ -8,10 +8,10 @@
                         <span class="text-xs text-gray-500 italic">LOGO</span>
                     </div>
                     <div class="text-left">
-                        <h1 class="text-2xl font-black uppercase">YOUR SCHOOL NAME HERE</h1>
-                        <p class="text-sm italic">Motto: Excellence in Learning and Character</p>
-                        <p class="text-xs">School Address: 123 Education Way, Lagos, Nigeria</p>
-                        <p class="text-xs">Contact: 0801 234 5678 | info@school.com</p>
+                        <h1 class="text-2xl font-black uppercase">{{ $school['name'] ?? 'School Portal' }}</h1>
+                        <p class="text-sm italic">{{ $school['tagline'] ?? '' }}</p>
+                        <p class="text-xs">{{ setting('school_address') }}</p>
+                        <p class="text-xs">{{ setting('school_phone') }} | {{ setting('school_email') }}</p>
                     </div>
                 </div>
             </div>

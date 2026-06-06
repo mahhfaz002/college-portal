@@ -12,8 +12,8 @@
         <div id="id-card" class="w-[320px] h-[500px] bg-white border border-gray-300 shadow-2xl rounded-2xl overflow-hidden relative">
 
             <div class="bg-blue-800 h-24 p-4 text-center text-white">
-                <h1 class="text-lg font-black uppercase leading-tight">YOUR SCHOOL NAME</h1>
-                <p class="text-[10px] italic">Excellence and Integrity</p>
+                <h1 class="text-lg font-black uppercase leading-tight">{{ $school['name'] ?? 'School Portal' }}</h1>
+                <p class="text-[10px] italic">{{ $school['tagline'] ?? '' }}</p>
             </div>
 
             <div class="flex justify-center -mt-10">
