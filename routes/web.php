@@ -39,7 +39,8 @@ Route::view('/contact', 'contact')->name('contact');
 
 // Admission Form (Prospective Students)
 Route::get('/apply', [ApplicantController::class, 'showForm'])->name('admission.form');
-Route::post('/apply', [ApplicantController::class, 'submit'])->name('admission.submit');
+Route::post('/apply', [ApplicantController::class, 'submit'])
+    ->middleware('throttle:6,1')->name('admission.submit'); // spam guard on public form
 
 
 // ==========================================
@@ -76,14 +77,18 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // --- Student Management ---
-    // Viewing is open to all staff (oversight); ordering matters so /create
-    // is not captured by the /{student} wildcard.
-    Route::get('/students', [StudentController::class, 'index'])->name('students.index');
-    Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
-    Route::get('/students/{student}', [StudentController::class, 'show'])->name('students.show');
-    Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
-    Route::get('/students/{student}/report-card', [StudentController::class, 'reportCard'])->name('students.report');
-    Route::get('/students/{student}/id-card', [StudentController::class, 'idCard'])->name('students.id-card');
+    // Viewing student records is for STAFF only (the 'student' role is absent
+    // from view_students) — prevents a pupil from opening another pupil's
+    // record/report by guessing the ID. Ordering matters so /create is not
+    // captured by the /{student} wildcard.
+    Route::middleware('role:'.Permissions::middleware('view_students'))->group(function () {
+        Route::get('/students', [StudentController::class, 'index'])->name('students.index');
+        Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
+        Route::get('/students/{student}', [StudentController::class, 'show'])->name('students.show');
+        Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
+        Route::get('/students/{student}/report-card', [StudentController::class, 'reportCard'])->name('students.report');
+        Route::get('/students/{student}/id-card', [StudentController::class, 'idCard'])->name('students.id-card');
+    });
 
     // Writes — Registrar/Admin only (proprietor is blocked globally by readonly).
     Route::middleware('role:'.Permissions::middleware('manage_students'))->group(function () {
@@ -162,7 +167,8 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
 
     // --- Support tickets ---
     Route::get('/support', [SupportTicketController::class, 'index'])->name('support.index');
-    Route::post('/support', [SupportTicketController::class, 'store'])->name('support.store');
+    Route::post('/support', [SupportTicketController::class, 'store'])
+        ->middleware('throttle:20,1')->name('support.store');
     Route::middleware('role:'.Permissions::middleware('handle_tickets'))->group(function () {
         Route::put('/support/{ticket}', [SupportTicketController::class, 'update'])->name('support.update');
     });
@@ -187,7 +193,8 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
     Route::middleware('role:'.Permissions::middleware('take_exams'))->group(function () {
         Route::get('/my-exams', [StudentExamController::class, 'available'])->name('myexams.available');
         Route::get('/my-exams/{exam}', [StudentExamController::class, 'take'])->name('myexams.take');
-        Route::post('/my-exams/{exam}/unlock', [StudentExamController::class, 'unlock'])->name('myexams.unlock');
+        Route::post('/my-exams/{exam}/unlock', [StudentExamController::class, 'unlock'])
+            ->middleware('throttle:10,1')->name('myexams.unlock'); // brute-force guard on exam password
         Route::post('/my-exams/{exam}/submit', [StudentExamController::class, 'submit'])->name('myexams.submit');
         Route::post('/results/{score}/query', [StudentExamController::class, 'query'])->name('results.query');
     });

@@ -17,6 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'force.password.change' => \App\Http\Middleware\ForcePasswordChange::class,
             'readonly' => \App\Http\Middleware\EnforceReadOnly::class,
         ]);
+
+        // Defensive response headers on every web request.
+        $middleware->web(append: [
+            \App\Http\Middleware\SecurityHeaders::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

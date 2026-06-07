@@ -22,6 +22,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Force HTTPS for generated URLs in production (Laravel Cloud terminates
+        // TLS at the edge); keeps assets/links/redirects on https.
+        if ($this->app->environment('production')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         // Register one Gate per capability from the central Permissions map,
         // so Blade can use @can('manage_fees') etc. and routes/controllers can
         // authorize() against the same single source of truth.
