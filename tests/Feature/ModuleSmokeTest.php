@@ -18,43 +18,61 @@ class ModuleSmokeTest extends TestCase
 
     private function admin(): User
     {
+        // Proprietor can VIEW every page (read-only oversight) — ideal for
+        // the GET smoke checks below.
         return User::where('role', 'proprietor')->firstOrFail();
     }
 
-    /** @dataProvider pageProvider */
-    public function test_page_renders(string $path): void
+    private function writer(): User
     {
-        $this->actingAs($this->admin())->get($path)->assertOk();
+        // Principal can perform writes the proprietor cannot.
+        return User::where('role', 'principal')->firstOrFail();
     }
 
+    private function userWithRole(string $role): User
+    {
+        return User::where('role', $role)->firstOrFail();
+    }
+
+    /** @dataProvider pageProvider */
+    public function test_page_renders(string $path, string $role): void
+    {
+        $this->actingAs($this->userWithRole($role))->get($path)->assertOk();
+    }
+
+    /**
+     * Each page is loaded as a role that legitimately owns or oversees it.
+     * Proprietor is used for the broad data-view pages (oversight); the
+     * management/form pages are loaded as their owning role.
+     */
     public static function pageProvider(): array
     {
         return [
-            'students'          => ['/students'],
-            'students.create'   => ['/students/create'],
-            'subjects'          => ['/subjects'],
-            'attendance'        => ['/attendance'],
-            'attendance report' => ['/attendance/report'],
-            'inventory'         => ['/inventory'],
-            'inventory.create'  => ['/inventory/create'],
-            'admissions'        => ['/admin/admissions'],
-            'promotion'         => ['/promotion'],
-            'scores.entry'      => ['/scores/entry'],
-            'announcements'     => ['/announcements'],
-            'settings'          => ['/settings'],
-            'staff'             => ['/staff'],
-            'timetable'         => ['/timetable'],
-            'library'           => ['/library'],
-            'exams'             => ['/exams'],
-            'transport'         => ['/transport'],
-            'hr'                => ['/hr'],
-            'alumni'            => ['/alumni'],
+            'students'          => ['/students', 'proprietor'],
+            'students.create'   => ['/students/create', 'admin'],
+            'subjects'          => ['/subjects', 'proprietor'],
+            'attendance'        => ['/attendance', 'proprietor'],
+            'attendance report' => ['/attendance/report', 'proprietor'],
+            'inventory'         => ['/inventory', 'admin'],
+            'inventory.create'  => ['/inventory/create', 'admin'],
+            'admissions'        => ['/admin/admissions', 'admin'],
+            'promotion'         => ['/promotion', 'admin'],
+            'scores.entry'      => ['/scores/entry', 'teacher'],
+            'announcements'     => ['/announcements', 'proprietor'],
+            'settings'          => ['/settings', 'principal'],
+            'staff'             => ['/staff', 'principal'],
+            'timetable'         => ['/timetable', 'proprietor'],
+            'library'           => ['/library', 'proprietor'],
+            'exams'             => ['/exams', 'proprietor'],
+            'transport'         => ['/transport', 'proprietor'],
+            'hr'                => ['/hr', 'proprietor'],
+            'alumni'            => ['/alumni', 'proprietor'],
         ];
     }
 
     public function test_announcement_lifecycle(): void
     {
-        $admin = $this->admin();
+        $admin = $this->writer();
 
         $this->actingAs($admin)->post('/announcements', [
             'title' => 'Resumption',

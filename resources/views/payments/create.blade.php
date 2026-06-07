@@ -10,9 +10,24 @@
 
                 <form action="{{ route('payments.store', $student->id) }}" method="POST">
                     @csrf
+
+                    @if($bills->count())
+                    <div class="mb-4">
+                        <label class="block font-bold">Apply to Bill <span class="text-gray-400 font-normal text-sm">(optional)</span></label>
+                        <select name="fee_bill_id" id="billSelect" class="w-full border-gray-300 rounded">
+                            <option value="">General payment</option>
+                            @foreach($bills as $bill)
+                                <option value="{{ $bill->id }}" data-balance="{{ $bill->balance }}">
+                                    {{ $bill->title }} — outstanding ₦{{ number_format($bill->balance, 2) }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
+
                     <div class="mb-4">
                         <label class="block font-bold">Amount Paid (₦)</label>
-                        <input type="number" name="amount" class="w-full border-gray-300 rounded" required>
+                        <input type="number" step="0.01" name="amount" id="amountInput" class="w-full border-gray-300 rounded" required>
                     </div>
 
                     <div class="mb-4">
@@ -36,4 +51,11 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.getElementById('billSelect')?.addEventListener('change', function () {
+            const bal = this.selectedOptions[0]?.dataset.balance;
+            if (bal) document.getElementById('amountInput').value = bal;
+        });
+    </script>
 </x-app-layout>

@@ -19,6 +19,8 @@ class SettingsSeeder extends Seeder
             'school_phone'       => ['+234 800 000 0000', 'branding'],
             'school_email'       => ['info@mahhfaz.edu', 'branding'],
             'staff_email_domain' => ['mahhfaz.edu', 'branding'],
+            'school_acronym'     => ['MAH', 'branding'],
+            'admission_prefix'   => ['MAH', 'branding'],
 
             // Academic
             'currency_symbol'    => ['₦', 'academic'],
@@ -26,6 +28,7 @@ class SettingsSeeder extends Seeder
             'current_session'    => ['2025/2026', 'academic'],
             'ca_max_score'       => ['40', 'academic'],
             'exam_max_score'     => ['60', 'academic'],
+            'min_attendance_percent' => ['75', 'academic'],
             // Grading scheme: JSON list of {min, grade, remark}
             'grading_scheme'     => [json_encode([
                 ['min' => 70, 'grade' => 'A', 'remark' => 'Excellent'],

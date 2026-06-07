@@ -5,11 +5,11 @@
                 🖥️ ICT System Console: <span class="text-purple-600">Administrator</span>
             </h2>
             <div class="flex gap-2">
-                <a href="{{ route('register') }}" class="bg-gray-800 text-white px-4 py-2 rounded-lg font-bold hover:bg-gray-900 transition text-sm">
-                    ➕ Create New User
+                <a href="{{ route('support.index') }}" class="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-purple-700 transition text-sm">
+                    🛠️ Support Tickets ({{ $openTickets }})
                 </a>
-                <a href="#" class="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-purple-700 transition text-sm">
-                    🔄 System Backup
+                <a href="{{ route('exams.index') }}" class="bg-gray-800 text-white px-4 py-2 rounded-lg font-bold hover:bg-gray-900 transition text-sm">
+                    📝 Exam Support
                 </a>
             </div>
         </div>
@@ -30,24 +30,30 @@
                 </div>
 
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">System Health</p>
-                    <span class="inline-block mt-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">All Systems Operational</span>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Open Tickets</p>
+                    <h3 class="text-3xl font-black text-red-600">{{ $openTickets }}</h3>
+                    <p class="text-[11px] text-gray-400 mt-1">{{ $releasedExams }} exam(s) live now</p>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h3 class="font-bold text-gray-700 mb-4 border-b pb-2">System Management</h3>
-                    <div class="grid grid-cols-2 gap-4">
-                        <a href="#" class="p-4 bg-gray-50 rounded-lg hover:bg-purple-50 border border-transparent hover:border-purple-200 transition">
-                            <span class="block font-bold text-purple-700">Manage Users</span>
-                            <span class="text-xs text-gray-500">Edit roles, reset passwords</span>
-                        </a>
-                        <a href="#" class="p-4 bg-gray-50 rounded-lg hover:bg-purple-50 border border-transparent hover:border-purple-200 transition">
-                            <span class="block font-bold text-purple-700">Database Sync</span>
-                            <span class="text-xs text-gray-500">Force sync student data</span>
-                        </a>
+                    <h3 class="font-bold text-gray-700 mb-4 border-b pb-2">Password Resets</h3>
+                    @if(session('success'))<div class="mb-3 p-3 bg-green-100 border border-green-300 text-green-800 rounded text-xs">{{ session('success') }}</div>@endif
+                    <div class="max-h-72 overflow-y-auto divide-y">
+                        @foreach($allUsers as $u)
+                        <div class="flex justify-between items-center py-2">
+                            <div>
+                                <p class="text-sm font-bold text-gray-800">{{ $u->name }}</p>
+                                <p class="text-[11px] text-gray-400 uppercase">{{ str_replace('_',' ',$u->role) }}</p>
+                            </div>
+                            <form action="{{ route('support.reset-password', $u) }}" method="POST" onsubmit="return confirm('Reset password for {{ $u->name }}?')">
+                                @csrf
+                                <button class="text-xs bg-gray-700 text-white px-3 py-1.5 rounded font-bold hover:bg-gray-800">Reset</button>
+                            </form>
+                        </div>
+                        @endforeach
                     </div>
                 </div>
 

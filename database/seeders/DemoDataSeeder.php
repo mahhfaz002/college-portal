@@ -80,6 +80,16 @@ class DemoDataSeeder extends Seeder
             ]
         );
 
+        // A couple of pending applications for the registrar to review.
+        \App\Models\Applicant::firstOrCreate(
+            ['parent_email' => 'newparent@example.com'],
+            [
+                'full_name' => 'Zainab Ibrahim', 'date_of_birth' => '2014-05-10', 'gender' => 'Female',
+                'parent_name' => 'Mr. Ibrahim', 'parent_phone' => '+234 803 222 1111',
+                'desired_class' => 'JSS1A', 'status' => 'pending',
+            ]
+        );
+
         // A welcome announcement
         Announcement::firstOrCreate(
             ['title' => 'Welcome to the new term'],

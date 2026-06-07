@@ -29,10 +29,12 @@
         @endif
     </form>
 
+    @can('manage_students')
     <a href="{{ route('students.create') }}"
        style="background-color: #2563eb; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">
         + Admit New Student
     </a>
+    @endcan
 </div>
 
                 <table class="min-w-full border-collapse border border-gray-300">
@@ -63,19 +65,33 @@
                                 <td class="border p-2">
                                     <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
 
+                                        <a href="{{ route('students.show', $student->id) }}"
+                                           style="background-color: #6b7280; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; white-space: nowrap;">
+                                            View
+                                        </a>
+
+                                        @can('manage_fees')
                                         <a href="{{ route('payments.create', $student->id) }}"
                                            style="background-color: #059669; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; white-space: nowrap;">
                                             Pay Fees
                                         </a>
+                                        @endcan
 
+                                        @can('manage_students')
                                         <a href="{{ route('students.edit', $student->id) }}"
                                            style="background-color: #4b5563; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; white-space: nowrap;">
                                             Edit
                                         </a>
+                                        @endcan
+
+                                        @can('enter_scores')
                                         <a href="{{ route('scores.create', ['class' => $student->class_arm]) }}"
-   style="background-color: #2563eb; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 11px; font-weight: bold; white-space: nowrap;">
-    Scores
-</a>
+                                           style="background-color: #2563eb; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 11px; font-weight: bold; white-space: nowrap;">
+                                            Scores
+                                        </a>
+                                        @endcan
+
+                                        @can('manage_students')
                                         <form action="{{ route('students.destroy', $student->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this student?');" style="margin: 0;">
                                             @csrf
                                             @method('DELETE')
@@ -84,6 +100,7 @@
                                                 Delete
                                             </button>
                                         </form>
+                                        @endcan
                                     </div>
                                 </td>
                             </tr>

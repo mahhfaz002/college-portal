@@ -22,7 +22,7 @@ class DashboardController extends Controller
         return match ($user->role) {
             'proprietor'   => $this->proprietorDashboard($request),
             'principal'    => $this->principalDashboard($request),
-            'admin'        => $this->proprietorDashboard($request),
+            'admin'        => $this->adminDashboard($request),
             'ict'          => $this->ictDashboard($request),
             'accountant'   => $this->accountantDashboard($request),
             'teacher'      => $this->teacherDashboard($request),
@@ -65,10 +65,20 @@ class DashboardController extends Controller
         $recentPayments = (clone $paymentQuery)->latest()->take(5)->get();
         $classes = Student::select('class_arm')->whereNotNull('class_arm')->distinct()->pluck('class_arm');
 
+        // Oversight figures: total staff and per-class student headcounts.
+        $staffCount = \App\Models\User::where('role', '!=', 'student')->count();
+        $classBreakdown = Student::select('class_arm', DB::raw('COUNT(*) as total'))
+            ->whereNotNull('class_arm')
+            ->groupBy('class_arm')
+            ->orderBy('class_arm')
+            ->get();
+
         return view('dashboards.proprietor', compact(
             'totalRevenue',
             'totalDebt',
             'studentCount',
+            'staffCount',
+            'classBreakdown',
             'topStudents',
             'recentPayments',
             'classes',
@@ -81,21 +91,59 @@ class DashboardController extends Controller
     private function teacherDashboard(Request $request)
     {
         $user = auth()->user();
-        if (!$user->class_assigned) {
-            return view('dashboards.teacher', [
-                'students' => collect(),
-                'studentCount' => 0,
-                'selectedClass' => 'Not Assigned',
-                'attendanceTaken' => false,
-            ]);
+        $user->load('classes', 'subjects');
+
+        // Classes from the pivot, falling back to the legacy single column.
+        $classNames = $user->classes->pluck('name');
+        if ($classNames->isEmpty() && $user->class_assigned) {
+            $classNames = collect([$user->class_assigned]);
         }
-        $selectedClass = $user->class_assigned;
-        $students = Student::where('class_arm', $selectedClass)->get();
+
+        $today = date('Y-m-d');
+
+        // Per-class "attendance taken today?" status.
+        $classStatus = $classNames->map(function ($name) use ($today, $user) {
+            $studentIds = Student::where('class_arm', $name)->pluck('id');
+            $taken = \App\Models\ClassAttendanceLog::where('user_id', $user->id)
+                ->where('class_arm', $name)
+                ->whereDate('log_date', $today)
+                ->exists();
+            return [
+                'name' => $name,
+                'student_count' => $studentIds->count(),
+                'attendance_taken' => $taken,
+            ];
+        });
+
+        $selectedClass = $classNames->first() ?? 'Not Assigned';
+        $students = $selectedClass !== 'Not Assigned'
+            ? Student::where('class_arm', $selectedClass)->get()
+            : collect();
         $studentCount = $students->count();
-        $attendanceTaken = Attendance::where('attendance_date', date('Y-m-d'))
-            ->whereIn('student_id', $students->pluck('id'))
-            ->exists();
-        return view('dashboards.teacher', compact('students', 'studentCount', 'selectedClass', 'attendanceTaken'));
+        $attendanceTaken = $classStatus->firstWhere('name', $selectedClass)['attendance_taken'] ?? false;
+
+        // Today's clock record.
+        $clock = \App\Models\StaffAttendance::where('user_id', $user->id)
+            ->whereDate('work_date', $today)
+            ->first();
+
+        // Exam tasks for the subjects this teacher teaches.
+        $subjectIds = $user->subjects->pluck('id');
+        $authorExams = collect();
+        $gradeExams = collect();
+        if ($subjectIds->isNotEmpty()) {
+            $authorExams = \App\Models\Exam::whereIn('subject_id', $subjectIds)
+                ->where('status', 'draft')->with('subject')->get();
+            $gradeExams = \App\Models\Exam::whereIn('subject_id', $subjectIds)
+                ->whereIn('status', ['released', 'grading'])
+                ->withCount('submissions')->with('subject')->get()
+                ->filter(fn ($e) => $e->submissions_count > 0)->values();
+        }
+
+        return view('dashboards.teacher', compact(
+            'students', 'studentCount', 'selectedClass', 'attendanceTaken',
+            'classStatus', 'clock', 'authorExams', 'gradeExams'
+        ));
     }
 
     public function storeTeacher(Request $request)
@@ -162,13 +210,19 @@ class DashboardController extends Controller
             ]);
         }
 
-        $scores = Score::where('student_id', $student->id)->with('subject')->get();
+        // Only published results are visible to students.
+        $scores = Score::where('student_id', $student->id)
+            ->where('status', 'published')
+            ->with('subject')->get();
         $payments = Payment::where('student_id', $student->id)->latest()->take(5)->get();
+        $availableExams = \App\Models\Exam::where('status', 'released')->get()
+            ->filter(fn ($e) => in_array($student->class_arm, $e->class_arms, true))
+            ->count();
         $totalDays = Attendance::where('student_id', $student->id)->count();
         $daysPresent = Attendance::where('student_id', $student->id)->where('status', 'present')->count();
         $attendanceRate = $totalDays > 0 ? round(($daysPresent / $totalDays) * 100) : 100;
 
-        return view('dashboards.student', compact('student', 'scores', 'payments', 'attendanceRate'));
+        return view('dashboards.student', compact('student', 'scores', 'payments', 'attendanceRate', 'availableExams'));
     }
 
     /**
@@ -192,12 +246,25 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        // How many teachers are active today (clocked in or took a class).
+        $today = date('Y-m-d');
+        $activeTeacherIds = \App\Models\StaffAttendance::whereDate('work_date', $today)
+            ->whereNotNull('clock_in')
+            ->pluck('user_id')
+            ->merge(\App\Models\ClassAttendanceLog::whereDate('log_date', $today)->pluck('user_id'))
+            ->unique();
+        $teacherTotal = \App\Models\User::where('role', 'teacher')->count();
+        $activeTeachers = \App\Models\User::where('role', 'teacher')
+            ->whereIn('id', $activeTeacherIds)->count();
+
         return view('dashboards.principal', compact(
             'staffCount',
             'unassignedTeachers',
             'totalStudents',
             'attendanceToday',
-            'staffList'
+            'staffList',
+            'activeTeachers',
+            'teacherTotal'
         ));
     }
 
@@ -205,8 +272,34 @@ class DashboardController extends Controller
     {
         $totalStudents = Student::count();
         $subjectsCount = \App\Models\Subject::count();
-        $scoresEntered = Score::count();
-        return view('dashboards.exam_officer', compact('totalStudents', 'subjectsCount', 'scoresEntered'));
+        $exams = \App\Models\Exam::with('subject')->latest()->take(8)->get();
+        $openQueries = \App\Models\ResultQuery::where('status', 'open')->count();
+        $pendingGrading = \App\Models\Exam::where('status', 'grading')->count();
+
+        // Roster: each student with attendance % and fee-cleared status.
+        $roster = Student::orderBy('class_arm')->orderBy('full_name')->get()->map(function ($s) {
+            $present = $s->attendances()->whereIn('status', ['present', 'late'])->count();
+            $total = $s->attendances()->count();
+            return [
+                'student' => $s,
+                'attendance_pct' => $total > 0 ? (int) round($present / $total * 100) : 100,
+                'fees_cleared' => $s->feesCleared(),
+            ];
+        });
+
+        return view('dashboards.exam_officer', compact(
+            'totalStudents', 'subjectsCount', 'exams', 'openQueries', 'pendingGrading', 'roster'
+        ));
+    }
+
+    private function adminDashboard(Request $request)
+    {
+        $pending = \App\Models\Applicant::where('status', 'pending')->count();
+        $admitted = \App\Models\Applicant::where('status', 'admitted')->count();
+        $totalStudents = Student::count();
+        $recentApplicants = \App\Models\Applicant::latest()->take(6)->get();
+
+        return view('dashboards.admin', compact('pending', 'admitted', 'totalStudents', 'recentApplicants'));
     }
 
     private function ictDashboard(Request $request)
@@ -214,11 +307,17 @@ class DashboardController extends Controller
         $totalUsers = \App\Models\User::count();
         $activeSessions = DB::table('sessions')->count();
         $latestSystemLogs = \App\Models\ActivityLog::with('user')->latest()->take(10)->get();
+        $openTickets = \App\Models\SupportTicket::where('status', '!=', 'resolved')->count();
+        $releasedExams = \App\Models\Exam::where('status', 'released')->count();
+        $allUsers = \App\Models\User::where('role', '!=', 'student')->orderBy('name')->get();
 
         return view('dashboards.ict', compact(
             'totalUsers',
             'activeSessions',
-            'latestSystemLogs'
+            'latestSystemLogs',
+            'openTickets',
+            'releasedExams',
+            'allUsers'
         ));
     }
 }

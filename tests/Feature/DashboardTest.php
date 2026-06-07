@@ -60,13 +60,24 @@ class DashboardTest extends TestCase
         $teacher = $this->userWithRole('teacher');
         $this->actingAs($teacher)->get('/settings')->assertForbidden();
 
+        // Proprietor may VIEW settings (oversight) ...
         $proprietor = $this->userWithRole('proprietor');
         $this->actingAs($proprietor)->get('/settings')->assertOk();
     }
 
-    public function test_proprietor_can_update_settings(): void
+    public function test_proprietor_cannot_update_settings(): void
     {
+        // ... but the read-only rule blocks any write, even settings.
         $user = $this->userWithRole('proprietor');
+        $this->actingAs($user)->put('/settings', [
+            'school_name' => 'New School Name',
+            'currency_symbol' => '$',
+        ])->assertForbidden();
+    }
+
+    public function test_principal_can_update_settings(): void
+    {
+        $user = $this->userWithRole('principal');
         $this->actingAs($user)->put('/settings', [
             'school_name' => 'New School Name',
             'currency_symbol' => '$',

@@ -32,4 +32,17 @@ public function attendances()
     return $this->hasMany(Attendance::class);
 }
 
+public function bills()
+{
+    return $this->hasMany(FeeBill::class);
+}
+
+/**
+ * Whether the student has settled all fees (used for exam eligibility).
+ */
+public function feesCleared(): bool
+{
+    return (float) $this->fees_balance <= 0;
+}
+
 }

@@ -1,60 +1,65 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Staff Management</h2>
+        <div class="flex justify-between items-center">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">👥 Staff Directory</h2>
+            @can('manage_staff')
+            <a href="{{ route('staff.create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition shadow-sm text-sm">
+                + Register Staff
+            </a>
+            @endcan
+        </div>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-            <div class="bg-white p-6 rounded-lg shadow-sm mb-8 border-t-4 border-indigo-500">
-                <h3 class="font-bold mb-4">Add New Staff Member</h3>
-                <form action="{{ route('staff.store') }}" method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    @csrf
-                    <input type="text" name="name" placeholder="Full Name" class="border-gray-300 rounded-md shadow-sm" required>
-                    <input type="email" name="email" placeholder="Email Address" class="border-gray-300 rounded-md shadow-sm" required>
-                    <input type="password" name="password" placeholder="Password" class="border-gray-300 rounded-md shadow-sm" required>
-                    <select name="role" class="border-gray-300 rounded-md shadow-sm" required>
-                        <option value="teacher">Teacher</option>
-                        <option value="accountant">Accountant</option>
-                        <option value="exam_officer">Exam Officer</option>
-                        <option value="principal">Principal</option>
-                    </select>
-                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded font-bold hover:bg-indigo-700">Create Account</button>
-                </form>
-            </div>
+            @if(session('success'))
+                <div class="mb-4 p-4 bg-green-100 border border-green-300 text-green-800 rounded-lg text-sm font-medium">{{ session('success') }}</div>
+            @endif
+            @if(session('error'))
+                <div class="mb-4 p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg text-sm font-medium">{{ session('error') }}</div>
+            @endif
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg border border-gray-200">
-                <div class="p-6">
+                <div class="p-6 overflow-x-auto">
                     <table class="w-full text-left">
                         <thead>
-                            <tr class="bg-gray-50 border-b">
-                                <th class="p-3 font-bold">Name</th>
+                            <tr class="bg-gray-50 border-b text-xs uppercase text-gray-500">
+                                <th class="p-3 font-bold">Staff</th>
+                                <th class="p-3 font-bold">Staff ID</th>
                                 <th class="p-3 font-bold">Role</th>
-                                <th class="p-3 font-bold">Assigned Class</th>
-                                <th class="p-3 font-bold">Action</th>
+                                <th class="p-3 font-bold">Classes</th>
+                                <th class="p-3 font-bold">Subjects</th>
+                                <th class="p-3 font-bold text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($staff as $member)
+                            @forelse($staff as $member)
                             <tr class="border-b hover:bg-gray-50">
-                                <td class="p-3">{{ $member->name }}</td>
-                                <td class="p-3"><span class="uppercase text-xs font-bold px-2 py-1 bg-gray-200 rounded">{{ $member->role }}</span></td>
-                                <td class="p-3 text-blue-600 font-bold">{{ $member->class_assigned ?? 'Not Assigned' }}</td>
                                 <td class="p-3">
-                                    <form action="{{ route('staff.assign', $member) }}" method="POST" class="flex gap-2">
-                                        @csrf
-                                        <select name="class_assigned" class="text-xs border-gray-300 rounded p-1">
-                                            @forelse($classes as $class)
-                                                <option value="{{ $class }}">{{ $class }}</option>
-                                            @empty
-                                                <option value="">No classes available</option>
-                                            @endforelse
-                                        </select>
-                                        <button class="bg-green-600 text-white text-xs px-2 py-1 rounded">Assign</button>
-                                    </form>
+                                    <div class="flex items-center gap-3">
+                                        @if($member->passport)
+                                            <img src="{{ $member->passport }}" class="w-9 h-9 rounded-full object-cover border" alt="">
+                                        @else
+                                            <div class="w-9 h-9 bg-indigo-100 rounded-full flex items-center justify-center font-bold text-indigo-700 text-sm">{{ strtoupper(substr($member->name,0,1)) }}</div>
+                                        @endif
+                                        <div>
+                                            <p class="font-bold text-gray-800 text-sm">{{ $member->name }}</p>
+                                            <p class="text-xs text-gray-400">{{ $member->email }}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="p-3 text-xs font-mono text-gray-600">{{ $member->staff_id ?? '—' }}</td>
+                                <td class="p-3"><span class="uppercase text-[10px] font-bold px-2 py-1 bg-gray-200 rounded">{{ str_replace('_',' ',$member->role) }}</span></td>
+                                <td class="p-3 text-sm text-gray-600">{{ $member->classes_count }}</td>
+                                <td class="p-3 text-sm text-gray-600">{{ $member->subjects_count }}</td>
+                                <td class="p-3 text-right">
+                                    <a href="{{ route('staff.show', $member) }}" class="bg-gray-600 text-white text-xs px-3 py-1.5 rounded font-bold hover:bg-gray-700">View</a>
                                 </td>
                             </tr>
-                            @endforeach
+                            @empty
+                            <tr><td colspan="6" class="p-8 text-center text-gray-400 italic">No staff yet.</td></tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>

@@ -23,6 +23,12 @@
                         {{ __('Dashboard') }}
                     </x-nav-link>
 
+                    @if($role === 'student')
+                        <x-nav-link :href="route('myexams.available')" :active="request()->routeIs('myexams.*')">
+                            {{ __('My Exams') }}
+                        </x-nav-link>
+                    @endif
+
                     @if($isStaff)
                         <x-nav-link :href="route('students.index')" :active="request()->routeIs('students.*')">
                             {{ __('Students') }}
@@ -57,6 +63,18 @@
                             {{ __('Admissions') }}
                         </x-nav-link>
                     @endif
+
+                    @if(in_array($role, ['accountant', 'proprietor']))
+                        <x-nav-link :href="route('fees.index')" :active="request()->routeIs('fees.*')">
+                            {{ __('Fees') }}
+                        </x-nav-link>
+                    @endif
+
+                    @if(in_array($role, ['principal', 'proprietor']))
+                        <x-nav-link :href="route('staff.attendance')" :active="request()->routeIs('staff.attendance')">
+                            {{ __('Teacher Activity') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -72,7 +90,10 @@
                     <x-slot name="content">
                         <x-dropdown-link :href="route('timetable.index')">{{ __('Timetable') }}</x-dropdown-link>
                         <x-dropdown-link :href="route('library.index')">{{ __('Library') }}</x-dropdown-link>
-                        <x-dropdown-link :href="route('exams.index')">{{ __('Exams / Quizzes') }}</x-dropdown-link>
+                        @if(in_array($role, ['exam_officer','ict','principal','proprietor']))
+                            <x-dropdown-link :href="route('exams.index')">{{ __('Exams') }}</x-dropdown-link>
+                            <x-dropdown-link :href="route('exams.queries')">{{ __('Result Queries') }}</x-dropdown-link>
+                        @endif
                         @if(in_array($role, ['proprietor','principal','admin','ict','accountant']))
                             <x-dropdown-link :href="route('transport.index')">{{ __('Transport') }}</x-dropdown-link>
                             <x-dropdown-link :href="route('hr.index')">{{ __('HR / Payroll') }}</x-dropdown-link>
@@ -98,6 +119,10 @@
                     <x-slot name="content">
                         <x-dropdown-link :href="route('profile.edit')">
                             {{ __('Profile') }}
+                        </x-dropdown-link>
+
+                        <x-dropdown-link :href="route('support.index')">
+                            {{ __('Support') }}
                         </x-dropdown-link>
 
                         @if($isAdminish && \Illuminate\Support\Facades\Route::has('settings.index'))
@@ -170,7 +195,9 @@
             @if($isStaff)
                 <x-responsive-nav-link :href="route('timetable.index')">{{ __('Timetable') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('library.index')">{{ __('Library') }}</x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('exams.index')">{{ __('Exams / Quizzes') }}</x-responsive-nav-link>
+                @if(in_array($role, ['exam_officer','ict','principal','proprietor']))
+                    <x-responsive-nav-link :href="route('exams.index')">{{ __('Exams') }}</x-responsive-nav-link>
+                @endif
                 @if(in_array($role, ['proprietor','principal','admin','ict','accountant']))
                     <x-responsive-nav-link :href="route('transport.index')">{{ __('Transport') }}</x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('hr.index')">{{ __('HR / Payroll') }}</x-responsive-nav-link>
@@ -188,6 +215,10 @@
             <div class="mt-3 space-y-1">
                 <x-responsive-nav-link :href="route('profile.edit')">
                     {{ __('Profile') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('support.index')">
+                    {{ __('Support') }}
                 </x-responsive-nav-link>
 
                 @if($isAdminish && \Illuminate\Support\Facades\Route::has('settings.index'))

@@ -13,7 +13,16 @@ class Score extends Model
         'ca_score',
         'exam_score',
         'term',
-        'session'
+        'session',
+        'grade',
+        'total',
+        'status',
+        'exam_id',
+        'published_at',
+    ];
+
+    protected $casts = [
+        'published_at' => 'datetime',
     ];
 
     // Connects score back to a student

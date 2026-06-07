@@ -19,5 +19,7 @@ class Applicant extends Model
         'passport_path',
         'birth_cert_path',
         'indigene_letter_path',
+        'passport',
+        'admission_number',
     ];
 }

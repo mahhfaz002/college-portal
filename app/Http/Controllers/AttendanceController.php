@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Student;
 use App\Models\Attendance;
+use App\Models\ClassAttendanceLog;
 use Illuminate\Http\Request;
 
 class AttendanceController extends Controller
@@ -40,8 +41,10 @@ class AttendanceController extends Controller
         $request->validate([
             'date' => 'required|date',
             'status' => 'required|array',
+            'class' => 'nullable|string',
         ]);
 
+        $present = 0;
         foreach ($request->status as $studentId => $status) {
             Attendance::updateOrCreate(
                 [
@@ -50,6 +53,29 @@ class AttendanceController extends Controller
                 ],
                 [
                     'status' => $status,
+                ]
+            );
+            if (in_array($status, ['present', 'late'], true)) {
+                $present++;
+            }
+        }
+
+        // Log that this teacher took attendance for this class today, so the
+        // principal can see who is active and which classes were covered.
+        $className = $request->input('class')
+            ?? optional(Student::find(array_key_first($request->status)))->class_arm;
+
+        if ($className) {
+            ClassAttendanceLog::updateOrCreate(
+                [
+                    'user_id'   => auth()->id(),
+                    'class_arm' => $className,
+                    'log_date'  => $request->date,
+                ],
+                [
+                    'present_count' => $present,
+                    'total_count'   => count($request->status),
+                    'taken_at'      => now(),
                 ]
             );
         }

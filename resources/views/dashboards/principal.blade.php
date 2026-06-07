@@ -29,13 +29,14 @@
                     <p class="text-xs font-bold text-gray-400 uppercase">Total Students</p>
                     <h3 class="text-2xl font-black">{{ $totalStudents }}</h3>
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <p class="text-xs font-bold text-gray-400 uppercase">Attendance Today</p>
-                    <h3 class="text-2xl font-black text-green-600">{{ $attendanceToday }}</h3>
-                </div>
+                <a href="{{ route('staff.attendance') }}" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:border-indigo-300 transition">
+                    <p class="text-xs font-bold text-gray-400 uppercase">Teachers Active Today</p>
+                    <h3 class="text-2xl font-black text-green-600">{{ $activeTeachers }}<span class="text-gray-300 text-lg">/{{ $teacherTotal }}</span></h3>
+                    <p class="text-[11px] text-indigo-600 font-bold mt-1">View classroom activity →</p>
+                </a>
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                     <p class="text-xs font-bold text-gray-400 uppercase">Current Term</p>
-                    <h3 class="text-2xl font-black text-indigo-600">1st Term</h3>
+                    <h3 class="text-2xl font-black text-indigo-600">{{ $school['term'] ?: '1st Term' }}</h3>
                 </div>
             </div>
 

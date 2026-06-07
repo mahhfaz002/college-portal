@@ -13,11 +13,22 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
+            @if(session('success'))<div class="mb-4 p-4 bg-green-100 border border-green-300 text-green-800 rounded-lg text-sm">{{ session('success') }}</div>@endif
+            @if(session('error'))<div class="mb-4 p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg text-sm">{{ session('error') }}</div>@endif
+
             @if(isset($error))
                 <div class="bg-red-100 border-l-4 border-red-500 p-4 text-red-700 mb-6 rounded-r-lg">
                     {{ $error }}
                 </div>
             @else
+
+            @if(($availableExams ?? 0) > 0)
+            <div class="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg flex justify-between items-center">
+                <p class="font-bold text-indigo-800">📝 You have {{ $availableExams }} exam(s) available to take.</p>
+                <a href="{{ route('myexams.available') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 text-sm">Go to My Exams →</a>
+            </div>
+            @endif
+
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white p-6 rounded-xl shadow-sm border-b-4 border-blue-500">
                     <p class="text-xs font-bold text-gray-400 uppercase">Class</p>
@@ -56,22 +67,17 @@
                                 <th class="px-6 py-3 text-center">Exam (60)</th>
                                 <th class="px-6 py-3 text-center">Total</th>
                                 <th class="px-6 py-3 text-center">Grade</th>
+                                <th class="px-6 py-3 text-center">Query</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             @forelse($scores as $score)
                             @php
-                                $total = $score->ca_score + $score->exam_score;
-                                $grade = match(true) {
-                                    $total >= 70 => 'A',
-                                    $total >= 60 => 'B',
-                                    $total >= 50 => 'C',
-                                    $total >= 40 => 'D',
-                                    default => 'F',
-                                };
+                                $total = $score->total ?? ($score->ca_score + $score->exam_score);
+                                $grade = $score->grade ?? grade_for($total)['grade'];
                             @endphp
                             <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 text-sm font-bold text-gray-800">{{ $score->subject }}</td>
+                                <td class="px-6 py-4 text-sm font-bold text-gray-800">{{ $score->subject->name ?? '—' }}</td>
                                 <td class="px-6 py-4 text-sm text-center text-gray-600">{{ $score->ca_score }}</td>
                                 <td class="px-6 py-4 text-sm text-center text-gray-600">{{ $score->exam_score }}</td>
                                 <td class="px-6 py-4 text-sm text-center font-black text-blue-600">{{ $total }}</td>
@@ -80,14 +86,24 @@
                                         {{ $grade == 'A' ? 'bg-green-100 text-green-700' : '' }}
                                         {{ $grade == 'B' ? 'bg-blue-100 text-blue-700' : '' }}
                                         {{ $grade == 'C' ? 'bg-yellow-100 text-yellow-700' : '' }}
-                                        {{ $grade == 'F' ? 'bg-red-100 text-red-700' : '' }}">
+                                        {{ in_array($grade,['F','E']) ? 'bg-red-100 text-red-700' : '' }}">
                                         {{ $grade }}
                                     </span>
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <details class="inline-block text-left">
+                                        <summary class="cursor-pointer text-xs text-indigo-600 font-bold">Raise</summary>
+                                        <form action="{{ route('results.query', $score) }}" method="POST" class="mt-2 w-48">
+                                            @csrf
+                                            <textarea name="message" rows="2" placeholder="Describe the issue…" class="w-full border-gray-300 rounded text-xs" required></textarea>
+                                            <button class="mt-1 bg-indigo-600 text-white text-xs px-3 py-1 rounded font-bold">Send</button>
+                                        </form>
+                                    </details>
                                 </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="5" class="p-8 text-center text-gray-400 italic text-sm">No results uploaded for this term yet.</td>
+                                <td colspan="6" class="p-8 text-center text-gray-400 italic text-sm">No results published for this term yet.</td>
                             </tr>
                             @endforelse
                         </tbody>
