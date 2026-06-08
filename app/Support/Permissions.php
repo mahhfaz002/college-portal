@@ -29,6 +29,9 @@ class Permissions
         // Managed class registry (create/activate classes).
         'manage_classes'       => ['principal', 'ict'],
 
+        // Timetable generation & approval — Principal only. Everyone else views.
+        'manage_timetable'     => ['principal'],
+
         // Payroll — Bursar runs it; Principal reviews/approves only.
         'manage_payroll'       => ['accountant'],
         'review_payroll'       => ['principal'],

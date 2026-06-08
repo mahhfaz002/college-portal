@@ -63,7 +63,10 @@ class TimetableTest extends TestCase
     {
         $principal = User::where('role', 'principal')->firstOrFail();
 
-        $this->actingAs($principal)->post('/timetable/generate', ['periods' => 6])->assertRedirect();
+        // Params arrive from the form as STRINGS — must not 500 (Carbon int bug).
+        $this->actingAs($principal)->post('/timetable/generate', [
+            'periods' => '6', 'period_minutes' => '45', 'start_time' => '08:30', 'break_after' => '3',
+        ])->assertRedirect();
         $plan = TimetablePlan::where('status', 'draft')->latest()->firstOrFail();
         $this->assertNotEmpty($plan->entries);
 
@@ -95,9 +98,27 @@ class TimetableTest extends TestCase
         $this->actingAs($studentUser)->get('/timetable')->assertOk()->assertSee('JSS1A')->assertDontSee('JSS2A');
     }
 
-    public function test_teacher_cannot_generate(): void
+    public function test_only_principal_can_generate(): void
     {
-        $teacher = User::where('role', 'teacher')->firstOrFail();
-        $this->actingAs($teacher)->post('/timetable/generate', [])->assertForbidden();
+        // Teacher, ICT, and everyone else are blocked — generation is principal-only.
+        $this->actingAs(User::where('role', 'teacher')->firstOrFail())
+            ->post('/timetable/generate', [])->assertForbidden();
+        $this->actingAs(User::where('role', 'ict')->firstOrFail())
+            ->post('/timetable/generate', [])->assertForbidden();
+    }
+
+    public function test_other_staff_see_published_timetable_readonly(): void
+    {
+        // Principal generates + approves.
+        $principal = User::where('role', 'principal')->firstOrFail();
+        $this->actingAs($principal)->post('/timetable/generate', ['period_minutes' => '40']);
+        $plan = TimetablePlan::where('status', 'draft')->latest()->firstOrFail();
+        $this->actingAs($principal)->post("/timetable/{$plan->id}/approve");
+
+        // ICT sees the published timetable but no generate control.
+        $this->actingAs(User::where('role', 'ict')->firstOrFail())
+            ->get('/timetable')->assertOk()
+            ->assertSee('Published Timetable')
+            ->assertDontSee('Generate Weekly Timetable');
     }
 }

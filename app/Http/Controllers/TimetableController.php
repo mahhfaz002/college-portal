@@ -31,9 +31,12 @@ class TimetableController extends Controller
             return $this->teacherView($user);
         }
 
-        // Manager view
-        $draft = TimetablePlan::where('status', 'draft')->latest()->with('entries.subject', 'entries.teacher')->first();
+        // Principal manages; every other staff role sees the published timetable read-only.
+        $canManage = $user->canManage('manage_timetable'); // principal only
         $approved = TimetablePlan::where('status', 'approved')->latest()->with('entries.subject', 'entries.teacher')->first();
+        $draft = $canManage
+            ? TimetablePlan::where('status', 'draft')->latest()->with('entries.subject', 'entries.teacher')->first()
+            : null;
         $params = $this->service->defaultParams();
         $rows = $this->service->periodRows($params);
 
@@ -42,7 +45,7 @@ class TimetableController extends Controller
             'approved' => $approved,
             'params' => $params,
             'rows' => $rows,
-            'canManage' => $user->canManage('manage_classes'), // principal/ict
+            'canManage' => $canManage,
         ]);
     }
 

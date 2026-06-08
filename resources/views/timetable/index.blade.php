@@ -75,8 +75,43 @@
             @endif
 
             @if($approved)
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-green-300 text-sm text-green-800">
-                    ✅ A timetable is currently <strong>published</strong> (approved {{ $approved->approved_at?->diffForHumans() }}). Teachers and students see it on their dashboards. Generating &amp; approving a new one replaces it.
+                @php $approvedByClass = $approved->entries->groupBy('class_arm'); @endphp
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-green-300">
+                    <div class="flex justify-between items-center border-b pb-2 mb-4">
+                        <h3 class="font-bold text-green-800">✅ Published Timetable
+                            <span class="text-xs font-normal text-gray-400">approved {{ $approved->approved_at?->diffForHumans() }}</span>
+                        </h3>
+                        @if($canManage)<span class="text-xs text-gray-400">Generating &amp; approving a new one replaces this.</span>@endif
+                    </div>
+                    @forelse($approvedByClass as $class => $entries)
+                        @php $map = $entries->keyBy(fn($e) => $e->day.'-'.$e->period_no); @endphp
+                        <div class="mb-6">
+                            <h4 class="font-bold text-gray-700 mb-2">{{ $class }}</h4>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs border">
+                                    <thead><tr class="bg-gray-50">
+                                        <th class="p-2 border">Period</th>
+                                        @foreach($params['days'] as $day)<th class="p-2 border">{{ \Illuminate\Support\Str::substr($day,0,3) }}</th>@endforeach
+                                    </tr></thead>
+                                    <tbody>
+                                        @foreach($rows as $row)
+                                        <tr>
+                                            <td class="p-2 border font-bold text-gray-500">{{ $row['no'] }}<br><span class="font-normal">{{ $row['start'] }}</span></td>
+                                            @foreach($params['days'] as $day)
+                                                @php $e = $map->get($day.'-'.$row['no']); @endphp
+                                                <td class="p-2 border">
+                                                    @if($e)<span class="font-bold text-gray-800">{{ $e->subject->name ?? '' }}</span><br><span class="text-gray-400">{{ $e->teacher->name ?? '' }}</span>@else<span class="text-gray-300">—</span>@endif
+                                                </td>
+                                            @endforeach
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    @empty
+                        <p class="text-gray-400 italic">Published timetable has no entries.</p>
+                    @endforelse
                 </div>
             @endif
         </div>

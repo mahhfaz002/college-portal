@@ -32,10 +32,26 @@ class TimetableService
     }
 
     /**
+     * Coerce numeric params to ints (HTML form posts arrive as strings, which
+     * blows up Carbon::addMinutes). Always run this before using params.
+     */
+    public function normalizeParams(array $params): array
+    {
+        $params = array_merge($this->defaultParams(), $params);
+        $params['periods']        = max(1, (int) $params['periods']);
+        $params['period_minutes'] = max(5, (int) $params['period_minutes']);
+        $params['break_after']    = (int) ($params['break_after'] ?? 0);
+        $params['break_minutes']  = (int) ($params['break_minutes'] ?? 0);
+        $params['start_time']     = $params['start_time'] ?: '08:00';
+        return $params;
+    }
+
+    /**
      * Period rows: [['no'=>1,'start'=>'08:00','end'=>'08:40'], ...] with the break gap applied.
      */
     public function periodRows(array $params): array
     {
+        $params = $this->normalizeParams($params);
         $rows = [];
         $cursor = Carbon::createFromFormat('H:i', $params['start_time']);
         for ($i = 1; $i <= $params['periods']; $i++) {
@@ -43,8 +59,8 @@ class TimetableService
             $end = $cursor->copy()->addMinutes($params['period_minutes']);
             $rows[] = ['no' => $i, 'start' => $start->format('H:i'), 'end' => $end->format('H:i')];
             $cursor = $end;
-            if ((int) ($params['break_after'] ?? 0) === $i) {
-                $cursor->addMinutes((int) ($params['break_minutes'] ?? 0));
+            if ($params['break_after'] === $i) {
+                $cursor->addMinutes($params['break_minutes']);
             }
         }
         return $rows;
@@ -89,7 +105,7 @@ class TimetableService
      */
     public function generate(array $params, ?int $userId = null): TimetablePlan
     {
-        $params = array_merge($this->defaultParams(), $params);
+        $params = $this->normalizeParams($params);
         $rows = $this->periodRows($params);
         $courses = $this->gatherCourses();
 

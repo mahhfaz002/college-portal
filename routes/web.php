@@ -188,9 +188,9 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
         Route::post('/support/reset-password/{user}', [SupportTicketController::class, 'resetPassword'])->name('support.reset-password');
     });
 
-    // --- Timetable --- (everyone views their own; principal/ICT generate & approve)
+    // --- Timetable --- (everyone views; Principal alone generates & approves)
     Route::get('/timetable', [TimetableController::class, 'index'])->name('timetable.index');
-    Route::middleware('role:'.Permissions::middleware('manage_classes'))->group(function () {
+    Route::middleware('role:'.Permissions::middleware('manage_timetable'))->group(function () {
         Route::post('/timetable/generate', [TimetableController::class, 'generate'])->name('timetable.generate');
         Route::post('/timetable/{plan}/approve', [TimetableController::class, 'approve'])->name('timetable.approve');
         Route::delete('/timetable/{plan}', [TimetableController::class, 'destroy'])->name('timetable.destroy');
