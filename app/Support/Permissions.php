@@ -20,9 +20,18 @@ class Permissions
         'manage_staff'         => ['principal'],
         'view_staff'           => ['principal', 'proprietor'],
 
-        // Student records (admit/edit/delete) — Admin/Registrar.
+        // Student records (admit/delete) — Admin/Registrar.
         'manage_students'      => ['admin'],
+        // Edit existing student info (names, next-of-kin, class correction/repeat, passport).
+        'edit_students'        => ['admin', 'ict'],
         'view_students'        => ['proprietor', 'principal', 'admin', 'accountant', 'ict', 'exam_officer', 'teacher'],
+
+        // Managed class registry (create/activate classes).
+        'manage_classes'       => ['principal', 'ict'],
+
+        // Payroll — Bursar runs it; Principal reviews/approves only.
+        'manage_payroll'       => ['accountant'],
+        'review_payroll'       => ['principal'],
 
         // Fees / payments — Bursar (accountant).
         'manage_fees'          => ['accountant'],
@@ -38,8 +47,12 @@ class Permissions
         'author_questions'     => ['teacher'],
         'take_exams'           => ['student'],
 
-        // Attendance taking — class teachers.
+        // Attendance — bursar & ICT excluded.
         'take_attendance'      => ['teacher', 'exam_officer'],
+        'view_attendance'      => ['teacher', 'exam_officer', 'principal', 'proprietor', 'admin'],
+
+        // Subjects — bursar excluded; ICT may manage.
+        'view_subjects'        => ['teacher', 'exam_officer', 'principal', 'proprietor', 'admin', 'ict'],
 
         // Staff clock in/out — all staff except the view-only proprietor.
         'clock_attendance'     => ['teacher', 'accountant', 'exam_officer', 'ict', 'admin', 'principal'],
@@ -48,7 +61,7 @@ class Permissions
         'view_staff_attendance'=> ['principal', 'proprietor'],
 
         // Academic structure.
-        'manage_subjects'      => ['principal', 'admin', 'exam_officer'],
+        'manage_subjects'      => ['principal', 'admin', 'exam_officer', 'ict'],
 
         // Technical support — ICT handles tickets; anyone can raise one.
         'handle_tickets'       => ['ict'],

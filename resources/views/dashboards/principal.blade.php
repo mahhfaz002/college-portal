@@ -45,23 +45,60 @@
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                         <h3 class="font-bold text-gray-700 mb-4 border-b pb-2 text-lg">Administrative Quick Links</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <a href="{{ route('students.index') }}" class="p-4 bg-gray-50 rounded-lg hover:bg-indigo-50 border border-transparent hover:border-indigo-200 transition">
-                                <span class="block font-bold text-indigo-700">Student Admissions</span>
-                                <span class="text-xs text-gray-500">View and admit new students</span>
+                            <a href="{{ route('staff.index') }}" class="p-4 bg-gray-50 rounded-lg hover:bg-indigo-50 border border-transparent hover:border-indigo-200 transition">
+                                <span class="block font-bold text-indigo-700">Staff &amp; Assignments</span>
+                                <span class="text-xs text-gray-500">Register staff, assign classes &amp; subjects</span>
                             </a>
-                            <a href="#" class="p-4 bg-gray-50 rounded-lg hover:bg-green-50 border border-transparent hover:border-green-200 transition">
-                                <span class="block font-bold text-green-700">Academic Reports</span>
-                                <span class="text-xs text-gray-500">School-wide performance analysis</span>
+                            <a href="{{ route('announcements.index') }}" class="p-4 bg-gray-50 rounded-lg hover:bg-amber-50 border border-transparent hover:border-amber-200 transition">
+                                <span class="block font-bold text-amber-700">📢 Post Announcement</span>
+                                <span class="text-xs text-gray-500">To everyone, staff, students, or a class</span>
                             </a>
-                            <a href="#" class="p-4 bg-gray-50 rounded-lg hover:bg-yellow-50 border border-transparent hover:border-yellow-200 transition">
-                                <span class="block font-bold text-yellow-700">Inventory/Supplies</span>
-                                <span class="text-xs text-gray-500">Manage school assets</span>
+                            <a href="{{ route('classes.index') }}" class="p-4 bg-gray-50 rounded-lg hover:bg-green-50 border border-transparent hover:border-green-200 transition">
+                                <span class="block font-bold text-green-700">🏫 Manage Classes</span>
+                                <span class="text-xs text-gray-500">Add classes &amp; view enrolment</span>
                             </a>
-                            <a href="#" class="p-4 bg-gray-50 rounded-lg hover:bg-red-50 border border-transparent hover:border-red-200 transition">
-                                <span class="block font-bold text-red-700">Disciplinary Records</span>
-                                <span class="text-xs text-gray-500">Track student behavior issues</span>
+                            @if(\Illuminate\Support\Facades\Route::has('payroll.review'))
+                            <a href="{{ route('payroll.review') }}" class="p-4 bg-gray-50 rounded-lg hover:bg-purple-50 border border-transparent hover:border-purple-200 transition">
+                                <span class="block font-bold text-purple-700">💰 Payroll Approvals @if($pendingPayroll)<span class="ml-1 text-[10px] text-white bg-red-500 px-2 py-0.5 rounded-full">{{ $pendingPayroll }}</span>@endif</span>
+                                <span class="text-xs text-gray-500">Review &amp; approve bursar payslips</span>
                             </a>
+                            @endif
+                            @if(\Illuminate\Support\Facades\Route::has('timetable.index'))
+                            <a href="{{ route('timetable.index') }}" class="p-4 bg-gray-50 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-200 transition">
+                                <span class="block font-bold text-blue-700">🗓️ Timetable</span>
+                                <span class="text-xs text-gray-500">Generate &amp; approve weekly timetable</span>
+                            </a>
+                            @endif
                         </div>
+                    </div>
+
+                    <!-- Today's clock in/out -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div class="px-6 py-4 bg-gray-50 border-b flex justify-between items-center">
+                            <h3 class="font-bold text-gray-700">🕒 Today's Clock In / Out</h3>
+                            <a href="{{ route('staff.attendance') }}" class="text-xs font-bold text-indigo-600">Full report →</a>
+                        </div>
+                        <table class="w-full text-left text-sm">
+                            <thead><tr class="bg-gray-50 border-b text-xs uppercase text-gray-500">
+                                <th class="p-3">Teacher</th><th class="p-3">Clock In</th><th class="p-3">Clock Out</th><th class="p-3">Status</th>
+                            </tr></thead>
+                            <tbody>
+                                @forelse($teacherClock as $row)
+                                <tr class="border-b">
+                                    <td class="p-3 font-bold">{{ $row['teacher']->name }}</td>
+                                    <td class="p-3 text-green-700">{{ $row['clock_in'] ? \Illuminate\Support\Carbon::parse($row['clock_in'])->format('h:i A') : '—' }}</td>
+                                    <td class="p-3 text-red-600">{{ $row['clock_out'] ? \Illuminate\Support\Carbon::parse($row['clock_out'])->format('h:i A') : '—' }}</td>
+                                    <td class="p-3">
+                                        @if($row['clock_in'] && !$row['clock_out'])<span class="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-1 rounded-full">● ON SITE</span>
+                                        @elseif($row['clock_out'])<span class="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-full">left</span>
+                                        @else<span class="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-full">not in</span>@endif
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr><td colspan="4" class="p-6 text-center text-gray-400 italic">No teachers yet.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 

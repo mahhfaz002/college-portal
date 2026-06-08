@@ -54,7 +54,34 @@
                                 <td class="p-3 text-sm text-gray-600">{{ $member->classes_count }}</td>
                                 <td class="p-3 text-sm text-gray-600">{{ $member->subjects_count }}</td>
                                 <td class="p-3 text-right">
-                                    <a href="{{ route('staff.show', $member) }}" class="bg-gray-600 text-white text-xs px-3 py-1.5 rounded font-bold hover:bg-gray-700">View</a>
+                                    <div class="flex items-center justify-end gap-2">
+                                        @can('manage_staff')
+                                        @if($member->role === 'teacher')
+                                        <details class="relative text-left">
+                                            <summary class="cursor-pointer bg-green-600 text-white text-xs px-3 py-1.5 rounded font-bold list-none">Assign</summary>
+                                            <div class="absolute right-0 z-10 mt-1 w-64 bg-white border rounded-lg shadow-lg p-3">
+                                                <form action="{{ route('staff.assignments', $member) }}" method="POST">
+                                                    @csrf
+                                                    <p class="text-[10px] font-bold text-gray-500 uppercase mb-1">Classes</p>
+                                                    <div class="grid grid-cols-2 gap-1 max-h-28 overflow-y-auto mb-2">
+                                                        @foreach($allClasses as $c)
+                                                            <label class="flex items-center gap-1 text-xs"><input type="checkbox" name="class_ids[]" value="{{ $c->id }}" {{ $member->classes->contains($c->id) ? 'checked' : '' }}> {{ $c->name }}</label>
+                                                        @endforeach
+                                                    </div>
+                                                    <p class="text-[10px] font-bold text-gray-500 uppercase mb-1">Subjects</p>
+                                                    <div class="grid grid-cols-2 gap-1 max-h-28 overflow-y-auto mb-2">
+                                                        @foreach($allSubjects as $s)
+                                                            <label class="flex items-center gap-1 text-xs"><input type="checkbox" name="subject_ids[]" value="{{ $s->id }}" {{ $member->subjects->contains($s->id) ? 'checked' : '' }}> {{ $s->name }}</label>
+                                                        @endforeach
+                                                    </div>
+                                                    <button class="w-full bg-indigo-600 text-white text-xs py-1.5 rounded font-bold">Save</button>
+                                                </form>
+                                            </div>
+                                        </details>
+                                        @endif
+                                        @endcan
+                                        <a href="{{ route('staff.show', $member) }}" class="bg-gray-600 text-white text-xs px-3 py-1.5 rounded font-bold hover:bg-gray-700">View</a>
+                                    </div>
                                 </td>
                             </tr>
                             @empty

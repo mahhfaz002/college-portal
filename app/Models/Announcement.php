@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Announcement extends Model
 {
-    protected $fillable = ['user_id', 'title', 'body', 'audience', 'is_published'];
+    protected $fillable = ['user_id', 'title', 'body', 'audience', 'target_class', 'is_published'];
 
     protected $casts = ['is_published' => 'boolean'];
 
@@ -16,15 +16,25 @@ class Announcement extends Model
     }
 
     /**
-     * Announcements visible to a given role.
+     * Announcements visible to a given role (and class, for students).
+     * audience: all | staff | students | both | class (+ legacy role names).
      */
-    public function scopeVisibleTo($query, string $role)
+    public function scopeVisibleTo($query, string $role, ?string $classArm = null)
     {
-        $audiences = ['all'];
-        $audiences[] = $role;
-        if ($role !== 'student') {
-            $audiences[] = 'staff';
-        }
-        return $query->where('is_published', true)->whereIn('audience', $audiences);
+        return $query->where('is_published', true)->where(function ($q) use ($role, $classArm) {
+            $q->whereIn('audience', ['all', 'both']);
+
+            if ($role === 'student') {
+                $q->orWhere('audience', 'students');
+                if ($classArm) {
+                    $q->orWhere(fn ($qq) => $qq->where('audience', 'class')->where('target_class', $classArm));
+                }
+            } else {
+                // Staff see staff/role-targeted and (for oversight) all class-targeted notices.
+                $q->orWhere('audience', 'staff')
+                  ->orWhere('audience', $role)
+                  ->orWhere('audience', 'class');
+            }
+        });
     }
 }

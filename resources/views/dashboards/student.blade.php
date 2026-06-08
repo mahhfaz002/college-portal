@@ -29,6 +29,48 @@
             </div>
             @endif
 
+            @if(isset($todayLessons) && $todayLessons->count())
+            <div class="mb-6 bg-white rounded-xl shadow-sm border border-blue-200 overflow-hidden">
+                <div class="px-6 py-3 bg-blue-50 border-b flex justify-between items-center">
+                    <h3 class="font-bold text-blue-800">🗓️ Today's Timetable ({{ now()->format('l') }})</h3>
+                    <a href="{{ route('timetable.index') }}" class="text-xs font-bold text-blue-700">Full week →</a>
+                </div>
+                <table class="w-full text-left text-sm">
+                    <tbody>
+                        @foreach($todayLessons as $lesson)
+                        <tr class="border-b">
+                            <td class="p-3 font-bold text-gray-500 w-24">{{ $lesson->start_time }}–{{ $lesson->end_time }}</td>
+                            <td class="p-3 font-bold text-gray-800">{{ $lesson->subject->name ?? '' }}</td>
+                            <td class="p-3 text-gray-400">{{ $lesson->teacher->name ?? '' }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @endif
+
+            @if(isset($announcements) && $announcements->count())
+            <div class="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-3 bg-amber-50 border-b flex justify-between items-center">
+                    <h3 class="font-bold text-amber-800">📢 Announcements
+                        <span class="ml-1 text-[10px] font-bold text-white bg-amber-500 px-2 py-0.5 rounded-full">{{ $announcements->count() }}</span>
+                    </h3>
+                    <a href="{{ route('announcements.index') }}" class="text-xs font-bold text-amber-700">View all →</a>
+                </div>
+                <div class="divide-y">
+                    @foreach($announcements as $a)
+                    <div class="px-6 py-3">
+                        <p class="font-bold text-gray-800 text-sm">{{ $a->title }}
+                            @if($a->audience === 'class')<span class="ml-1 text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">{{ $a->target_class }}</span>@endif
+                        </p>
+                        <p class="text-sm text-gray-600 whitespace-pre-line">{{ \Illuminate\Support\Str::limit($a->body, 160) }}</p>
+                        <p class="text-[10px] text-gray-400 mt-1">{{ $a->author->name ?? 'School' }} · {{ $a->created_at->diffForHumans() }}</p>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white p-6 rounded-xl shadow-sm border-b-4 border-blue-500">
                     <p class="text-xs font-bold text-gray-400 uppercase">Class</p>

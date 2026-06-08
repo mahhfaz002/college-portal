@@ -17,18 +17,34 @@
                         @csrf
                         <input name="title" placeholder="Title" required class="w-full rounded-lg border-gray-300">
                         <textarea name="body" placeholder="Message..." rows="3" required class="w-full rounded-lg border-gray-300"></textarea>
-                        <div class="flex items-center gap-3">
-                            <select name="audience" class="rounded-lg border-gray-300">
-                                <option value="all">Everyone</option>
-                                <option value="staff">All Staff</option>
-                                <option value="teacher">Teachers</option>
-                                <option value="student">Students</option>
-                                <option value="accountant">Accountants</option>
-                                <option value="principal">Principals</option>
-                            </select>
-                            <button class="text-white px-5 py-2 rounded-lg font-bold" style="background: var(--brand)">Post</button>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Send to</label>
+                                <select name="audience" id="audienceSelect" class="w-full rounded-lg border-gray-300">
+                                    <option value="all">Everyone</option>
+                                    <option value="staff">Staff only</option>
+                                    <option value="students">Students only</option>
+                                    <option value="both">Staff &amp; Students</option>
+                                    <option value="class">A specific class</option>
+                                </select>
+                            </div>
+                            <div id="classWrap" style="display:none">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Class</label>
+                                <select name="target_class" class="w-full rounded-lg border-gray-300">
+                                    <option value="">Select class…</option>
+                                    @foreach($classes as $class)
+                                        <option value="{{ $class }}">{{ $class }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <button class="text-white px-5 py-2 rounded-lg font-bold h-10" style="background: var(--brand)">Post</button>
                         </div>
                     </form>
+                    <script>
+                        document.getElementById('audienceSelect')?.addEventListener('change', function () {
+                            document.getElementById('classWrap').style.display = this.value === 'class' ? 'block' : 'none';
+                        });
+                    </script>
                 </div>
             @endif
 
@@ -40,7 +56,7 @@
                                 <h4 class="font-bold text-gray-800">{{ $a->title }}</h4>
                                 <p class="text-xs text-gray-400">
                                     {{ $a->author->name ?? 'System' }} • {{ $a->created_at->diffForHumans() }}
-                                    <span class="ml-2 px-2 py-0.5 bg-gray-100 rounded-full uppercase">{{ $a->audience }}</span>
+                                    <span class="ml-2 px-2 py-0.5 bg-gray-100 rounded-full uppercase">{{ $a->audience === 'class' ? $a->target_class : $a->audience }}</span>
                                 </p>
                             </div>
                             @if($canManage)

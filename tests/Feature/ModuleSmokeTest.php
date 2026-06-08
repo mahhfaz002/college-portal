@@ -65,7 +65,6 @@ class ModuleSmokeTest extends TestCase
             'library'           => ['/library', 'proprietor'],
             'exams'             => ['/exams', 'proprietor'],
             'transport'         => ['/transport', 'proprietor'],
-            'hr'                => ['/hr', 'proprietor'],
             'alumni'            => ['/alumni', 'proprietor'],
         ];
     }

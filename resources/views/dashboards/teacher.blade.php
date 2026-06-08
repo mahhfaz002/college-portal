@@ -42,6 +42,27 @@
                 </div>
             </div>
 
+            <!-- Today's lessons (from approved timetable) -->
+            @if(isset($todayLessons) && $todayLessons->count())
+            <div class="mb-8 bg-white rounded-xl shadow-sm border border-blue-200 overflow-hidden">
+                <div class="px-6 py-4 bg-blue-50 border-b flex justify-between items-center">
+                    <h3 class="font-bold text-blue-800">🗓️ Today's Lessons ({{ now()->format('l') }})</h3>
+                    <a href="{{ route('timetable.index') }}" class="text-xs font-bold text-blue-700">Full week →</a>
+                </div>
+                <table class="w-full text-left text-sm">
+                    <tbody>
+                        @foreach($todayLessons as $lesson)
+                        <tr class="border-b">
+                            <td class="p-3 font-bold text-gray-500 w-24">{{ $lesson->start_time }}–{{ $lesson->end_time }}</td>
+                            <td class="p-3 font-bold text-gray-800">{{ $lesson->subject->name ?? '' }}</td>
+                            <td class="p-3 text-indigo-600">{{ $lesson->class_arm }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @endif
+
             <!-- My classes + attendance status -->
             @if(isset($classStatus) && $classStatus->count())
             <div class="mb-8 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

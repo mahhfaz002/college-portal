@@ -5,6 +5,9 @@
                 💰 Accountant Portal: <span class="text-green-600">Finance & Bursary</span>
             </h2>
             <div class="flex gap-2">
+                <a href="{{ route('payroll.index') }}" class="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-purple-700 transition shadow-sm">
+                    💼 Payroll
+                </a>
                 <a href="{{ route('fees.index') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition shadow-sm">
                     🧾 Fee Billing
                 </a>

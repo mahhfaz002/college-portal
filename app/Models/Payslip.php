@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Payslip extends Model
+{
+    protected $fillable = [
+        'user_id', 'month', 'basic_salary', 'allowances', 'deductions',
+        'tax', 'net_salary', 'status', 'flag_comment', 'created_by',
+        'submitted_at', 'approved_at', 'paid_at',
+    ];
+
+    protected $casts = [
+        'deductions'   => 'array',
+        'submitted_at' => 'datetime',
+        'approved_at'  => 'datetime',
+        'paid_at'      => 'datetime',
+    ];
+
+    public function staff()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function totalDeductions(): float
+    {
+        return collect($this->deductions ?? [])->sum(fn ($d) => (float) ($d['amount'] ?? 0));
+    }
+
+    /**
+     * net = basic + allowances - deductions - tax.
+     */
+    public function recomputeNet(): void
+    {
+        $this->net_salary = max(0,
+            (float) $this->basic_salary
+            + (float) $this->allowances
+            - $this->totalDeductions()
+            - (float) $this->tax
+        );
+    }
+}

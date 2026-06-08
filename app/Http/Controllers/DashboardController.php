@@ -140,9 +140,19 @@ class DashboardController extends Controller
                 ->filter(fn ($e) => $e->submissions_count > 0)->values();
         }
 
+        // Today's lessons from the approved timetable.
+        $todayLessons = collect();
+        $plan = \App\Models\TimetablePlan::where('status', 'approved')->latest()->first();
+        if ($plan) {
+            $todayLessons = \App\Models\TimetableEntry::where('plan_id', $plan->id)
+                ->where('teacher_id', $user->id)
+                ->where('day', now()->format('l'))
+                ->with('subject')->orderBy('period_no')->get();
+        }
+
         return view('dashboards.teacher', compact(
             'students', 'studentCount', 'selectedClass', 'attendanceTaken',
-            'classStatus', 'clock', 'authorExams', 'gradeExams'
+            'classStatus', 'clock', 'authorExams', 'gradeExams', 'todayLessons'
         ));
     }
 
@@ -218,11 +228,24 @@ class DashboardController extends Controller
         $availableExams = \App\Models\Exam::where('status', 'released')->get()
             ->filter(fn ($e) => in_array($student->class_arm, $e->class_arms, true))
             ->count();
+
+        $announcements = \App\Models\Announcement::visibleTo('student', $student->class_arm)
+            ->with('author')->latest()->take(5)->get();
+
+        // Today's lessons for the student's class.
+        $todayLessons = collect();
+        $ttPlan = \App\Models\TimetablePlan::where('status', 'approved')->latest()->first();
+        if ($ttPlan && $student->class_arm) {
+            $todayLessons = \App\Models\TimetableEntry::where('plan_id', $ttPlan->id)
+                ->where('class_arm', $student->class_arm)
+                ->where('day', now()->format('l'))
+                ->with('subject', 'teacher')->orderBy('period_no')->get();
+        }
         $totalDays = Attendance::where('student_id', $student->id)->count();
         $daysPresent = Attendance::where('student_id', $student->id)->where('status', 'present')->count();
         $attendanceRate = $totalDays > 0 ? round(($daysPresent / $totalDays) * 100) : 100;
 
-        return view('dashboards.student', compact('student', 'scores', 'payments', 'attendanceRate', 'availableExams'));
+        return view('dashboards.student', compact('student', 'scores', 'payments', 'attendanceRate', 'availableExams', 'announcements', 'todayLessons'));
     }
 
     /**
@@ -257,6 +280,20 @@ class DashboardController extends Controller
         $activeTeachers = \App\Models\User::where('role', 'teacher')
             ->whereIn('id', $activeTeacherIds)->count();
 
+        // Today's clock in/out for every teacher, shown inline on the dashboard.
+        $clockToday = \App\Models\StaffAttendance::whereDate('work_date', $today)
+            ->get()->keyBy('user_id');
+        $teacherClock = \App\Models\User::where('role', 'teacher')->orderBy('name')->get()
+            ->map(fn ($t) => [
+                'teacher'   => $t,
+                'clock_in'  => optional($clockToday->get($t->id))->clock_in,
+                'clock_out' => optional($clockToday->get($t->id))->clock_out,
+            ]);
+
+        // Pending payroll approvals (badge).
+        $pendingPayroll = \Illuminate\Support\Facades\Schema::hasTable('payslips')
+            ? \App\Models\Payslip::where('status', 'submitted')->count() : 0;
+
         return view('dashboards.principal', compact(
             'staffCount',
             'unassignedTeachers',
@@ -264,7 +301,9 @@ class DashboardController extends Controller
             'attendanceToday',
             'staffList',
             'activeTeachers',
-            'teacherTotal'
+            'teacherTotal',
+            'teacherClock',
+            'pendingPayroll'
         ));
     }
 

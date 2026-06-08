@@ -10,6 +10,7 @@ use App\Http\Controllers\StaffAttendanceController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ScoreController;
 use App\Http\Controllers\SubjectController;
+use App\Http\Controllers\ClassController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\InventoryItemController;
@@ -20,7 +21,7 @@ use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\LibraryController;
 use App\Http\Controllers\TransportationController;
-use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\PayslipController;
 use App\Http\Controllers\AlumniController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamWorkController;
@@ -91,11 +92,16 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
     });
 
     // Writes — Registrar/Admin only (proprietor is blocked globally by readonly).
+    // Admit / delete students — Registrar/Admin only.
     Route::middleware('role:'.Permissions::middleware('manage_students'))->group(function () {
         Route::post('/students', [StudentController::class, 'store'])->name('students.store');
+        Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
+    });
+
+    // Edit student info / class correction / promotion — Admin + ICT.
+    Route::middleware('role:'.Permissions::middleware('edit_students'))->group(function () {
         Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
         Route::patch('/students/{student}', [StudentController::class, 'update']);
-        Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
         Route::get('/promotion', [StudentController::class, 'promotionForm'])->name('students.promotion');
         Route::post('/promotion', [StudentController::class, 'promote'])->name('students.promote');
     });
@@ -105,10 +111,14 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
         Route::post('/students/{student}/remark', [StudentController::class, 'saveRemark'])->name('students.remark');
     });
 
-    // --- Academic & Results ---
-    Route::get('/subjects', [SubjectController::class, 'index'])->name('subjects.index');
-    Route::post('/subjects', [SubjectController::class, 'store'])->name('subjects.store');
-    Route::delete('/subjects/{subject}', [SubjectController::class, 'destroy'])->name('subjects.destroy');
+    // --- Subjects --- (bursar excluded)
+    Route::middleware('role:'.Permissions::middleware('view_subjects'))->group(function () {
+        Route::get('/subjects', [SubjectController::class, 'index'])->name('subjects.index');
+    });
+    Route::middleware('role:'.Permissions::middleware('manage_subjects'))->group(function () {
+        Route::post('/subjects', [SubjectController::class, 'store'])->name('subjects.store');
+        Route::delete('/subjects/{subject}', [SubjectController::class, 'destroy'])->name('subjects.destroy');
+    });
 
     // Score entry (class + subject sheet). Single canonical route name.
     Route::middleware(['role:teacher,exam_officer,principal,proprietor,admin'])->group(function () {
@@ -133,9 +143,11 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
     // Receipts are viewable by oversight + finance roles.
     Route::get('/payments/{payment}/receipt', [PaymentController::class, 'show'])->name('payments.receipt');
 
-    // --- Attendance ---
-    Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
-    Route::get('/attendance/report', [AttendanceController::class, 'report'])->name('attendance.report');
+    // --- Attendance --- (bursar & ICT excluded)
+    Route::middleware('role:'.Permissions::middleware('view_attendance'))->group(function () {
+        Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+        Route::get('/attendance/report', [AttendanceController::class, 'report'])->name('attendance.report');
+    });
     Route::middleware('role:'.Permissions::middleware('take_attendance'))->group(function () {
         Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
     });
@@ -176,9 +188,13 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
         Route::post('/support/reset-password/{user}', [SupportTicketController::class, 'resetPassword'])->name('support.reset-password');
     });
 
-    // --- Timetable (staff) ---
+    // --- Timetable --- (everyone views their own; principal/ICT generate & approve)
     Route::get('/timetable', [TimetableController::class, 'index'])->name('timetable.index');
-    Route::post('/timetable', [TimetableController::class, 'store'])->name('timetable.store');
+    Route::middleware('role:'.Permissions::middleware('manage_classes'))->group(function () {
+        Route::post('/timetable/generate', [TimetableController::class, 'generate'])->name('timetable.generate');
+        Route::post('/timetable/{plan}/approve', [TimetableController::class, 'approve'])->name('timetable.approve');
+        Route::delete('/timetable/{plan}', [TimetableController::class, 'destroy'])->name('timetable.destroy');
+    });
 
     // --- Library ---
     Route::get('/library', [LibraryController::class, 'index'])->name('library.index');
@@ -232,13 +248,26 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
         Route::get('/exams/{exam}', [ExamController::class, 'show'])->name('exams.show');
     });
 
-    // --- Management-only modules: Transport, HR/Payroll, Alumni ---
+    // --- Payroll / Payslips ---
+    // Bursar runs payroll; Principal only reviews (flag/approve), cannot edit amounts.
+    Route::middleware('role:'.Permissions::middleware('manage_payroll'))->group(function () {
+        Route::get('/payroll', [PayslipController::class, 'index'])->name('payroll.index');
+        Route::get('/payroll/{user}/edit', [PayslipController::class, 'edit'])->name('payroll.edit');
+        Route::post('/payroll/{user}', [PayslipController::class, 'store'])->name('payroll.store');
+        Route::post('/payroll-submit', [PayslipController::class, 'submit'])->name('payroll.submit');
+        Route::post('/payroll/{payslip}/pay', [PayslipController::class, 'pay'])->name('payroll.pay');
+    });
+    Route::middleware('role:'.Permissions::middleware('review_payroll'))->group(function () {
+        Route::get('/payroll-review', [PayslipController::class, 'review'])->name('payroll.review');
+        Route::post('/payroll/{payslip}/approve', [PayslipController::class, 'approve'])->name('payroll.approve');
+        Route::post('/payroll/{payslip}/flag', [PayslipController::class, 'flag'])->name('payroll.flag');
+    });
+
+    // --- Management-only modules: Transport, Alumni ---
+    // (HR/Payroll moved to the dedicated payslip workflow below — bursar + principal only.)
     Route::middleware(['role:proprietor,principal,admin,ict,accountant'])->group(function () {
         Route::get('/transport', [TransportationController::class, 'index'])->name('transport.index');
         Route::post('/transport/assign', [TransportationController::class, 'assignStudent'])->name('transport.assign');
-
-        Route::get('/hr', [PayrollController::class, 'index'])->name('hr.index');
-        Route::post('/payroll/generate/{month}', [PayrollController::class, 'generatePayroll'])->name('payroll.generate');
 
         Route::get('/alumni', [AlumniController::class, 'index'])->name('alumni.index');
         Route::get('/alumni/search', [AlumniController::class, 'search'])->name('alumni.search');
@@ -253,6 +282,13 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
         Route::get('/staff', [UserController::class, 'index'])->name('staff.index');
         Route::get('/staff/{user}', [UserController::class, 'show'])->name('staff.show');
         Route::get('/staff/{user}/id-card', [UserController::class, 'idCard'])->name('staff.id-card');
+    });
+
+    // --- Class registry management (Principal + ICT) ---
+    Route::middleware('role:'.Permissions::middleware('manage_classes'))->group(function () {
+        Route::get('/classes', [ClassController::class, 'index'])->name('classes.index');
+        Route::post('/classes', [ClassController::class, 'store'])->name('classes.store');
+        Route::post('/classes/{schoolClass}/toggle', [ClassController::class, 'toggle'])->name('classes.toggle');
     });
 
     // Creating / editing / assigning / deleting staff: Principal only.
