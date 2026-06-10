@@ -191,6 +191,37 @@
                     </div>
                 </div>
             </div>
+            {{-- Online payment orders / invoices (Phase 4) --}}
+            <div id="payments" class="mt-6 bg-white rounded-xl shadow-sm border overflow-hidden">
+                <div class="px-6 py-4 border-b font-bold text-gray-700 flex items-center justify-between">
+                    <span>Payment Orders &amp; Invoices</span>
+                    @php $due = ($invoices ?? collect())->where('status','!=','paid')->count(); @endphp
+                    @if($due)<span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-bold">{{ $due }} due</span>@endif
+                </div>
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+                        <tr><th class="text-left px-6 py-2">Description</th><th class="text-left px-6 py-2">Amount</th><th class="text-left px-6 py-2">Status</th><th class="text-right px-6 py-2">Action</th></tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        @forelse($invoices ?? [] as $inv)
+                            <tr>
+                                <td class="px-6 py-3 font-semibold text-gray-800">{{ $inv->description }}</td>
+                                <td class="px-6 py-3">{{ money($inv->amount) }}</td>
+                                <td class="px-6 py-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold {{ $inv->isPaid() ? 'bg-green-100 text-green-700':'bg-amber-100 text-amber-700' }}">{{ ucfirst($inv->status) }}</span></td>
+                                <td class="px-6 py-3 text-right">
+                                    @if($inv->isPaid())
+                                        <a href="{{ route('invoices.receipt', $inv) }}" target="_blank" class="text-indigo-600 font-semibold hover:underline">Print Receipt</a>
+                                    @else
+                                        <a href="{{ route('payments.initialize', $inv) }}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-emerald-700">Pay Now</a>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="4" class="px-6 py-6 text-center text-gray-400">No payment orders assigned.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
             @endif
         </div>
     </div>

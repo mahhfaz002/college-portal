@@ -90,7 +90,11 @@
                     @endif
 
                     @if(in_array($role, ['bursar', 'proprietor', 'registrar']))
-                        <x-nav-link :href="route('fees.index')" :active="request()->routeIs('fees.*')">{{ __('Fees') }}</x-nav-link>
+                        <x-nav-link :href="route('fees.index')" :active="request()->routeIs('fees.index')">{{ __('Fees') }}</x-nav-link>
+                    @endif
+
+                    @if($role === 'bursar')
+                        <x-nav-link :href="route('fees.orders.index')" :active="request()->routeIs('fees.orders.*')">{{ __('Payment Orders') }}</x-nav-link>
                     @endif
 
                     @if(in_array($role, ['registrar', 'proprietor']))

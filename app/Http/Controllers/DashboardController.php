@@ -251,7 +251,10 @@ class DashboardController extends Controller
         $daysPresent = Attendance::where('student_id', $student->id)->where('status', 'present')->count();
         $attendanceRate = $totalDays > 0 ? round(($daysPresent / $totalDays) * 100) : 100;
 
-        return view('dashboards.student', compact('student', 'scores', 'payments', 'attendanceRate', 'availableExams', 'announcements', 'todayLessons'));
+        // Online payment orders / invoices assigned to this student (Phase 4).
+        $invoices = \App\Models\Invoice::where('student_id', $student->id)->latest()->get();
+
+        return view('dashboards.student', compact('student', 'scores', 'payments', 'attendanceRate', 'availableExams', 'announcements', 'todayLessons', 'invoices'));
     }
 
     /**

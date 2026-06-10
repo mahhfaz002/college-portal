@@ -15,6 +15,7 @@ class Invoice extends Model
 
     protected $fillable = [
         'college_id', 'applicant_id', 'student_id', 'user_id', 'program_id',
+        'fee_order_id',
         'purpose', 'description', 'amount', 'currency',
         'status', 'reference', 'gateway_reference', 'payment_method',
         'payer_email', 'paid_at', 'meta',

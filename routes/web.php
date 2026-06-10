@@ -168,6 +168,11 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
         // Fee billing actions
         Route::post('/fees/student', [FeeController::class, 'storeStudentFee'])->name('fees.student');
         Route::post('/fees/class', [FeeController::class, 'storeClassFee'])->name('fees.class');
+
+        // Phase 4 — online payment orders (Paystack). Bursar creates/fans out.
+        Route::get('/fees/orders', [\App\Http\Controllers\FeeOrderController::class, 'index'])->name('fees.orders.index');
+        Route::post('/fees/orders', [\App\Http\Controllers\FeeOrderController::class, 'store'])->name('fees.orders.store');
+        Route::get('/fees/orders/{feeOrder}', [\App\Http\Controllers\FeeOrderController::class, 'show'])->name('fees.orders.show');
     });
 
     // Fee hub is viewable by finance + oversight roles (writes still gated above).
