@@ -242,10 +242,28 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
         Route::post('/term/clear-assignments', [TermController::class, 'clearAssignments'])->name('term.clear-assignments');
     });
 
-    // --- Library ---
-    Route::get('/library', [LibraryController::class, 'index'])->name('library.index');
-    Route::post('/library/issue', [LibraryController::class, 'issueBook'])->name('library.issue');
-    Route::post('/library/return/{record}', [LibraryController::class, 'returnBook'])->name('library.return');
+    // --- Student Affairs ---
+    Route::middleware('role:student_affairs,registrar,proprietor')->group(function () {
+        Route::post('/affairs/cases', [\App\Http\Controllers\StudentAffairsController::class, 'store'])->name('affairs.cases.store');
+        Route::post('/affairs/cases/{case}/resolve', [\App\Http\Controllers\StudentAffairsController::class, 'resolve'])->name('affairs.cases.resolve');
+        Route::delete('/affairs/cases/{case}', [\App\Http\Controllers\StudentAffairsController::class, 'destroy'])->name('affairs.cases.destroy');
+    });
+
+    // --- Office Secretary (correspondence register) ---
+    Route::middleware('role:office_secretary,registrar,proprietor')->group(function () {
+        Route::post('/office/correspondence', [\App\Http\Controllers\OfficeSecretaryController::class, 'store'])->name('office.correspondence.store');
+        Route::post('/office/correspondence/{correspondence}/status', [\App\Http\Controllers\OfficeSecretaryController::class, 'updateStatus'])->name('office.correspondence.status');
+        Route::delete('/office/correspondence/{correspondence}', [\App\Http\Controllers\OfficeSecretaryController::class, 'destroy'])->name('office.correspondence.destroy');
+    });
+
+    // --- Library --- (librarian + academic oversight)
+    Route::middleware('role:librarian,registrar,proprietor,ict')->group(function () {
+        Route::get('/library', [LibraryController::class, 'index'])->name('library.index');
+        Route::post('/library/issue', [LibraryController::class, 'issueBook'])->name('library.issue');
+        Route::post('/library/return/{record}', [LibraryController::class, 'returnBook'])->name('library.return');
+        Route::post('/library/books', [LibraryController::class, 'storeBook'])->name('library.books.store');
+        Route::delete('/library/books/{book}', [LibraryController::class, 'destroyBook'])->name('library.books.destroy');
+    });
 
     // ==========================================
     // EXAM WORKFLOW

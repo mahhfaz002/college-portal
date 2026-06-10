@@ -31,9 +31,9 @@ class DashboardController extends Controller
             'hod'                => $this->hodDashboard($request),
             'assistant_hod'      => $this->hodDashboard($request),
             'academic_secretary' => $this->academicSecretaryDashboard($request),
-            'student_affairs'    => $this->simpleDashboard('student_affairs'),
-            'librarian'          => $this->simpleDashboard('librarian'),
-            'office_secretary'   => $this->simpleDashboard('office_secretary'),
+            'student_affairs'    => app(\App\Http\Controllers\StudentAffairsController::class)->dashboard($request),
+            'librarian'          => app(\App\Http\Controllers\LibraryController::class)->index(),
+            'office_secretary'   => app(\App\Http\Controllers\OfficeSecretaryController::class)->dashboard($request),
             default              => $this->proprietorDashboard($request),
         };
     }

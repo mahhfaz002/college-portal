@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCollege;
 use Illuminate\Database\Eloquent\Model;
 
 class Book extends Model
 {
-    protected $fillable = ['isbn', 'title', 'author', 'total_copies', 'available_copies'];
+    use BelongsToCollege;
+
+    protected $fillable = ['isbn', 'title', 'author', 'category', 'total_copies', 'available_copies', 'college_id'];
 
     public function borrowRecords()
     {

@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCollege;
 use Illuminate\Database\Eloquent\Model;
 
 class BorrowRecord extends Model
 {
-    protected $fillable = ['student_id', 'book_id', 'borrowed_at', 'due_at', 'returned_at', 'fine_amount'];
+    use BelongsToCollege;
+
+    protected $fillable = ['student_id', 'book_id', 'borrowed_at', 'due_at', 'returned_at', 'fine_amount', 'college_id'];
 
     protected $casts = [
         'borrowed_at' => 'datetime',

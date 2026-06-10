@@ -16,7 +16,38 @@ class LibraryController extends Controller
         $students = Student::orderBy('full_name')->get();
         $records = BorrowRecord::with(['book', 'student'])->whereNull('returned_at')->latest()->get();
 
-        return view('library.index', compact('books', 'students', 'records'));
+        $stats = [
+            'titles'  => $books->count(),
+            'copies'  => $books->sum('total_copies'),
+            'on_loan' => $records->count(),
+            'overdue' => $records->filter(fn ($r) => $r->due_at && $r->due_at->isPast())->count(),
+        ];
+
+        return view('library.index', compact('books', 'students', 'records', 'stats'));
+    }
+
+    /** Add a new title to the catalogue. */
+    public function storeBook(Request $request)
+    {
+        $data = $request->validate([
+            'title'        => 'required|string|max:200',
+            'author'       => 'nullable|string|max:150',
+            'isbn'         => 'nullable|string|max:50',
+            'category'     => 'nullable|string|max:100',
+            'total_copies' => 'required|integer|min:1',
+        ]);
+        $data['available_copies'] = $data['total_copies'];
+        $data['college_id'] = current_college_id();
+        $data['isbn'] = $data['isbn'] ?? '';   // legacy column is NOT NULL
+        Book::create($data);
+
+        return back()->with('success', 'Book added to the catalogue.');
+    }
+
+    public function destroyBook(Book $book)
+    {
+        $book->delete();
+        return back()->with('success', 'Book removed.');
     }
 
     // Issue a book to a student
@@ -33,6 +64,7 @@ class LibraryController extends Controller
         BorrowRecord::create([
             'student_id' => $request->student_id,
             'book_id' => $book->id,
+            'college_id' => current_college_id(),
             'borrowed_at' => Carbon::now(),
             'due_at' => Carbon::now()->addWeeks(2), // 2-week loan period
         ]);
