@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Concerns\BelongsToCollege;
 
 class Student extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToCollege;
 
     protected $fillable = [
         'full_name',
@@ -18,8 +19,23 @@ class Student extends Model
         'parent_phone',
         'fees_balance',
         'blood_group',
-        'photo'
+        'photo',
+        'college_id',
+        'department_id',
+        'program_id',
+        'level',
+        'registration_status',
     ];
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function program()
+    {
+        return $this->belongsTo(Program::class);
+    }
     public function payments()
 {
     return $this->hasMany(Payment::class);

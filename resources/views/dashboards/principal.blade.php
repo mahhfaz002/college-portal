@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                🎓 Principal's Office: <span class="text-indigo-600">Administrative Hub</span>
+                🎓 Registrar's Office: <span class="text-indigo-600">Administrative Hub</span>
             </h2>
             <a href="{{ route('staff.index') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition shadow-sm">
                 👥 Manage All Staff
@@ -15,7 +15,7 @@
 
             @if($unassignedTeachers > 0)
             <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-400 text-red-700 flex justify-between items-center rounded-r-lg">
-                <p class="font-bold">⚠️ There are {{ $unassignedTeachers }} teachers without an assigned class!</p>
+                <p class="font-bold">⚠️ There are {{ $unassignedTeachers }} lecturers without an assigned class!</p>
                 <a href="{{ route('staff.index') }}" class="underline font-black italic">Fix Now →</a>
             </div>
             @endif
@@ -30,7 +30,7 @@
                     <h3 class="text-2xl font-black">{{ $totalStudents }}</h3>
                 </div>
                 <a href="{{ route('staff.attendance') }}" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:border-indigo-300 transition">
-                    <p class="text-xs font-bold text-gray-400 uppercase">Teachers Active Today</p>
+                    <p class="text-xs font-bold text-gray-400 uppercase">Lecturers Active Today</p>
                     <h3 class="text-2xl font-black text-green-600">{{ $activeTeachers }}<span class="text-gray-300 text-lg">/{{ $teacherTotal }}</span></h3>
                     <p class="text-[11px] text-indigo-600 font-bold mt-1">View classroom activity →</p>
                 </a>
@@ -125,7 +125,7 @@
                         </div>
                         <table class="w-full text-left text-sm">
                             <thead><tr class="bg-gray-50 border-b text-xs uppercase text-gray-500">
-                                <th class="p-3">Teacher</th><th class="p-3">Clock In</th><th class="p-3">Clock Out</th><th class="p-3">Status</th>
+                                <th class="p-3">Lecturer</th><th class="p-3">Clock In</th><th class="p-3">Clock Out</th><th class="p-3">Status</th>
                             </tr></thead>
                             <tbody>
                                 @forelse($teacherClock as $row)

@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                👩‍🏫 Teacher Portal: <span class="text-indigo-600">{{ $selectedClass }}</span>
+                👩‍🏫 Lecturer Portal: <span class="text-indigo-600">{{ $selectedClass }}</span>
             </h2>
             <div class="text-sm font-medium text-gray-500">
                 Session: 2025/2026 | Term: 1st Term

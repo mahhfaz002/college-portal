@@ -20,15 +20,20 @@ class DashboardController extends Controller
         $user = auth()->user();
 
         return match ($user->role) {
-            'proprietor'   => $this->proprietorDashboard($request),
-            'principal'    => $this->principalDashboard($request),
-            'admin'        => $this->adminDashboard($request),
-            'ict'          => $this->ictDashboard($request),
-            'accountant'   => $this->accountantDashboard($request),
-            'teacher'      => $this->teacherDashboard($request),
-            'student'      => $this->studentDashboard($request),
-            'exam_officer' => $this->examOfficerDashboard(),
-            default        => $this->proprietorDashboard($request),
+            'proprietor'         => $this->proprietorDashboard($request),
+            'registrar'          => $this->principalDashboard($request),   // Registrar = academic admin head
+            'ict'                => $this->ictDashboard($request),
+            'bursar'             => $this->accountantDashboard($request),   // Bursar = finance
+            'lecturer'           => $this->teacherDashboard($request),      // Lecturer = old teacher
+            'student'            => $this->studentDashboard($request),
+            'exam_officer'       => $this->examOfficerDashboard(),
+            'hod'                => $this->hodDashboard($request),
+            'assistant_hod'      => $this->hodDashboard($request),
+            'academic_secretary' => $this->academicSecretaryDashboard($request),
+            'student_affairs'    => $this->simpleDashboard('student_affairs'),
+            'librarian'          => $this->simpleDashboard('librarian'),
+            'office_secretary'   => $this->simpleDashboard('office_secretary'),
+            default              => $this->proprietorDashboard($request),
         };
     }
 
@@ -178,7 +183,7 @@ class DashboardController extends Controller
             'name' => $request->first_name . ' ' . $request->surname,
             'email' => $email,
             'password' => \Illuminate\Support\Facades\Hash::make($randomPassword),
-            'role' => 'teacher',
+            'role' => 'lecturer',
             'class_assigned' => $request->class_assigned,
             'subject_assigned' => $request->subject_assigned,
             'must_change_password' => true,
@@ -259,7 +264,7 @@ class DashboardController extends Controller
     private function principalDashboard(Request $request)
     {
         $staffCount = \App\Models\User::where('role', '!=', 'student')->count();
-        $unassignedTeachers = \App\Models\User::where('role', 'teacher')
+        $unassignedTeachers = \App\Models\User::where('role', 'lecturer')
             ->whereNull('class_assigned')
             ->count();
         $totalStudents = Student::count();
@@ -276,14 +281,14 @@ class DashboardController extends Controller
             ->pluck('user_id')
             ->merge(\App\Models\ClassAttendanceLog::whereDate('log_date', $today)->pluck('user_id'))
             ->unique();
-        $teacherTotal = \App\Models\User::where('role', 'teacher')->count();
-        $activeTeachers = \App\Models\User::where('role', 'teacher')
+        $teacherTotal = \App\Models\User::where('role', 'lecturer')->count();
+        $activeTeachers = \App\Models\User::where('role', 'lecturer')
             ->whereIn('id', $activeTeacherIds)->count();
 
         // Today's clock in/out for every teacher, shown inline on the dashboard.
         $clockToday = \App\Models\StaffAttendance::whereDate('work_date', $today)
             ->get()->keyBy('user_id');
-        $teacherClock = \App\Models\User::where('role', 'teacher')->orderBy('name')->get()
+        $teacherClock = \App\Models\User::where('role', 'lecturer')->orderBy('name')->get()
             ->map(fn ($t) => [
                 'teacher'   => $t,
                 'clock_in'  => optional($clockToday->get($t->id))->clock_in,
@@ -358,5 +363,73 @@ class DashboardController extends Controller
             'releasedExams',
             'allUsers'
         ));
+    }
+
+    /**
+     * HEAD OF DEPARTMENT / ASSISTANT HOD.
+     * Core action (Phase 1): see students in the department and the registrations
+     * awaiting HOD approval. Real approval wiring lands in Phase 3.
+     */
+    private function hodDashboard(Request $request)
+    {
+        $user = auth()->user();
+        $departmentId = $user->department_id;
+
+        $programs = \App\Models\Program::where('department_id', $departmentId)->get();
+        $programIds = $programs->pluck('id');
+
+        $studentCount = Student::whereIn('program_id', $programIds)->count();
+        $pendingApprovals = Student::whereIn('program_id', $programIds)
+            ->where('registration_status', 'pending_hod')->count();
+        $courses = \App\Models\Subject::whereIn('program_id', $programIds)->count();
+        $lecturers = \App\Models\User::where('role', 'lecturer')
+            ->where('department_id', $departmentId)->count();
+
+        $department = \App\Models\Department::find($departmentId);
+
+        return view('dashboards.hod', compact(
+            'department', 'programs', 'studentCount', 'pendingApprovals', 'courses', 'lecturers'
+        ));
+    }
+
+    /**
+     * ACADEMIC SECRETARY.
+     * Core action (Phase 1): view all courses + lecturers and assign a course
+     * to an academic lecturer (uses the existing subject_teacher pivot).
+     */
+    private function academicSecretaryDashboard(Request $request)
+    {
+        $courses = \App\Models\Subject::with('teachers')->orderBy('name')->get();
+        $lecturers = \App\Models\User::where('role', 'lecturer')->orderBy('name')->get();
+        $departments = \App\Models\Department::orderBy('name')->get();
+
+        $totalCourses = $courses->count();
+        $assignedCourses = $courses->filter(fn ($c) => $c->teachers->isNotEmpty())->count();
+
+        return view('dashboards.academic_secretary', compact(
+            'courses', 'lecturers', 'departments', 'totalCourses', 'assignedCourses'
+        ));
+    }
+
+    /**
+     * Generic shell dashboard for the lighter staff roles (Student Affairs,
+     * Librarian, Office Secretary, Assistant HOD fallback). Phase 1 = shell +
+     * headline figures; each role's full feature set arrives in later phases.
+     */
+    private function simpleDashboard(string $role)
+    {
+        $stats = [
+            'staffCount'   => \App\Models\User::where('role', '!=', 'student')->count(),
+            'studentCount' => Student::count(),
+        ];
+
+        // Librarian gets live library figures if the tables exist.
+        if ($role === 'librarian' && \Illuminate\Support\Facades\Schema::hasTable('books')) {
+            $stats['books'] = \App\Models\Book::count();
+            $stats['borrowed'] = \Illuminate\Support\Facades\Schema::hasTable('borrow_records')
+                ? \App\Models\BorrowRecord::whereNull('returned_at')->count() : 0;
+        }
+
+        return view('dashboards.' . $role, ['role' => $role, 'stats' => $stats]);
     }
 }

@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Concerns\BelongsToCollege;
 
 class FeeBill extends Model
 {
+    use BelongsToCollege;
+
     protected $fillable = [
         'student_id', 'title', 'term', 'session',
-        'amount', 'amount_paid', 'status', 'created_by',
+        'amount', 'amount_paid', 'status', 'created_by', 'college_id',
     ];
 
     protected $casts = [

@@ -11,16 +11,16 @@ class SettingsSeeder extends Seeder
     {
         $defaults = [
             // Branding
-            'school_name'        => ['MAHHFAZ School System', 'branding'],
-            'school_tagline'     => ['Knowledge • Integrity • Excellence', 'branding'],
+            'school_name'        => ['MAHHFAZ College of Health Sciences and Technology, Jalingo', 'branding'],
+            'school_tagline'     => ['Knowledge • Service • Excellence in Health Education', 'branding'],
             'school_logo'        => [null, 'branding'],
-            'primary_color'      => ['#2563eb', 'branding'],
-            'school_address'     => ['123 School Road, Jalingo, Taraba', 'branding'],
+            'primary_color'      => ['#1d4ed8', 'branding'],
+            'school_address'     => ['Jalingo, Taraba State, Nigeria', 'branding'],
             'school_phone'       => ['+234 800 000 0000', 'branding'],
-            'school_email'       => ['info@mahhfaz.edu', 'branding'],
-            'staff_email_domain' => ['mahhfaz.edu', 'branding'],
-            'school_acronym'     => ['MAH', 'branding'],
-            'admission_prefix'   => ['MAH', 'branding'],
+            'school_email'       => ['info@mahhfaz.edu.ng', 'branding'],
+            'staff_email_domain' => ['mahhfaz.edu.ng', 'branding'],
+            'school_acronym'     => ['MAHHFAZ', 'branding'],
+            'admission_prefix'   => ['MAHHFAZ', 'branding'],
 
             // Academic
             'currency_symbol'    => ['₦', 'academic'],

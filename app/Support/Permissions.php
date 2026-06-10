@@ -16,68 +16,82 @@ namespace App\Support;
 class Permissions
 {
     public const MATRIX = [
-        // Staff / teacher management — Principal only.
-        'manage_staff'         => ['principal'],
-        'view_staff'           => ['principal', 'proprietor'],
+        // Staff management — Registrar registers/manages all staff.
+        'manage_staff'         => ['registrar'],
+        'view_staff'           => ['registrar', 'proprietor', 'academic_secretary'],
 
-        // Student records (admit/delete) — Admin/Registrar.
-        'manage_students'      => ['admin'],
-        // Edit existing student info (names, next-of-kin, class correction/repeat, passport).
-        'edit_students'        => ['admin', 'ict'],
-        'view_students'        => ['proprietor', 'principal', 'admin', 'accountant', 'ict', 'exam_officer', 'teacher'],
+        // Student records (admit/delete) — Registrar (absorbed the old admin role).
+        'manage_students'      => ['registrar'],
+        // Edit existing student info (names, next-of-kin, level correction, passport).
+        'edit_students'        => ['registrar', 'ict'],
+        'view_students'        => ['proprietor', 'registrar', 'bursar', 'ict', 'exam_officer', 'lecturer', 'hod', 'assistant_hod', 'student_affairs', 'office_secretary'],
 
-        // Managed class registry (create/activate classes).
-        'manage_classes'       => ['principal', 'ict'],
+        // Managed class/level registry.
+        'manage_classes'       => ['registrar', 'ict'],
 
-        // Timetable generation & approval — Principal only. Everyone else views.
-        'manage_timetable'     => ['principal'],
+        // Departments & Programs — Registrar owns the academic structure.
+        'manage_departments'   => ['registrar'],
+        'manage_programs'      => ['registrar'],
+        'view_departments'     => ['registrar', 'proprietor', 'academic_secretary', 'hod', 'assistant_hod', 'exam_officer'],
 
-        // Payroll — Bursar runs it; Principal reviews/approves only.
-        'manage_payroll'       => ['accountant'],
-        'review_payroll'       => ['principal'],
+        // Timetable generation & approval — Registrar. Everyone else views.
+        'manage_timetable'     => ['registrar'],
 
-        // Fees / payments — Bursar (accountant).
-        'manage_fees'          => ['accountant'],
-        'view_fees'            => ['proprietor', 'accountant', 'principal'],
+        // Payroll — Bursar runs it; Registrar reviews/approves only.
+        'manage_payroll'       => ['bursar'],
+        'review_payroll'       => ['registrar'],
 
-        // Admissions: ICT creates applications; Admin/Registrar approves/rejects.
+        // Fees / payments — Bursar.
+        'manage_fees'          => ['bursar'],
+        'view_fees'            => ['proprietor', 'bursar', 'registrar'],
+
+        // Admissions: applicants apply online; Registrar offers admission.
         'create_admissions'    => ['ict'],
-        'manage_admissions'    => ['admin'],
+        'manage_admissions'    => ['registrar'],
 
-        // Academic term/session control — Principal.
-        'manage_term'          => ['principal'],
+        // Academic term/session control — Registrar.
+        'manage_term'          => ['registrar'],
 
         // Exam lifecycle — Exam Officer (+ ICT support during exams).
         'manage_exams'         => ['exam_officer', 'ict'],
-        'view_exams'           => ['exam_officer', 'ict', 'principal', 'proprietor'],
-        'enter_scores'         => ['teacher', 'exam_officer'],
-        'author_questions'     => ['teacher'],
+        'view_exams'           => ['exam_officer', 'ict', 'registrar', 'proprietor', 'hod'],
+        'enter_scores'         => ['lecturer', 'exam_officer'],
+        'author_questions'     => ['lecturer'],
         'take_exams'           => ['student'],
 
-        // Attendance — bursar & ICT excluded.
-        'take_attendance'      => ['teacher', 'exam_officer'],
-        'view_attendance'      => ['teacher', 'exam_officer', 'principal', 'proprietor', 'admin'],
+        // Attendance — Lecturers take it for their classes.
+        'take_attendance'      => ['lecturer', 'exam_officer'],
+        'view_attendance'      => ['lecturer', 'exam_officer', 'registrar', 'proprietor', 'hod'],
 
-        // Subjects — bursar excluded; ICT may manage.
-        'view_subjects'        => ['teacher', 'exam_officer', 'principal', 'proprietor', 'admin', 'ict'],
+        // Courses (formerly subjects) — staff view; bursar excluded.
+        'view_subjects'        => ['lecturer', 'exam_officer', 'registrar', 'proprietor', 'ict', 'academic_secretary', 'hod', 'assistant_hod'],
+
+        // Academic Secretary assigns courses to lecturers.
+        'assign_courses'       => ['academic_secretary', 'registrar'],
+
+        // HOD approves a student's final registration in their department.
+        'approve_registration' => ['hod', 'assistant_hod'],
+
+        // Library — Librarian runs it; ICT supports.
+        'manage_library'       => ['librarian', 'ict'],
 
         // Staff clock in/out — all staff except the view-only proprietor.
-        'clock_attendance'     => ['teacher', 'accountant', 'exam_officer', 'ict', 'admin', 'principal'],
+        'clock_attendance'     => ['lecturer', 'bursar', 'exam_officer', 'ict', 'registrar', 'hod', 'assistant_hod', 'academic_secretary', 'student_affairs', 'librarian', 'office_secretary'],
 
-        // Teacher-attendance oversight report.
-        'view_staff_attendance'=> ['principal', 'proprietor'],
+        // Staff-attendance oversight report.
+        'view_staff_attendance'=> ['registrar', 'proprietor'],
 
-        // Academic structure — only Principal & ICT add/remove subjects.
-        'manage_subjects'      => ['principal', 'ict'],
+        // Academic structure — Registrar & ICT add/remove courses.
+        'manage_subjects'      => ['registrar', 'ict'],
 
         // Technical support — ICT handles tickets; anyone can raise one.
         'handle_tickets'       => ['ict'],
         'reset_passwords'      => ['ict'],
 
         // Operations / system.
-        'manage_settings'      => ['principal', 'admin', 'ict'],
-        'manage_announcements' => ['principal', 'admin', 'ict'],
-        'manage_inventory'     => ['admin', 'ict'],
+        'manage_settings'      => ['registrar', 'ict'],
+        'manage_announcements' => ['registrar', 'ict', 'student_affairs'],
+        'manage_inventory'     => ['registrar', 'ict', 'office_secretary'],
     ];
 
     /**

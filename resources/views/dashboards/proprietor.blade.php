@@ -55,15 +55,25 @@
             </div>
             @endif
 
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-green-500">
-                    <p class="text-sm text-gray-500 font-bold uppercase">Total Revenue (Paid)</p>
-                    <h3 class="text-3xl font-black text-gray-800">₦{{ number_format($totalRevenue, 2) }}</h3>
+            {{-- FINANCE — bold, prominent banner for the Proprietor --}}
+            <div class="mb-8 rounded-2xl bg-gradient-to-r from-gray-900 to-indigo-900 p-6 shadow-lg">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-2xl">💰</span>
+                    <h3 class="text-lg font-black uppercase tracking-wide text-white">Finance Overview</h3>
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-red-500">
-                    <p class="text-sm text-gray-500 font-bold uppercase">Outstanding Debt</p>
-                    <h3 class="text-3xl font-black text-gray-800">₦{{ number_format($totalDebt, 2) }}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white/10 backdrop-blur p-6 rounded-xl border-l-8 border-green-400">
+                        <p class="text-sm font-black uppercase text-green-200">Total Revenue (Paid)</p>
+                        <h3 class="text-4xl font-black text-white">₦{{ number_format($totalRevenue, 2) }}</h3>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur p-6 rounded-xl border-l-8 border-red-400">
+                        <p class="text-sm font-black uppercase text-red-200">Outstanding Debt</p>
+                        <h3 class="text-4xl font-black text-white">₦{{ number_format($totalDebt, 2) }}</h3>
+                    </div>
                 </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-blue-500">
                     <p class="text-sm text-gray-500 font-bold uppercase">Student Population</p>
                     <h3 class="text-3xl font-black text-gray-800">{{ $studentCount }}</h3>

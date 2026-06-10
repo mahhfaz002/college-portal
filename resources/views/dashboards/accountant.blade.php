@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                💰 Accountant Portal: <span class="text-green-600">Finance & Bursary</span>
+                💰 Bursar Portal: <span class="text-green-600">Finance & Bursary</span>
             </h2>
             <div class="flex gap-2">
                 <a href="{{ route('payroll.index') }}" class="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-purple-700 transition shadow-sm">

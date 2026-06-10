@@ -19,8 +19,11 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // Defensive response headers on every web request.
+        // SetCollegeContext binds the tenant (college) so the CollegeScope can
+        // isolate every query to the logged-in user's college.
         $middleware->web(append: [
             \App\Http\Middleware\SecurityHeaders::class,
+            \App\Http\Middleware\SetCollegeContext::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

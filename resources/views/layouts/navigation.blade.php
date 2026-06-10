@@ -1,7 +1,11 @@
 @php
     $role = Auth::user()->role ?? 'guest';
     $isStaff = $role !== 'student';
-    $isAdminish = in_array($role, ['proprietor', 'principal', 'admin', 'ict']);
+    // Roles with system-wide oversight / settings access.
+    $isAdminish = in_array($role, ['proprietor', 'registrar', 'ict']);
+    // Roles that see the academic structure (departments / programs / courses).
+    $academic = ['registrar', 'proprietor', 'ict', 'academic_secretary', 'exam_officer', 'lecturer', 'hod', 'assistant_hod'];
+    $brandName = current_college()->name ?? ($school['name'] ?? 'MAHHFAZ College of Health Sciences and Technology, Jalingo');
 @endphp
 <nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -9,12 +13,14 @@
             <div class="flex">
                 <div class="shrink-0 flex items-center gap-2">
                     <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
-                        @if(!empty($school['logo']))
+                        @if(current_college()?->logo_path)
+                            <img src="{{ media_url(current_college()->logo_path) }}" alt="Logo" class="h-9 w-9 rounded object-contain">
+                        @elseif(!empty($school['logo']))
                             <img src="{{ media_url($school['logo']) }}" alt="Logo" class="h-9 w-9 rounded object-contain">
                         @else
                             <x-application-logo class="block h-9 w-auto fill-current" style="color: var(--brand)" />
                         @endif
-                        <span class="font-bold text-gray-800 hidden md:inline">{{ $school['name'] ?? 'School Portal' }}</span>
+                        <span class="font-bold text-gray-800 hidden md:inline truncate max-w-[18rem]">{{ $brandName }}</span>
                     </a>
                 </div>
 
@@ -24,78 +30,53 @@
                     </x-nav-link>
 
                     @if($role === 'student')
-                        <x-nav-link :href="route('myexams.available')" :active="request()->routeIs('myexams.*')">
-                            {{ __('My Exams') }}
-                        </x-nav-link>
-                        <x-nav-link :href="route('timetable.index')" :active="request()->routeIs('timetable.*')">
-                            {{ __('Timetable') }}
-                        </x-nav-link>
-                        <x-nav-link :href="route('dashboard').'#results'">
-                            {{ __('Results') }}
-                        </x-nav-link>
-                        <x-nav-link :href="route('dashboard').'#fees'">
-                            {{ __('Fees') }}
-                        </x-nav-link>
-                        <x-nav-link :href="route('notifications.index')" :active="request()->routeIs('notifications.*')">
-                            {{ __('Notifications') }}
-                        </x-nav-link>
+                        <x-nav-link :href="route('myexams.available')" :active="request()->routeIs('myexams.*')">{{ __('My Exams') }}</x-nav-link>
+                        <x-nav-link :href="route('timetable.index')" :active="request()->routeIs('timetable.*')">{{ __('Timetable') }}</x-nav-link>
+                        <x-nav-link :href="route('dashboard').'#results'">{{ __('Results') }}</x-nav-link>
+                        <x-nav-link :href="route('dashboard').'#fees'">{{ __('Fees') }}</x-nav-link>
+                        <x-nav-link :href="route('notifications.index')" :active="request()->routeIs('notifications.*')">{{ __('Notifications') }}</x-nav-link>
                     @endif
 
                     @if($isStaff)
-                        <x-nav-link :href="route('students.index')" :active="request()->routeIs('students.*')">
-                            {{ __('Students') }}
-                        </x-nav-link>
+                        <x-nav-link :href="route('students.index')" :active="request()->routeIs('students.*')">{{ __('Students') }}</x-nav-link>
 
-                        @if(in_array($role, ['teacher','exam_officer','principal','proprietor','admin','ict']))
-                            <x-nav-link :href="route('subjects.index')" :active="request()->routeIs('subjects.*')">
-                                {{ __('Subjects') }}
-                            </x-nav-link>
+                        @if(in_array($role, ['registrar', 'proprietor']))
+                            <x-nav-link :href="route('departments.index')" :active="request()->routeIs('departments.*')">{{ __('Departments') }}</x-nav-link>
+                            <x-nav-link :href="route('programs.index')" :active="request()->routeIs('programs.*')">{{ __('Programs') }}</x-nav-link>
                         @endif
 
-                        @if(in_array($role, ['teacher','exam_officer','principal','proprietor','admin']))
-                            <x-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.*')">
-                                {{ __('Attendance') }}
-                            </x-nav-link>
+                        @if(in_array($role, $academic))
+                            <x-nav-link :href="route('subjects.index')" :active="request()->routeIs('subjects.*')">{{ __('Courses') }}</x-nav-link>
+                        @endif
+
+                        @if(in_array($role, ['lecturer','exam_officer','registrar','proprietor','hod']))
+                            <x-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.*')">{{ __('Attendance') }}</x-nav-link>
                         @endif
 
                         @if(\Illuminate\Support\Facades\Route::has('announcements.index'))
-                            <x-nav-link :href="route('announcements.index')" :active="request()->routeIs('announcements.*')">
-                                {{ __('Announcements') }}
-                            </x-nav-link>
+                            <x-nav-link :href="route('announcements.index')" :active="request()->routeIs('announcements.*')">{{ __('Announcements') }}</x-nav-link>
                         @endif
                     @endif
 
-                    @if(in_array($role, ['principal', 'proprietor']))
-                        <x-nav-link :href="route('staff.index')" :active="request()->routeIs('staff.*')">
-                            {{ __('Staff') }}
-                        </x-nav-link>
+                    @if(in_array($role, ['registrar', 'proprietor', 'academic_secretary']))
+                        <x-nav-link :href="route('staff.index')" :active="request()->routeIs('staff.*')">{{ __('Staff') }}</x-nav-link>
                     @endif
 
-                    @if(in_array($role, ['admin', 'ict', 'proprietor']))
-                        <x-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">
-                            {{ __('Inventory') }}
-                        </x-nav-link>
-                        <x-nav-link :href="route('admission.admin')" :active="request()->routeIs('admission.admin')">
-                            {{ __('Admissions') }}
-                        </x-nav-link>
+                    @if(in_array($role, ['registrar', 'ict', 'proprietor', 'office_secretary']))
+                        <x-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">{{ __('Inventory') }}</x-nav-link>
+                        <x-nav-link :href="route('admission.admin')" :active="request()->routeIs('admission.admin')">{{ __('Admissions') }}</x-nav-link>
                     @endif
 
-                    @if(in_array($role, ['accountant', 'proprietor']))
-                        <x-nav-link :href="route('fees.index')" :active="request()->routeIs('fees.*')">
-                            {{ __('Fees') }}
-                        </x-nav-link>
+                    @if(in_array($role, ['bursar', 'proprietor', 'registrar']))
+                        <x-nav-link :href="route('fees.index')" :active="request()->routeIs('fees.*')">{{ __('Fees') }}</x-nav-link>
                     @endif
 
-                    @if(in_array($role, ['principal', 'proprietor']))
-                        <x-nav-link :href="route('staff.attendance')" :active="request()->routeIs('staff.attendance')">
-                            {{ __('Teacher Activity') }}
-                        </x-nav-link>
+                    @if(in_array($role, ['registrar', 'proprietor']))
+                        <x-nav-link :href="route('staff.attendance')" :active="request()->routeIs('staff.attendance')">{{ __('Staff Activity') }}</x-nav-link>
                     @endif
 
-                    @if(in_array($role, ['principal', 'ict']))
-                        <x-nav-link :href="route('classes.index')" :active="request()->routeIs('classes.*')">
-                            {{ __('Classes') }}
-                        </x-nav-link>
+                    @if(in_array($role, ['librarian', 'ict', 'registrar']))
+                        <x-nav-link :href="route('library.index')" :active="request()->routeIs('library.*')">{{ __('Library') }}</x-nav-link>
                     @endif
                 </div>
             </div>
@@ -120,14 +101,14 @@
                     <x-slot name="content">
                         <x-dropdown-link :href="route('timetable.index')">{{ __('Timetable') }}</x-dropdown-link>
                         <x-dropdown-link :href="route('library.index')">{{ __('Library') }}</x-dropdown-link>
-                        @if(in_array($role, ['exam_officer','ict','principal','proprietor']))
+                        @if(in_array($role, ['exam_officer','ict','registrar','proprietor','hod']))
                             <x-dropdown-link :href="route('exams.index')">{{ __('Exams') }}</x-dropdown-link>
                             <x-dropdown-link :href="route('exams.queries')">{{ __('Result Queries') }}</x-dropdown-link>
                         @endif
-                        @if(in_array($role, ['accountant','principal']) && \Illuminate\Support\Facades\Route::has('payroll.index'))
+                        @if(in_array($role, ['bursar','registrar']) && \Illuminate\Support\Facades\Route::has('payroll.index'))
                             <x-dropdown-link :href="route('payroll.index')">{{ __('HR / Payroll') }}</x-dropdown-link>
                         @endif
-                        @if(in_array($role, ['proprietor','principal','admin','ict','accountant']))
+                        @if(in_array($role, ['proprietor','registrar','ict','bursar']))
                             <x-dropdown-link :href="route('transport.index')">{{ __('Transport') }}</x-dropdown-link>
                             <x-dropdown-link :href="route('alumni.index')">{{ __('Alumni') }}</x-dropdown-link>
                         @endif
@@ -139,7 +120,7 @@
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
                             <div>{{ Auth::user()->name }}</div>
-                            <span class="ml-2 text-[10px] uppercase font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{{ $role }}</span>
+                            <span class="ml-2 text-[10px] uppercase font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{{ str_replace('_', ' ', $role) }}</span>
                             <div class="ms-1">
                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -149,25 +130,17 @@
                     </x-slot>
 
                     <x-slot name="content">
-                        <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('Profile') }}
-                        </x-dropdown-link>
-
-                        <x-dropdown-link :href="route('support.index')">
-                            {{ __('Support') }}
-                        </x-dropdown-link>
+                        <x-dropdown-link :href="route('profile.edit')">{{ __('Profile') }}</x-dropdown-link>
+                        <x-dropdown-link :href="route('support.index')">{{ __('Support') }}</x-dropdown-link>
 
                         @if($isAdminish && \Illuminate\Support\Facades\Route::has('settings.index'))
-                            <x-dropdown-link :href="route('settings.index')">
-                                {{ __('School Settings') }}
-                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('settings.index')">{{ __('College Settings') }}</x-dropdown-link>
                         @endif
 
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').submit();">
+                                    onclick="event.preventDefault(); this.closest('form').submit();">
                                 {{ __('Log Out') }}
                             </x-dropdown-link>
                         </form>
@@ -188,59 +161,41 @@
 
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
-            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">{{ __('Dashboard') }}</x-responsive-nav-link>
 
             @if($isStaff)
-                <x-responsive-nav-link :href="route('students.index')" :active="request()->routeIs('students.*')">
-                    {{ __('Students') }}
-                </x-responsive-nav-link>
-                @if(in_array($role, ['teacher','exam_officer','principal','proprietor','admin','ict']))
-                <x-responsive-nav-link :href="route('subjects.index')" :active="request()->routeIs('subjects.*')">
-                    {{ __('Subjects') }}
-                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('students.index')" :active="request()->routeIs('students.*')">{{ __('Students') }}</x-responsive-nav-link>
+                @if(in_array($role, ['registrar', 'proprietor']))
+                    <x-responsive-nav-link :href="route('departments.index')">{{ __('Departments') }}</x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('programs.index')">{{ __('Programs') }}</x-responsive-nav-link>
                 @endif
-                @if(in_array($role, ['teacher','exam_officer','principal','proprietor','admin']))
-                <x-responsive-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.*')">
-                    {{ __('Attendance') }}
-                </x-responsive-nav-link>
+                @if(in_array($role, $academic))
+                    <x-responsive-nav-link :href="route('subjects.index')" :active="request()->routeIs('subjects.*')">{{ __('Courses') }}</x-responsive-nav-link>
+                @endif
+                @if(in_array($role, ['lecturer','exam_officer','registrar','proprietor','hod']))
+                    <x-responsive-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.*')">{{ __('Attendance') }}</x-responsive-nav-link>
                 @endif
                 @if(\Illuminate\Support\Facades\Route::has('announcements.index'))
-                    <x-responsive-nav-link :href="route('announcements.index')" :active="request()->routeIs('announcements.*')">
-                        {{ __('Announcements') }}
-                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('announcements.index')" :active="request()->routeIs('announcements.*')">{{ __('Announcements') }}</x-responsive-nav-link>
                 @endif
             @endif
 
-            @if(in_array($role, ['principal', 'proprietor']))
-                <x-responsive-nav-link :href="route('staff.index')" :active="request()->routeIs('staff.*')">
-                    {{ __('Staff') }}
-                </x-responsive-nav-link>
+            @if(in_array($role, ['registrar', 'proprietor', 'academic_secretary']))
+                <x-responsive-nav-link :href="route('staff.index')" :active="request()->routeIs('staff.*')">{{ __('Staff') }}</x-responsive-nav-link>
             @endif
 
-            @if(in_array($role, ['admin', 'ict', 'proprietor']))
-                <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">
-                    {{ __('Inventory') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admission.admin')" :active="request()->routeIs('admission.admin')">
-                    {{ __('Admissions') }}
-                </x-responsive-nav-link>
+            @if(in_array($role, ['registrar', 'ict', 'proprietor', 'office_secretary']))
+                <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">{{ __('Inventory') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admission.admin')" :active="request()->routeIs('admission.admin')">{{ __('Admissions') }}</x-responsive-nav-link>
+            @endif
+
+            @if(in_array($role, ['bursar', 'proprietor', 'registrar']))
+                <x-responsive-nav-link :href="route('fees.index')" :active="request()->routeIs('fees.*')">{{ __('Fees') }}</x-responsive-nav-link>
             @endif
 
             @if($isStaff)
                 <x-responsive-nav-link :href="route('timetable.index')">{{ __('Timetable') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('library.index')">{{ __('Library') }}</x-responsive-nav-link>
-                @if(in_array($role, ['exam_officer','ict','principal','proprietor']))
-                    <x-responsive-nav-link :href="route('exams.index')">{{ __('Exams') }}</x-responsive-nav-link>
-                @endif
-                @if(in_array($role, ['accountant','principal']) && \Illuminate\Support\Facades\Route::has('payroll.index'))
-                    <x-responsive-nav-link :href="route('payroll.index')">{{ __('HR / Payroll') }}</x-responsive-nav-link>
-                @endif
-                @if(in_array($role, ['proprietor','principal','admin','ict','accountant']))
-                    <x-responsive-nav-link :href="route('transport.index')">{{ __('Transport') }}</x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('alumni.index')">{{ __('Alumni') }}</x-responsive-nav-link>
-                @endif
             @endif
         </div>
 
@@ -251,25 +206,15 @@
             </div>
 
             <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('Profile') }}
-                </x-responsive-nav-link>
-
-                <x-responsive-nav-link :href="route('support.index')">
-                    {{ __('Support') }}
-                </x-responsive-nav-link>
-
+                <x-responsive-nav-link :href="route('profile.edit')">{{ __('Profile') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('support.index')">{{ __('Support') }}</x-responsive-nav-link>
                 @if($isAdminish && \Illuminate\Support\Facades\Route::has('settings.index'))
-                    <x-responsive-nav-link :href="route('settings.index')">
-                        {{ __('School Settings') }}
-                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('settings.index')">{{ __('College Settings') }}</x-responsive-nav-link>
                 @endif
-
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
+                            onclick="event.preventDefault(); this.closest('form').submit();">
                         {{ __('Log Out') }}
                     </x-responsive-nav-link>
                 </form>

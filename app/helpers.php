@@ -63,3 +63,41 @@ if (!function_exists('money')) {
         return setting('currency_symbol', '₦') . number_format((float) $amount, 2);
     }
 }
+
+if (!function_exists('current_college_id')) {
+    /**
+     * The college (tenant) the current request belongs to.
+     *
+     * Resolution order:
+     *   1. An explicit context set by SetCollegeContext middleware (request-bound).
+     *   2. The authenticated user's college_id.
+     * Returns null for guests / console, which makes the CollegeScope a no-op.
+     */
+    function current_college_id(): ?int
+    {
+        if (app()->bound('current_college_id')) {
+            return app('current_college_id');
+        }
+
+        if (auth()->check() && auth()->user()->college_id) {
+            return (int) auth()->user()->college_id;
+        }
+
+        return null;
+    }
+}
+
+if (!function_exists('current_college')) {
+    /**
+     * The current College model (or null). Cached per request.
+     */
+    function current_college(): ?\App\Models\College
+    {
+        static $cache = [];
+        $id = current_college_id();
+        if ($id === null) {
+            return null;
+        }
+        return $cache[$id] ??= \App\Models\College::withoutGlobalScopes()->find($id);
+    }
+}

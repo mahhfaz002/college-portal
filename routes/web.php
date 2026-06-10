@@ -69,7 +69,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
 
 
     // --- Admission Management (legacy panel) — registrar/admin + ICT only ---
-    Route::middleware('role:admin,ict,proprietor')->group(function () {
+    Route::middleware('role:registrar,ict,proprietor')->group(function () {
         Route::get('/admin/dashboard', [AdmissionDashboardController::class, 'index'])->name('admin.dashboard');
     });
     Route::middleware('role:'.Permissions::middleware('manage_admissions'))->group(function () {
@@ -121,11 +121,32 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
     });
     Route::middleware('role:'.Permissions::middleware('manage_subjects'))->group(function () {
         Route::post('/subjects', [SubjectController::class, 'store'])->name('subjects.store');
+        Route::put('/subjects/{subject}', [SubjectController::class, 'update'])->name('subjects.update');
         Route::delete('/subjects/{subject}', [SubjectController::class, 'destroy'])->name('subjects.destroy');
     });
 
+    // --- Departments & Programs (Registrar owns the academic structure) ---
+    Route::middleware('role:'.Permissions::middleware('view_departments'))->group(function () {
+        Route::get('/departments', [\App\Http\Controllers\DepartmentController::class, 'index'])->name('departments.index');
+        Route::get('/programs', [\App\Http\Controllers\ProgramController::class, 'index'])->name('programs.index');
+    });
+    Route::middleware('role:'.Permissions::middleware('manage_departments'))->group(function () {
+        Route::post('/departments', [\App\Http\Controllers\DepartmentController::class, 'store'])->name('departments.store');
+        Route::put('/departments/{department}', [\App\Http\Controllers\DepartmentController::class, 'update'])->name('departments.update');
+        Route::delete('/departments/{department}', [\App\Http\Controllers\DepartmentController::class, 'destroy'])->name('departments.destroy');
+        Route::post('/programs', [\App\Http\Controllers\ProgramController::class, 'store'])->name('programs.store');
+        Route::put('/programs/{program}', [\App\Http\Controllers\ProgramController::class, 'update'])->name('programs.update');
+        Route::delete('/programs/{program}', [\App\Http\Controllers\ProgramController::class, 'destroy'])->name('programs.destroy');
+    });
+
+    // --- Academic Secretary: assign courses to lecturers ---
+    Route::middleware('role:'.Permissions::middleware('assign_courses'))->group(function () {
+        Route::post('/course-assignments', [\App\Http\Controllers\CourseAssignmentController::class, 'store'])->name('course-assignments.store');
+        Route::delete('/course-assignments', [\App\Http\Controllers\CourseAssignmentController::class, 'destroy'])->name('course-assignments.destroy');
+    });
+
     // Score entry (class + subject sheet). Single canonical route name.
-    Route::middleware(['role:teacher,exam_officer,principal,proprietor,admin'])->group(function () {
+    Route::middleware(['role:lecturer,exam_officer,registrar,proprietor'])->group(function () {
         Route::get('/scores/entry', [ScoreController::class, 'create'])->name('scores.create');
         Route::post('/scores/store', [ScoreController::class, 'store'])->name('scores.store');
     });
@@ -173,7 +194,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
 
     // --- Announcements / Communications (everyone can read) ---
     Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
-    Route::middleware(['role:proprietor,principal,admin,ict'])->group(function () {
+    Route::middleware(['role:proprietor,registrar,ict'])->group(function () {
         Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
         Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy');
 
@@ -278,7 +299,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
 
     // --- Management-only modules: Transport, Alumni ---
     // (HR/Payroll moved to the dedicated payslip workflow below — bursar + principal only.)
-    Route::middleware(['role:proprietor,principal,admin,ict,accountant'])->group(function () {
+    Route::middleware(['role:proprietor,registrar,ict,bursar'])->group(function () {
         Route::get('/transport', [TransportationController::class, 'index'])->name('transport.index');
         Route::post('/transport/assign', [TransportationController::class, 'assignStudent'])->name('transport.assign');
 
@@ -320,7 +341,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
         ->middleware('role:proprietor,ict');
 
     // Inventory + admissions list (Admin/ICT/Proprietor view)
-    Route::middleware(['role:admin,ict,proprietor'])->group(function () {
+    Route::middleware(['role:registrar,ict,proprietor'])->group(function () {
         Route::resource('inventory', InventoryItemController::class);
         Route::get('/admin/admissions', [ApplicantController::class, 'index'])->name('admission.admin');
     });

@@ -35,13 +35,16 @@ class AppServiceProvider extends ServiceProvider
             Gate::define($capability, fn ($user) => Permissions::roleCan($user->role, $capability));
         }
 
-        // Make school branding available to every view as $school.
+        // Make college branding available to every view as $school.
+        // Prefer the logged-in user's college record so each registered college
+        // brands its own portal; fall back to global settings / app name.
         View::composer('*', function ($view) {
+            $college = function_exists('current_college') ? current_college() : null;
             $view->with('school', [
-                'name'     => setting('school_name', config('app.name', 'School Portal')),
+                'name'     => $college?->name ?? setting('school_name', config('app.name', 'MAHHFAZ College of Health Sciences and Technology, Jalingo')),
                 'tagline'  => setting('school_tagline', ''),
-                'logo'     => setting('school_logo'),
-                'color'    => setting('primary_color', '#2563eb'),
+                'logo'     => $college?->logo_path ?? setting('school_logo'),
+                'color'    => $college?->primary_color ?? setting('primary_color', '#2563eb'),
                 'currency' => setting('currency_symbol', '₦'),
                 'term'     => setting('current_term', ''),
                 'session'  => setting('current_session', ''),

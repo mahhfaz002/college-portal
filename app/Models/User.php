@@ -7,11 +7,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Support\Permissions;
+use App\Models\Concerns\BelongsToCollege;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, BelongsToCollege;
 
     /**
      * The attributes that are mass assignable.
@@ -36,7 +37,16 @@ class User extends Authenticatable
         'next_of_kin_name',
         'next_of_kin_phone',
         'status',
+        'college_id',
+        'department_id',
+        'program_id',
+        'staff_category',
     ];
+
+    public function departmentModel()
+    {
+        return $this->belongsTo(Department::class, 'department_id');
+    }
 
     public function activityLogs()
     {
