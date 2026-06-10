@@ -42,4 +42,15 @@ return [
         'model' => env('ANTHROPIC_MODEL', 'claude-opus-4-8'),
     ],
 
+    // Paystack — online payments. Per-college keys (stored on the College
+    // record) take precedence; these env values are the platform fallback.
+    // When no secret key is available AND the app is not in production, the
+    // PaystackService falls back to a sandbox auto-confirm so the flow is
+    // testable before live keys are supplied.
+    'paystack' => [
+        'public_key' => env('PAYSTACK_PUBLIC_KEY'),
+        'secret_key' => env('PAYSTACK_SECRET_KEY'),
+        'base_url'   => env('PAYSTACK_BASE_URL', 'https://api.paystack.co'),
+    ],
+
 ];

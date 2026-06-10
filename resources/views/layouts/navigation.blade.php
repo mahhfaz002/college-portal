@@ -1,6 +1,8 @@
 @php
     $role = Auth::user()->role ?? 'guest';
-    $isStaff = $role !== 'student';
+    // Applicants (pre-registration) and students are not staff — they get a
+    // minimal menu, not the staff modules.
+    $isStaff = !in_array($role, ['student', 'applicant']);
     // Roles with system-wide oversight / settings access.
     $isAdminish = in_array($role, ['proprietor', 'registrar', 'ict']);
     // Roles that see the academic structure (departments / programs / courses).
@@ -28,6 +30,11 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+
+                    @if($role === 'applicant')
+                        <x-nav-link :href="route('dashboard')">{{ __('Admission') }}</x-nav-link>
+                        <x-nav-link :href="route('dashboard').'#fees'">{{ __('Fees') }}</x-nav-link>
+                    @endif
 
                     @if($role === 'student')
                         <x-nav-link :href="route('myexams.available')" :active="request()->routeIs('myexams.*')">{{ __('My Exams') }}</x-nav-link>

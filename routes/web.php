@@ -44,6 +44,12 @@ Route::get('/apply', [ApplicantController::class, 'showForm'])->name('admission.
 Route::post('/apply', [ApplicantController::class, 'submit'])
     ->middleware('throttle:6,1')->name('admission.submit'); // spam guard on public form
 
+// Online payments (Paystack). Public: the application fee is paid before the
+// applicant account exists. Gateway init/callback look invoices up by id/ref.
+Route::get('/pay/{invoice}', [\App\Http\Controllers\GatewayPaymentController::class, 'initialize'])->name('payments.initialize');
+Route::get('/payments/callback', [\App\Http\Controllers\GatewayPaymentController::class, 'callback'])->name('payments.callback');
+Route::get('/pay/{invoice}/sandbox', [\App\Http\Controllers\GatewayPaymentController::class, 'sandbox'])->name('payments.sandbox');
+
 
 // ==========================================
 // 2. PASSWORD SECURITY CHECK (Login Required)
@@ -63,6 +69,9 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
 
     // --- Core Dashboard ---
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // --- Online-payment invoice receipt (owner or finance staff) ---
+    Route::get('/invoices/{invoice}/receipt', [\App\Http\Controllers\InvoiceController::class, 'receipt'])->name('invoices.receipt');
 
     // --- Notifications (aggregated, role-aware) ---
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');

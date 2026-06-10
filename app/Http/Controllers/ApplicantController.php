@@ -13,44 +13,114 @@ use Illuminate\Validation\Rule;
 
 class ApplicantController extends Controller
 {
-    /** Public application form. */
+    /** Public application form (Sections A–D, program choices per college). */
     public function showForm()
     {
-        return view('admission.form');
+        $colleges = \App\Models\College::where('is_active', true)->orderBy('name')->get();
+        $college  = $colleges->first();
+
+        $programs = $college
+            ? \App\Models\Program::withoutGlobalScopes()
+                ->where('college_id', $college->id)->with('department')->orderBy('name')->get()
+            : collect();
+
+        return view('admission.form', compact('colleges', 'college', 'programs'));
     }
 
-    /** Handle a public application submission. */
+    /**
+     * Handle a public application (Phase 2): create the applicant, raise the
+     * application-fee invoice for the first-choice program, and send the
+     * candidate to the payment gateway. The account is created only AFTER the
+     * application fee is confirmed (see GatewayPaymentController).
+     */
     public function submit(Request $request)
     {
         $validated = $request->validate([
-            'full_name'         => 'required|string|max:255',
-            'date_of_birth'     => 'required|date',
-            'gender'            => 'required|string|max:20',
-            'parent_name'       => 'required|string|max:255',
-            'parent_phone'      => 'required|string|max:50',
-            'parent_email'      => 'required|email|max:255',
-            'desired_class'     => 'required|string|max:100',
-            'passport'          => 'required|file|mimes:jpg,jpeg,png|max:2048',
-            'birth_certificate' => 'required|file|mimes:pdf,jpg,jpeg|max:2048',
-            'indigene_letter'   => 'nullable|file|mimes:pdf,jpg,jpeg|max:2048',
+            'college_id'    => 'required|exists:colleges,id',
+            // Section A — applicant bio
+            'first_name'    => 'required|string|max:100',
+            'surname'       => 'required|string|max:100',
+            'other_name'    => 'nullable|string|max:100',
+            'address'       => 'required|string|max:255',
+            'phone'         => 'required|string|max:50',
+            'email'         => 'required|email|max:255|unique:users,email',
+            'date_of_birth' => 'required|date|before:today',
+            'gender'        => 'required|string|max:20',
+            // Program choices
+            'first_choice_program_id'  => 'required|exists:programs,id',
+            'second_choice_program_id' => 'nullable|exists:programs,id|different:first_choice_program_id',
+            // Section B — parent / guardian
+            'guardian_name'         => 'required|string|max:255',
+            'guardian_relationship' => 'required|string|max:100',
+            'guardian_phone'        => 'required|string|max:50',
+            'guardian_email'        => 'nullable|email|max:255',
+            'guardian_address'      => 'nullable|string|max:255',
+            'guardian_occupation'   => 'nullable|string|max:150',
+            // Section C — sponsor
+            'sponsor_name'         => 'required|string|max:255',
+            'sponsor_relationship' => 'required|string|max:100',
+            'sponsor_phone'        => 'required|string|max:50',
+            'sponsor_address'      => 'nullable|string|max:255',
+            // Section D — passport
+            'passport'             => 'required|file|mimes:jpg,jpeg,png|max:2048',
         ]);
 
-        $data = collect($validated)->except(['passport', 'birth_certificate', 'indigene_letter'])->all();
-        $data['status'] = 'pending';
+        $program = \App\Models\Program::withoutGlobalScopes()->findOrFail($validated['first_choice_program_id']);
 
-        // Passport kept as base64 so it survives deploys (no object storage).
+        // Guard: chosen program must belong to the chosen college.
+        abort_unless((int) $program->college_id === (int) $validated['college_id'], 422, 'Program does not belong to the selected college.');
+
         $pp = $request->file('passport');
-        $data['passport'] = 'data:'.$pp->getMimeType().';base64,'.base64_encode(file_get_contents($pp->getRealPath()));
+        $passport = 'data:'.$pp->getMimeType().';base64,'.base64_encode(file_get_contents($pp->getRealPath()));
 
-        // Other documents on the public disk (PDFs etc.).
-        $data['birth_cert_path'] = $request->file('birth_certificate')->store('documents/certificates');
-        if ($request->hasFile('indigene_letter')) {
-            $data['indigene_letter_path'] = $request->file('indigene_letter')->store('documents/indigene');
-        }
+        $applicant = Applicant::create([
+            'college_id'   => $validated['college_id'],
+            'first_name'   => $validated['first_name'],
+            'surname'      => $validated['surname'],
+            'other_name'   => $validated['other_name'] ?? null,
+            'full_name'    => trim($validated['surname'].' '.$validated['first_name'].' '.($validated['other_name'] ?? '')),
+            'address'      => $validated['address'],
+            'phone'        => $validated['phone'],
+            'email'        => $validated['email'],
+            'date_of_birth'=> $validated['date_of_birth'],
+            'gender'       => $validated['gender'],
+            'first_choice_program_id'  => $validated['first_choice_program_id'],
+            'second_choice_program_id' => $validated['second_choice_program_id'] ?? null,
+            'guardian_name'         => $validated['guardian_name'],
+            'guardian_relationship' => $validated['guardian_relationship'],
+            'guardian_phone'        => $validated['guardian_phone'],
+            'guardian_email'        => $validated['guardian_email'] ?? null,
+            'guardian_address'      => $validated['guardian_address'] ?? null,
+            'guardian_occupation'   => $validated['guardian_occupation'] ?? null,
+            'sponsor_name'         => $validated['sponsor_name'],
+            'sponsor_relationship' => $validated['sponsor_relationship'],
+            'sponsor_phone'        => $validated['sponsor_phone'],
+            'sponsor_address'      => $validated['sponsor_address'] ?? null,
+            'passport'     => $passport,
+            'status'       => 'pending',
+            'application_status' => 'pending_payment',
+            'payment_status'     => 'unpaid',
+            // legacy not-null columns kept satisfied
+            'parent_name'  => $validated['guardian_name'],
+            'parent_phone' => $validated['guardian_phone'],
+            'parent_email' => $validated['guardian_email'] ?? $validated['email'],
+            'desired_class'=> $program->name,
+        ]);
 
-        Applicant::create($data);
+        // Raise the application-fee invoice and head to the gateway.
+        $invoice = \App\Models\Invoice::create([
+            'college_id'  => $validated['college_id'],
+            'applicant_id'=> $applicant->id,
+            'program_id'  => $program->id,
+            'purpose'     => 'application_fee',
+            'description' => 'Application fee — '.$program->name,
+            'amount'      => $program->application_fee,
+            'payer_email' => $applicant->email,
+            'status'      => 'pending',
+            'reference'   => \App\Services\PaystackService::reference('APP'),
+        ]);
 
-        return back()->with('success', 'Application submitted successfully! Please expect our response via your email and/or phone contact.');
+        return redirect()->route('payments.initialize', ['invoice' => $invoice->id]);
     }
 
     /** ICT: show the admission application form. */

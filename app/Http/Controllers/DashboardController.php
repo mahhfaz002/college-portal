@@ -26,6 +26,7 @@ class DashboardController extends Controller
             'bursar'             => $this->accountantDashboard($request),   // Bursar = finance
             'lecturer'           => $this->teacherDashboard($request),      // Lecturer = old teacher
             'student'            => $this->studentDashboard($request),
+            'applicant'          => $this->applicantDashboard($request),
             'exam_officer'       => $this->examOfficerDashboard(),
             'hod'                => $this->hodDashboard($request),
             'assistant_hod'      => $this->hodDashboard($request),
@@ -251,6 +252,20 @@ class DashboardController extends Controller
         $attendanceRate = $totalDays > 0 ? round(($daysPresent / $totalDays) * 100) : 100;
 
         return view('dashboards.student', compact('student', 'scores', 'payments', 'attendanceRate', 'availableExams', 'announcements', 'todayLessons'));
+    }
+
+    /**
+     * APPLICANT — limited dashboard: application status, admission decision and
+     * fees/invoices only. Full student features unlock after registration (Phase 3).
+     */
+    private function applicantDashboard(Request $request)
+    {
+        $user = auth()->user();
+        $applicant = \App\Models\Applicant::where('user_id', $user->id)->first();
+        $invoices = \App\Models\Invoice::where('applicant_id', optional($applicant)->id)
+            ->latest()->get();
+
+        return view('dashboards.applicant', compact('applicant', 'invoices'));
     }
 
     /**
