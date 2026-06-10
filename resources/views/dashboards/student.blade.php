@@ -22,6 +22,22 @@
                 </div>
             @else
 
+            @if($student && ($student->registration_status ?? null) !== 'registered')
+                <div class="mb-6 p-4 rounded-lg border flex flex-wrap items-center justify-between gap-3
+                    {{ $student->registration_status === 'pending_hod' ? 'bg-blue-50 border-blue-200 text-blue-800' : ($student->registration_status === 'documents_rejected' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-amber-50 border-amber-200 text-amber-800') }}">
+                    <div>
+                        <p class="font-bold">
+                            @if($student->registration_status === 'pending_hod') Registration submitted — awaiting HOD approval.
+                            @elseif($student->registration_status === 'documents_rejected') Your documents were returned for correction.
+                            @else Complete your registration: upload your documents for HOD review.
+                            @endif
+                        </p>
+                        <p class="text-xs opacity-80">Reg. No: {{ $student->registration_number ?? '—' }}</p>
+                    </div>
+                    <a href="{{ route('registration.documents') }}" class="bg-emerald-600 text-white px-5 py-2 rounded-full font-bold hover:bg-emerald-700 text-sm">Go to Registration →</a>
+                </div>
+            @endif
+
             @if(($availableExams ?? 0) > 0)
             <div class="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg flex justify-between items-center">
                 <p class="font-bold text-indigo-800">📝 You have {{ $availableExams }} exam(s) available to take.</p>

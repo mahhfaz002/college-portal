@@ -367,6 +367,34 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
         Route::post('/admin/admissions/{id}/approve', [ApplicantController::class, 'approve'])->name('admission.approve');
         Route::post('/admin/admissions/{id}/reject', [ApplicantController::class, 'reject'])->name('admission.reject');
     });
+
+    // ===== Phase 3 — admission → acceptance → registration → HOD approval =====
+    $AW = \App\Http\Controllers\AdmissionWorkflowController::class;
+
+    // Registrar: review paid applications, offer/decline admission.
+    Route::middleware('role:'.Permissions::middleware('manage_admissions'))->group(function () use ($AW) {
+        Route::get('/admissions/review', [$AW, 'reviewPanel'])->name('admissions.review');
+        Route::post('/admissions/{applicant}/offer', [$AW, 'offer'])->name('admissions.offer');
+        Route::post('/admissions/{applicant}/decline', [$AW, 'decline'])->name('admissions.decline');
+    });
+
+    // Applicant: accept / reject the offer, reapply, download letter & form.
+    Route::post('/admission/accept', [$AW, 'accept'])->name('admission.accept');
+    Route::post('/admission/reject', [$AW, 'rejectOffer'])->name('admission.reject.offer');
+    Route::post('/admission/reapply', [$AW, 'reapply'])->name('admission.reapply');
+    Route::get('/admission/letter', [$AW, 'admissionLetter'])->name('admission.letter');
+    Route::get('/admission/acceptance-form', [$AW, 'acceptanceForm'])->name('admission.acceptance_form');
+
+    // Student: registration document upload.
+    Route::get('/registration', [$AW, 'registration'])->name('registration.documents');
+    Route::post('/registration', [$AW, 'storeDocuments'])->name('registration.documents.store');
+
+    // HOD / Assistant HOD: review and approve registrations.
+    Route::middleware('role:hod,assistant_hod')->group(function () use ($AW) {
+        Route::get('/hod/registrations', [$AW, 'hodRegistrations'])->name('hod.registrations');
+        Route::post('/hod/registrations/{student}/approve', [$AW, 'hodApprove'])->name('hod.registrations.approve');
+        Route::post('/hod/registrations/{student}/reject', [$AW, 'hodReject'])->name('hod.registrations.reject');
+    });
 });
 
 // ==========================================

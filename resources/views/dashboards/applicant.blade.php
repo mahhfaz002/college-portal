@@ -69,6 +69,68 @@
                 </div>
             </div>
 
+            {{-- Admission offer: accept / reject --}}
+            @if($applicant->application_status === 'admitted')
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-6">
+                    <h3 class="font-bold text-amber-900 text-lg mb-1">🎉 Admission Offer</h3>
+                    <p class="text-sm text-amber-800 mb-4">
+                        You have been offered admission into
+                        <span class="font-bold">{{ $applicant->admittedProgram->name ?? '' }}</span>.
+                        Please accept to proceed to the acceptance fee, or reject to reapply for another program.
+                    </p>
+                    <div class="flex flex-wrap gap-3">
+                        <form method="POST" action="{{ route('admission.accept') }}">
+                            @csrf
+                            <button class="bg-emerald-600 text-white px-6 py-2.5 rounded-full font-bold hover:bg-emerald-700">
+                                Accept &amp; Pay Acceptance Fee
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ route('admission.reject.offer') }}"
+                              onsubmit="return confirm('Reject this admission offer?')">
+                            @csrf
+                            <button class="bg-white border border-red-300 text-red-600 px-6 py-2.5 rounded-full font-bold hover:bg-red-50">
+                                Reject Offer
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @endif
+
+            {{-- Acceptance paid: admission letter + acceptance form + registration --}}
+            @if(in_array($applicant->application_status, ['accepted','registered']))
+                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-6">
+                    <h3 class="font-bold text-emerald-900 text-lg mb-3">Admission Documents</h3>
+                    <div class="flex flex-wrap gap-3">
+                        <a href="{{ route('admission.letter') }}" target="_blank" class="bg-indigo-600 text-white px-5 py-2 rounded-full font-semibold hover:bg-indigo-700">📄 Admission Letter</a>
+                        <a href="{{ route('admission.acceptance_form') }}" target="_blank" class="bg-white border px-5 py-2 rounded-full font-semibold hover:bg-gray-50">📝 Acceptance Form</a>
+                        @if($applicant->application_status === 'registered')
+                            <a href="{{ route('registration.documents') }}" class="bg-emerald-600 text-white px-5 py-2 rounded-full font-semibold hover:bg-emerald-700">Upload Registration Documents →</a>
+                        @endif
+                    </div>
+                    @if($applicant->application_status === 'accepted')
+                        <p class="text-sm text-emerald-800 mt-3">Pay your <span class="font-bold">registration fee</span> below to unlock your student dashboard.</p>
+                    @endif
+                </div>
+            @endif
+
+            {{-- Offer rejected / declined: reapply --}}
+            @if(in_array($applicant->application_status, ['offer_rejected','rejected']))
+                <div class="bg-white border rounded-xl p-6">
+                    <h3 class="font-bold text-gray-800 text-lg mb-1">Reapply for Another Program</h3>
+                    <p class="text-sm text-gray-500 mb-4">A new application fee applies for each reapplication.</p>
+                    <form method="POST" action="{{ route('admission.reapply') }}" class="flex flex-wrap gap-3 items-center">
+                        @csrf
+                        <select name="program_id" required class="border-gray-300 rounded-lg">
+                            <option value="">Choose a program…</option>
+                            @foreach(\App\Models\Program::withoutGlobalScopes()->where('college_id',$applicant->college_id)->orderBy('name')->get() as $p)
+                                <option value="{{ $p->id }}">{{ $p->name }} — app fee {{ money($p->application_fee) }}</option>
+                            @endforeach
+                        </select>
+                        <button class="bg-indigo-600 text-white px-6 py-2.5 rounded-full font-bold hover:bg-indigo-700">Reapply &amp; Pay</button>
+                    </form>
+                </div>
+            @endif
+
             {{-- Fees / invoices --}}
             <div id="fees" class="bg-white rounded-xl shadow-sm overflow-hidden">
                 <div class="px-6 py-4 border-b font-bold text-gray-700">Fees &amp; Payments</div>

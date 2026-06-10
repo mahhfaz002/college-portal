@@ -25,6 +25,8 @@ class Student extends Model
         'program_id',
         'level',
         'registration_status',
+        'registration_number',
+        'applicant_id',
     ];
 
     public function department()

@@ -74,8 +74,9 @@ class GatewayPaymentController extends Controller
      */
     private function afterPaid(Invoice $invoice)
     {
-        if ($invoice->purpose === 'application_fee' && $invoice->applicant_id) {
-            $applicant = Applicant::withoutGlobalScopes()->find($invoice->applicant_id);
+        $applicant = $invoice->applicant_id ? Applicant::withoutGlobalScopes()->find($invoice->applicant_id) : null;
+
+        if ($invoice->purpose === 'application_fee' && $applicant) {
             $tempPassword = $this->ensureApplicantAccount($applicant);
 
             if ($applicant->user_id) {
@@ -87,12 +88,27 @@ class GatewayPaymentController extends Controller
                 $msg .= " Your login email is {$applicant->email} and temporary password is {$tempPassword} — please change it after logging in.";
             }
 
-            return redirect()->route('dashboard')
-                ->with('success', $msg)
-                ->with('receipt_invoice_id', $invoice->id);
+            return redirect()->route('dashboard')->with('success', $msg);
         }
 
-        // Other fee types are handled in later phases; default back to dashboard.
+        // Acceptance fee → unlock admission letter + raise the registration fee.
+        if ($invoice->purpose === 'acceptance_fee' && $applicant) {
+            $applicant->update(['application_status' => 'accepted']);
+            $this->ensureRegistrationInvoice($applicant);
+
+            return redirect()->route('dashboard')->with('success',
+                'Acceptance fee paid. You can now download your admission letter and pay your registration fee.');
+        }
+
+        // Registration fee → create the Student, assign the registration number,
+        // promote the account to a student and unlock the student dashboard.
+        if ($invoice->purpose === 'registration_fee' && $applicant) {
+            $this->completeRegistration($applicant);
+
+            return redirect()->route('dashboard')->with('success',
+                'Registration fee paid. Your student dashboard is unlocked — please upload your documents to complete registration.');
+        }
+
         return redirect()->to(Auth::check() ? route('dashboard') : route('home'))
             ->with('success', 'Payment confirmed.');
     }
@@ -126,5 +142,81 @@ class GatewayPaymentController extends Controller
         $applicant->update(['user_id' => $user->id]);
 
         return $tempPassword;
+    }
+
+    /** Raise the registration-fee invoice for an admitted+accepted applicant. */
+    private function ensureRegistrationInvoice(Applicant $applicant): void
+    {
+        $program = \App\Models\Program::withoutGlobalScopes()->find($applicant->admitted_program_id);
+        if (!$program) {
+            return;
+        }
+
+        $exists = Invoice::withoutGlobalScopes()
+            ->where('applicant_id', $applicant->id)
+            ->where('purpose', 'registration_fee')
+            ->whereIn('status', ['pending', 'paid'])
+            ->exists();
+
+        if ($exists) {
+            return;
+        }
+
+        Invoice::create([
+            'college_id'  => $applicant->college_id,
+            'applicant_id'=> $applicant->id,
+            'user_id'     => $applicant->user_id,
+            'program_id'  => $program->id,
+            'purpose'     => 'registration_fee',
+            'description' => 'Registration fee — '.$program->name,
+            'amount'      => $program->registration_fee,
+            'payer_email' => $applicant->email,
+            'status'      => 'pending',
+            'reference'   => \App\Services\PaystackService::reference('REG'),
+        ]);
+    }
+
+    /**
+     * Create the Student record, assign the registration number and promote the
+     * applicant's account to a full student (dashboard unlocks immediately;
+     * "fully registered" still requires HOD approval of uploaded documents).
+     */
+    private function completeRegistration(Applicant $applicant): void
+    {
+        $program = \App\Models\Program::withoutGlobalScopes()->with('department')->find($applicant->admitted_program_id);
+        if (!$program) {
+            return;
+        }
+
+        $student = \App\Models\Student::withoutGlobalScopes()
+            ->where('email', $applicant->email)->first();
+
+        if (!$student) {
+            $regNumber = app(\App\Services\StudentIdGenerator::class)->generate($program);
+
+            $student = \App\Models\Student::create([
+                'full_name'           => $applicant->full_name,
+                'email'               => $applicant->email,
+                'admission_number'    => $applicant->admission_number,
+                'registration_number' => $regNumber,
+                'college_id'          => $applicant->college_id,
+                'department_id'       => $program->department_id,
+                'program_id'          => $program->id,
+                'level'               => '100',
+                'class_arm'           => $program->name,
+                'parent_phone'        => $applicant->guardian_phone ?? $applicant->parent_phone,
+                'fees_balance'        => 0,
+                'photo'               => $applicant->passport,
+                'applicant_id'        => $applicant->id,
+                'registration_status' => 'registration_paid',
+            ]);
+        }
+
+        $applicant->update(['application_status' => 'registered']);
+
+        if ($applicant->user_id) {
+            \App\Models\User::withoutGlobalScopes()->where('id', $applicant->user_id)
+                ->update(['role' => 'student']);
+        }
     }
 }

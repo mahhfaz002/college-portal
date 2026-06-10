@@ -8,6 +8,10 @@
     // Roles that see the academic structure (departments / programs / courses).
     $academic = ['registrar', 'proprietor', 'ict', 'academic_secretary', 'exam_officer', 'lecturer', 'hod', 'assistant_hod'];
     $brandName = current_college()->name ?? ($school['name'] ?? 'MAHHFAZ College of Health Sciences and Technology, Jalingo');
+    // Student registration state drives the "Registration" prompt until the HOD approves.
+    $studentReg = $role === 'student'
+        ? \App\Models\Student::where('email', Auth::user()->email)->value('registration_status')
+        : null;
 @endphp
 <nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -37,6 +41,9 @@
                     @endif
 
                     @if($role === 'student')
+                        @if(($studentReg ?? null) && $studentReg !== 'registered')
+                            <x-nav-link :href="route('registration.documents')" :active="request()->routeIs('registration.*')">{{ __('Registration') }}</x-nav-link>
+                        @endif
                         <x-nav-link :href="route('myexams.available')" :active="request()->routeIs('myexams.*')">{{ __('My Exams') }}</x-nav-link>
                         <x-nav-link :href="route('timetable.index')" :active="request()->routeIs('timetable.*')">{{ __('Timetable') }}</x-nav-link>
                         <x-nav-link :href="route('dashboard').'#results'">{{ __('Results') }}</x-nav-link>
@@ -72,6 +79,14 @@
                     @if(in_array($role, ['registrar', 'ict', 'proprietor', 'office_secretary']))
                         <x-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">{{ __('Inventory') }}</x-nav-link>
                         <x-nav-link :href="route('admission.admin')" :active="request()->routeIs('admission.admin')">{{ __('Admissions') }}</x-nav-link>
+                    @endif
+
+                    @if(in_array($role, ['registrar', 'proprietor']))
+                        <x-nav-link :href="route('admissions.review')" :active="request()->routeIs('admissions.review')">{{ __('Offer Admission') }}</x-nav-link>
+                    @endif
+
+                    @if(in_array($role, ['hod', 'assistant_hod']))
+                        <x-nav-link :href="route('hod.registrations')" :active="request()->routeIs('hod.registrations')">{{ __('Registrations') }}</x-nav-link>
                     @endif
 
                     @if(in_array($role, ['bursar', 'proprietor', 'registrar']))
