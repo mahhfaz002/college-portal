@@ -163,10 +163,11 @@ class ApplicantController extends Controller
 
         $pp = $request->file('passport');
         $data['passport'] = 'data:'.$pp->getMimeType().';base64,'.base64_encode(file_get_contents($pp->getRealPath()));
-        $data['birth_cert_path'] = $request->file('birth_certificate')->store('documents/certificates');
-        if ($request->hasFile('indigene_letter')) $data['indigene_letter_path'] = $request->file('indigene_letter')->store('documents/indigene');
-        if ($request->hasFile('fslc')) $data['fslc_path'] = $request->file('fslc')->store('documents/fslc');
-        if ($request->hasFile('junior_waec')) $data['junior_waec_path'] = $request->file('junior_waec')->store('documents/jwaec');
+        $disk = config('filesystems.documents');
+        $data['birth_cert_path'] = $request->file('birth_certificate')->store('documents/certificates', $disk);
+        if ($request->hasFile('indigene_letter')) $data['indigene_letter_path'] = $request->file('indigene_letter')->store('documents/indigene', $disk);
+        if ($request->hasFile('fslc')) $data['fslc_path'] = $request->file('fslc')->store('documents/fslc', $disk);
+        if ($request->hasFile('junior_waec')) $data['junior_waec_path'] = $request->file('junior_waec')->store('documents/jwaec', $disk);
 
         $applicant = Applicant::create($data);
         ActivityLog::record("Created admission application for {$applicant->full_name}", 'admission.apply');

@@ -203,7 +203,7 @@ class AdmissionWorkflowController extends Controller
 
         foreach ((array) $request->file('docs') as $type => $file) {
             if (!$file) continue;
-            $path = $file->store('documents/registration');
+            $path = $file->store('documents/registration', config('filesystems.documents'));
             StudentDocument::updateOrCreate(
                 ['student_id' => $student->id, 'type' => $type],
                 [

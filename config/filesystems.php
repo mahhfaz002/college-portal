@@ -16,6 +16,14 @@ return [
     'default' => env('FILESYSTEM_DISK', 'local'),
 
     /*
+    | Disk used for uploaded registration/admission documents. Locally this is
+    | the web-served "public" disk; on Laravel Cloud set DOCUMENTS_DISK=s3 (with
+    | the S3_* env vars) so uploads persist across deploys instead of being lost
+    | on the ephemeral container filesystem.
+    */
+    'documents' => env('DOCUMENTS_DISK', 'public'),
+
+    /*
     |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
