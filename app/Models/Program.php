@@ -17,7 +17,7 @@ class Program extends Model
     protected $fillable = [
         'college_id', 'department_id', 'name', 'acronym',
         'application_fee', 'acceptance_fee', 'registration_fee',
-        'level_system', 'duration_years',
+        'level_system', 'duration_years', 'program_type', 'levels', 'id_format',
     ];
 
     protected $casts = [

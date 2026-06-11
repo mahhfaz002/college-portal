@@ -21,12 +21,13 @@ class DashboardController extends Controller
 
         return match ($user->role) {
             'proprietor'         => $this->proprietorDashboard($request),
-            'registrar'          => $this->principalDashboard($request),   // Registrar = academic admin head
-            'ict'                => $this->ictDashboard($request),
+            'registrar'          => $this->registrarDashboard($request),   // Registrar = read-only oversight + staff + admissions
+            'mis'                => $this->ictDashboard($request),         // MIS (formerly ICT)
             'bursar'             => $this->accountantDashboard($request),   // Bursar = finance
             'lecturer'           => $this->teacherDashboard($request),      // Lecturer = old teacher
             'student'            => $this->studentDashboard($request),
             'applicant'          => $this->applicantDashboard($request),
+            'admission_officer'  => app(\App\Http\Controllers\AdmissionOfficerController::class)->dashboard($request),
             'exam_officer'       => $this->examOfficerDashboard(),
             'hod'                => $this->hodDashboard($request),
             'assistant_hod'      => $this->hodDashboard($request),
@@ -255,6 +256,22 @@ class DashboardController extends Controller
         $invoices = \App\Models\Invoice::where('student_id', $student->id)->latest()->get();
 
         return view('dashboards.student', compact('student', 'scores', 'payments', 'attendanceRate', 'availableExams', 'announcements', 'todayLessons', 'invoices'));
+    }
+
+    /**
+     * REGISTRAR — read-only oversight + staff management + shared admission queue.
+     */
+    private function registrarDashboard(Request $request)
+    {
+        $stats = [
+            'students'     => Student::count(),
+            'applications' => \App\Models\Applicant::where('payment_status', 'paid')->count(),
+            'queue'        => \App\Models\Applicant::where('payment_status', 'paid')
+                                ->whereIn('application_status', ['submitted', 'offer_rejected'])->count(),
+            'staff'        => \App\Models\User::whereNotIn('role', ['student', 'applicant'])->count(),
+        ];
+
+        return view('dashboards.registrar', compact('stats'));
     }
 
     /**

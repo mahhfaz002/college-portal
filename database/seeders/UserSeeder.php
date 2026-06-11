@@ -94,9 +94,10 @@ class UserSeeder extends Seeder
 
         // --- Minimal bootstrap logins (no demo teaching/finance staff) ---
         $users = [
-            ['Proprietor (Owner)', 'proprietor@mahhfaz.edu.ng', 'proprietor'],
-            ['College Registrar',  'registrar@mahhfaz.edu.ng',  'registrar'],
-            ['ICT Administrator',  'ict@mahhfaz.edu.ng',        'ict'],
+            ['Proprietor (Owner)',  'proprietor@mahhfaz.edu.ng', 'proprietor'],
+            ['College Registrar',   'registrar@mahhfaz.edu.ng',  'registrar'],
+            ['MIS Administrator',   'mis@mahhfaz.edu.ng',        'mis'],
+            ['Admission Officer',   'admissions@mahhfaz.edu.ng', 'admission_officer'],
         ];
 
         foreach ($users as [$name, $email, $role]) {

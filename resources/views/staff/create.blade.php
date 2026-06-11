@@ -54,8 +54,13 @@
                             <input type="text" name="employed_year" value="{{ old('employed_year', date('Y')) }}" class="w-full border-gray-300 rounded-md shadow-sm">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Department <span class="text-gray-300">(optional)</span></label>
-                            <input type="text" name="department" value="{{ old('department') }}" placeholder="e.g. Sciences" class="w-full border-gray-300 rounded-md shadow-sm">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Department <span class="text-gray-300">(for HOD / lecturers)</span></label>
+                            <select name="department_id" class="w-full border-gray-300 rounded-md shadow-sm">
+                                <option value="">— None —</option>
+                                @foreach($departments as $d)
+                                    <option value="{{ $d->id }}" {{ old('department_id')==$d->id ? 'selected' : '' }}>{{ $d->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
                 </div>

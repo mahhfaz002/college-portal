@@ -4,7 +4,7 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 🏛️ Proprietor Dashboard (Global Overview)
             </h2>
-            @if(in_array(auth()->user()->role, ['proprietor', 'ict']))
+            @if(in_array(auth()->user()->role, ['proprietor', 'mis']))
             <a href="{{ route('superadmin.switchboard') }}" class="text-xs font-bold bg-indigo-600 text-white px-4 py-2 rounded-lg uppercase hover:bg-indigo-700 transition shadow-sm">
                 ⚙️ Master Switchboard
             </a>

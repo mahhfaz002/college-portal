@@ -19,15 +19,22 @@ class StudentController extends Controller
     {
         $search = $request->query('search');
 
-        if ($search) {
-            $students = Student::where('full_name', 'LIKE', "%{$search}%")
+        $students = Student::with(['department', 'program'])
+            ->when($search, fn ($q) => $q->where(fn ($w) => $w
+                ->where('full_name', 'LIKE', "%{$search}%")
                 ->orWhere('admission_number', 'LIKE', "%{$search}%")
-                ->get();
-        } else {
-            $students = Student::all();
-        }
+                ->orWhere('registration_number', 'LIKE', "%{$search}%")))
+            ->when($request->filled('department_id'), fn ($q) => $q->where('department_id', $request->department_id))
+            ->when($request->filled('program_id'), fn ($q) => $q->where('program_id', $request->program_id))
+            ->orderBy('full_name')
+            ->paginate(50)
+            ->withQueryString();
 
-        return view('students.index', compact('students'));
+        return view('students.index', [
+            'students'    => $students,
+            'departments' => \App\Models\Department::orderBy('name')->get(),
+            'programs'    => \App\Models\Program::with('department')->orderBy('name')->get(),
+        ]);
     }
 
     /**

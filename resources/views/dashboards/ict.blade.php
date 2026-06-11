@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                🖥️ ICT System Console: <span class="text-purple-600">Administrator</span>
+                🖥️ MIS Console: <span class="text-purple-600">Management Information Systems</span>
             </h2>
             <div class="flex gap-2">
                 <a href="{{ route('admission.apply') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition text-sm">

@@ -18,80 +18,85 @@ class Permissions
     public const MATRIX = [
         // Staff management — Registrar registers/manages all staff.
         'manage_staff'         => ['registrar'],
-        'view_staff'           => ['registrar', 'proprietor', 'academic_secretary'],
+        'view_staff'           => ['registrar', 'proprietor', 'academic_secretary', 'mis'],
 
-        // Student records (admit/delete) — Registrar (absorbed the old admin role).
-        'manage_students'      => ['registrar'],
-        // Edit existing student info (names, next-of-kin, level correction, passport).
-        'edit_students'        => ['registrar', 'ict'],
-        'view_students'        => ['proprietor', 'registrar', 'bursar', 'ict', 'exam_officer', 'lecturer', 'hod', 'assistant_hod', 'student_affairs', 'office_secretary'],
+        // Student records (create/edit/delete) — MIS. Registrar is READ-ONLY now.
+        'manage_students'      => ['mis'],
+        'edit_students'        => ['mis'],
+        'view_students'        => ['proprietor', 'registrar', 'bursar', 'mis', 'exam_officer', 'lecturer', 'hod', 'assistant_hod', 'student_affairs', 'office_secretary', 'admission_officer'],
 
-        // Managed class/level registry.
-        'manage_classes'       => ['registrar', 'ict'],
+        // Managed class/level registry — MIS.
+        'manage_classes'       => ['mis'],
 
-        // Departments & Programs — Registrar owns the academic structure.
-        'manage_departments'   => ['registrar'],
-        'manage_programs'      => ['registrar'],
-        'view_departments'     => ['registrar', 'proprietor', 'academic_secretary', 'hod', 'assistant_hod', 'exam_officer'],
+        // Departments & courses of study (programs) — MIS owns the structure.
+        'manage_departments'   => ['mis'],
+        'manage_programs'      => ['mis'],
+        'view_departments'     => ['registrar', 'proprietor', 'academic_secretary', 'hod', 'assistant_hod', 'exam_officer', 'mis', 'admission_officer'],
 
-        // Timetable generation & approval — Registrar. Everyone else views.
-        'manage_timetable'     => ['registrar'],
+        // Timetable generation & approval — MIS. Everyone else views.
+        'manage_timetable'     => ['mis'],
 
-        // Payroll — Bursar runs it; Registrar reviews/approves only.
+        // Payroll — Bursar runs it; MIS reviews/approves.
         'manage_payroll'       => ['bursar'],
-        'review_payroll'       => ['registrar'],
+        'review_payroll'       => ['mis'],
 
         // Fees / payments — Bursar.
         'manage_fees'          => ['bursar'],
-        'view_fees'            => ['proprietor', 'bursar', 'registrar'],
+        'view_fees'            => ['proprietor', 'bursar'],
 
-        // Admissions: applicants apply online; Registrar offers admission.
-        'create_admissions'    => ['ict'],
-        'manage_admissions'    => ['registrar'],
+        // Admissions: applicants apply online; Registrar & Admission Officer
+        // share the approval queue. Applications list is viewable by both.
+        'create_admissions'    => ['mis'],
+        'manage_admissions'    => ['registrar', 'admission_officer'],
+        'view_applications'    => ['registrar', 'admission_officer', 'proprietor'],
 
-        // Academic term/session control — Registrar.
-        'manage_term'          => ['registrar'],
+        // Academic term/session control — MIS.
+        'manage_term'          => ['mis'],
 
-        // Exam lifecycle — Exam Officer (+ ICT support during exams).
-        'manage_exams'         => ['exam_officer', 'ict'],
-        'view_exams'           => ['exam_officer', 'ict', 'registrar', 'proprietor', 'hod'],
+        // Exam lifecycle — Exam Officer (+ MIS support during exams).
+        'manage_exams'         => ['exam_officer', 'mis'],
+        'view_exams'           => ['exam_officer', 'mis', 'proprietor', 'hod'],
         'enter_scores'         => ['lecturer', 'exam_officer'],
         'author_questions'     => ['lecturer'],
         'take_exams'           => ['student'],
 
         // Attendance — Lecturers take it for their classes.
         'take_attendance'      => ['lecturer', 'exam_officer'],
-        'view_attendance'      => ['lecturer', 'exam_officer', 'registrar', 'proprietor', 'hod'],
+        'view_attendance'      => ['lecturer', 'exam_officer', 'proprietor', 'hod'],
 
-        // Courses (formerly subjects) — staff view; bursar excluded.
-        'view_subjects'        => ['lecturer', 'exam_officer', 'registrar', 'proprietor', 'ict', 'academic_secretary', 'hod', 'assistant_hod'],
+        // Courses (formerly subjects) — academic staff view.
+        'view_subjects'        => ['lecturer', 'exam_officer', 'proprietor', 'mis', 'academic_secretary', 'hod', 'assistant_hod'],
 
-        // Academic Secretary assigns courses to lecturers.
-        'assign_courses'       => ['academic_secretary', 'registrar'],
+        // Academic Secretary creates courses and assigns them to lecturers.
+        'manage_subjects'      => ['academic_secretary'],
+        'assign_courses'       => ['academic_secretary'],
 
         // HOD approves a student's final registration in their department.
         'approve_registration' => ['hod', 'assistant_hod'],
 
-        // Library — Librarian runs it; ICT supports.
-        'manage_library'       => ['librarian', 'ict'],
+        // Student affairs cases.
+        'manage_affairs'       => ['student_affairs'],
+
+        // Library — Librarian runs it; MIS supports.
+        'manage_library'       => ['librarian', 'mis'],
+
+        // Office correspondence register.
+        'manage_correspondence'=> ['office_secretary'],
 
         // Staff clock in/out — all staff except the view-only proprietor.
-        'clock_attendance'     => ['lecturer', 'bursar', 'exam_officer', 'ict', 'registrar', 'hod', 'assistant_hod', 'academic_secretary', 'student_affairs', 'librarian', 'office_secretary'],
+        'clock_attendance'     => ['lecturer', 'bursar', 'exam_officer', 'mis', 'registrar', 'admission_officer', 'hod', 'assistant_hod', 'academic_secretary', 'student_affairs', 'librarian', 'office_secretary'],
 
         // Staff-attendance oversight report.
-        'view_staff_attendance'=> ['registrar', 'proprietor'],
+        'view_staff_attendance'=> ['registrar', 'proprietor', 'mis'],
 
-        // Academic structure — Registrar & ICT add/remove courses.
-        'manage_subjects'      => ['registrar', 'ict'],
-
-        // Technical support — ICT handles tickets; anyone can raise one.
-        'handle_tickets'       => ['ict'],
-        'reset_passwords'      => ['ict'],
+        // Technical support — MIS handles tickets; anyone can raise one.
+        'handle_tickets'       => ['mis'],
+        'reset_passwords'      => ['mis'],
 
         // Operations / system.
-        'manage_settings'      => ['registrar', 'ict'],
-        'manage_announcements' => ['registrar', 'ict', 'student_affairs'],
-        'manage_inventory'     => ['registrar', 'ict', 'office_secretary'],
+        'manage_settings'      => ['mis'],
+        'manage_announcements' => ['mis', 'student_affairs', 'registrar'],
+        'manage_inventory'     => ['mis', 'office_secretary'],
     ];
 
     /**

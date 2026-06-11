@@ -4,9 +4,9 @@
     // minimal menu, not the staff modules.
     $isStaff = !in_array($role, ['student', 'applicant']);
     // Roles with system-wide oversight / settings access.
-    $isAdminish = in_array($role, ['proprietor', 'registrar', 'ict']);
+    $isAdminish = in_array($role, ['proprietor', 'registrar', 'mis']);
     // Roles that see the academic structure (departments / programs / courses).
-    $academic = ['registrar', 'proprietor', 'ict', 'academic_secretary', 'exam_officer', 'lecturer', 'hod', 'assistant_hod'];
+    $academic = ['registrar', 'proprietor', 'mis', 'academic_secretary', 'exam_officer', 'lecturer', 'hod', 'assistant_hod'];
     $brandName = current_college()->name ?? ($school['name'] ?? 'MAHHFAZ College of Health Sciences and Technology, Jalingo');
     // Student registration state drives the "Registration" prompt until the HOD approves.
     $studentReg = $role === 'student'
@@ -51,58 +51,69 @@
                         <x-nav-link :href="route('notifications.index')" :active="request()->routeIs('notifications.*')">{{ __('Notifications') }}</x-nav-link>
                     @endif
 
+                    {{-- Capability-driven menu: each link shows only for roles that can use it. --}}
                     @if($isStaff)
-                        <x-nav-link :href="route('students.index')" :active="request()->routeIs('students.*')">{{ __('Students') }}</x-nav-link>
+                        @can('view_students')
+                            <x-nav-link :href="route('students.index')" :active="request()->routeIs('students.*')">{{ __('Students') }}</x-nav-link>
+                        @endcan
 
-                        @if(in_array($role, ['registrar', 'proprietor']))
+                        @can('manage_departments')
                             <x-nav-link :href="route('departments.index')" :active="request()->routeIs('departments.*')">{{ __('Departments') }}</x-nav-link>
-                            <x-nav-link :href="route('programs.index')" :active="request()->routeIs('programs.*')">{{ __('Programs') }}</x-nav-link>
-                        @endif
+                        @endcan
+                        @can('manage_programs')
+                            <x-nav-link :href="route('programs.index')" :active="request()->routeIs('programs.*')">{{ __('Courses of Study') }}</x-nav-link>
+                        @endcan
 
-                        @if(in_array($role, $academic))
+                        @can('manage_subjects')
+                            <x-nav-link :href="route('courses.builder')" :active="request()->routeIs('courses.builder')">{{ __('Create Courses') }}</x-nav-link>
+                        @endcan
+                        @can('view_subjects')
                             <x-nav-link :href="route('subjects.index')" :active="request()->routeIs('subjects.*')">{{ __('Courses') }}</x-nav-link>
-                        @endif
+                        @endcan
+                        @can('assign_courses')
+                            <x-nav-link :href="route('subjects.index')" :active="false">{{ __('Assign Courses') }}</x-nav-link>
+                        @endcan
 
-                        @if(in_array($role, ['lecturer','exam_officer','registrar','proprietor','hod']))
+                        @can('view_attendance')
                             <x-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.*')">{{ __('Attendance') }}</x-nav-link>
-                        @endif
+                        @endcan
 
-                        @if(\Illuminate\Support\Facades\Route::has('announcements.index'))
+                        @can('view_staff')
+                            <x-nav-link :href="route('staff.index')" :active="request()->routeIs('staff.*')">{{ __('Staff') }}</x-nav-link>
+                        @endcan
+
+                        @can('view_applications')
+                            <x-nav-link :href="route('admission.admin')" :active="request()->routeIs('admission.admin')">{{ __('Applications') }}</x-nav-link>
+                        @endcan
+                        @can('manage_admissions')
+                            <x-nav-link :href="route('admissions.review')" :active="request()->routeIs('admissions.review')">{{ __('Admission Queue') }}</x-nav-link>
+                        @endcan
+
+                        @can('approve_registration')
+                            <x-nav-link :href="route('hod.registrations')" :active="request()->routeIs('hod.registrations')">{{ __('Registrations') }}</x-nav-link>
+                        @endcan
+
+                        @can('manage_fees')
+                            <x-nav-link :href="route('fees.index')" :active="request()->routeIs('fees.index')">{{ __('Fees') }}</x-nav-link>
+                            <x-nav-link :href="route('fees.orders.index')" :active="request()->routeIs('fees.orders.*')">{{ __('Payment Orders') }}</x-nav-link>
+                        @endcan
+                        @cannot('manage_fees')
+                            @can('view_fees')
+                                <x-nav-link :href="route('fees.index')" :active="request()->routeIs('fees.index')">{{ __('Fees') }}</x-nav-link>
+                            @endcan
+                        @endcannot
+
+                        @can('manage_library')
+                            <x-nav-link :href="route('library.index')" :active="request()->routeIs('library.*')">{{ __('Library') }}</x-nav-link>
+                        @endcan
+
+                        @can('view_staff_attendance')
+                            <x-nav-link :href="route('staff.attendance')" :active="request()->routeIs('staff.attendance')">{{ __('Staff Activity') }}</x-nav-link>
+                        @endcan
+
+                        @can('manage_announcements')
                             <x-nav-link :href="route('announcements.index')" :active="request()->routeIs('announcements.*')">{{ __('Announcements') }}</x-nav-link>
-                        @endif
-                    @endif
-
-                    @if(in_array($role, ['registrar', 'proprietor', 'academic_secretary']))
-                        <x-nav-link :href="route('staff.index')" :active="request()->routeIs('staff.*')">{{ __('Staff') }}</x-nav-link>
-                    @endif
-
-                    @if(in_array($role, ['registrar', 'ict', 'proprietor', 'office_secretary']))
-                        <x-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">{{ __('Inventory') }}</x-nav-link>
-                        <x-nav-link :href="route('admission.admin')" :active="request()->routeIs('admission.admin')">{{ __('Admissions') }}</x-nav-link>
-                    @endif
-
-                    @if(in_array($role, ['registrar', 'proprietor']))
-                        <x-nav-link :href="route('admissions.review')" :active="request()->routeIs('admissions.review')">{{ __('Offer Admission') }}</x-nav-link>
-                    @endif
-
-                    @if(in_array($role, ['hod', 'assistant_hod']))
-                        <x-nav-link :href="route('hod.registrations')" :active="request()->routeIs('hod.registrations')">{{ __('Registrations') }}</x-nav-link>
-                    @endif
-
-                    @if(in_array($role, ['bursar', 'proprietor', 'registrar']))
-                        <x-nav-link :href="route('fees.index')" :active="request()->routeIs('fees.index')">{{ __('Fees') }}</x-nav-link>
-                    @endif
-
-                    @if($role === 'bursar')
-                        <x-nav-link :href="route('fees.orders.index')" :active="request()->routeIs('fees.orders.*')">{{ __('Payment Orders') }}</x-nav-link>
-                    @endif
-
-                    @if(in_array($role, ['registrar', 'proprietor']))
-                        <x-nav-link :href="route('staff.attendance')" :active="request()->routeIs('staff.attendance')">{{ __('Staff Activity') }}</x-nav-link>
-                    @endif
-
-                    @if(in_array($role, ['librarian', 'ict', 'registrar']))
-                        <x-nav-link :href="route('library.index')" :active="request()->routeIs('library.*')">{{ __('Library') }}</x-nav-link>
+                        @endcan
                     @endif
                 </div>
             </div>
@@ -127,14 +138,14 @@
                     <x-slot name="content">
                         <x-dropdown-link :href="route('timetable.index')">{{ __('Timetable') }}</x-dropdown-link>
                         <x-dropdown-link :href="route('library.index')">{{ __('Library') }}</x-dropdown-link>
-                        @if(in_array($role, ['exam_officer','ict','registrar','proprietor','hod']))
+                        @if(in_array($role, ['exam_officer','mis','proprietor','hod']))
                             <x-dropdown-link :href="route('exams.index')">{{ __('Exams') }}</x-dropdown-link>
                             <x-dropdown-link :href="route('exams.queries')">{{ __('Result Queries') }}</x-dropdown-link>
                         @endif
-                        @if(in_array($role, ['bursar','registrar']) && \Illuminate\Support\Facades\Route::has('payroll.index'))
+                        @if(in_array($role, ['bursar','mis']) && \Illuminate\Support\Facades\Route::has('payroll.index'))
                             <x-dropdown-link :href="route('payroll.index')">{{ __('HR / Payroll') }}</x-dropdown-link>
                         @endif
-                        @if(in_array($role, ['proprietor','registrar','ict','bursar']))
+                        @if(in_array($role, ['proprietor','mis','bursar']))
                             <x-dropdown-link :href="route('transport.index')">{{ __('Transport') }}</x-dropdown-link>
                             <x-dropdown-link :href="route('alumni.index')">{{ __('Alumni') }}</x-dropdown-link>
                         @endif
@@ -210,7 +221,7 @@
                 <x-responsive-nav-link :href="route('staff.index')" :active="request()->routeIs('staff.*')">{{ __('Staff') }}</x-responsive-nav-link>
             @endif
 
-            @if(in_array($role, ['registrar', 'ict', 'proprietor', 'office_secretary']))
+            @if(in_array($role, ['registrar', 'mis', 'proprietor', 'office_secretary', 'admission_officer']))
                 <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">{{ __('Inventory') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admission.admin')" :active="request()->routeIs('admission.admin')">{{ __('Admissions') }}</x-responsive-nav-link>
             @endif

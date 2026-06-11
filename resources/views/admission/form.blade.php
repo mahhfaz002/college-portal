@@ -96,14 +96,73 @@
             </div>
         </section>
 
-        {{-- Section C --}}
+        {{-- Section C — O'Level results --}}
         <section class="bg-white rounded-xl shadow-sm border p-6">
-            <h2 class="text-lg font-bold text-gray-800 mb-4">Section C — Sponsor Information</h2>
-            <div class="grid md:grid-cols-2 gap-4">
-                <input name="sponsor_name" value="{{ old('sponsor_name') }}" required placeholder="Full name *" class="border-gray-300 rounded-lg">
-                <input name="sponsor_relationship" value="{{ old('sponsor_relationship') }}" required placeholder="Relationship * (e.g. Self, Uncle)" class="border-gray-300 rounded-lg">
-                <input name="sponsor_phone" value="{{ old('sponsor_phone') }}" required placeholder="Phone number *" class="border-gray-300 rounded-lg">
-                <input name="sponsor_address" value="{{ old('sponsor_address') }}" placeholder="Address" class="border-gray-300 rounded-lg">
+            <h2 class="text-lg font-bold text-gray-800 mb-1">Section C — O'Level Results</h2>
+            <p class="text-sm text-gray-500 mb-4">Enter your WAEC/NECO grades. The first five subjects are compulsory; add four more of your choice.</p>
+
+            <div class="grid sm:grid-cols-2 gap-4 mb-5">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Examination *</label>
+                    <select name="exam_type" required class="w-full border-gray-300 rounded-lg">
+                        <option value="">— Select —</option>
+                        <option value="WAEC" @selected(old('exam_type')=='WAEC')>WAEC</option>
+                        <option value="NECO" @selected(old('exam_type')=='NECO')>NECO</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Year of Examination *</label>
+                    <select name="exam_year" required class="w-full border-gray-300 rounded-lg">
+                        <option value="">— Year —</option>
+                        @for($y = (int)date('Y'); $y >= (int)date('Y')-15; $y--)
+                            <option value="{{ $y }}" @selected(old('exam_year')==$y)>{{ $y }}</option>
+                        @endfor
+                    </select>
+                </div>
+            </div>
+
+            @php
+                $fixed = ['English Language', 'Mathematics', 'Physics', 'Chemistry', 'Biology'];
+                $grades = ['A1','B2','B3','C4','C5','C6','D7','E8','F9'];
+            @endphp
+            <div class="overflow-x-auto border rounded-xl">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+                        <tr><th class="px-4 py-2 text-left">#</th><th class="px-4 py-2 text-left">Subject</th><th class="px-4 py-2 text-left">Grade</th></tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        @foreach($fixed as $i => $subj)
+                            <tr>
+                                <td class="px-4 py-2 text-gray-400">{{ $i+1 }}</td>
+                                <td class="px-4 py-2">
+                                    <input type="hidden" name="results[{{ $i }}][subject]" value="{{ $subj }}">
+                                    <span class="font-semibold text-gray-800">{{ $subj }}</span>
+                                </td>
+                                <td class="px-4 py-2">
+                                    <select name="results[{{ $i }}][grade]" required class="border-gray-300 rounded-lg text-sm py-1">
+                                        <option value="">—</option>
+                                        @foreach($grades as $g)<option value="{{ $g }}">{{ $g }}</option>@endforeach
+                                    </select>
+                                </td>
+                            </tr>
+                        @endforeach
+                        @for($j = 5; $j < 9; $j++)
+                            <tr>
+                                <td class="px-4 py-2 text-gray-400">{{ $j+1 }}</td>
+                                <td class="px-4 py-2">
+                                    <input name="results[{{ $j }}][subject]" placeholder="Type subject" autocomplete="off"
+                                           class="border-gray-300 rounded-lg text-sm py-1 w-full" style="text-transform:uppercase">
+                                </td>
+                                <td class="px-4 py-2">
+                                    <select name="results[{{ $j }}][grade]" class="border-gray-300 rounded-lg text-sm py-1">
+                                        <option value="">—</option>
+                                        @foreach($grades as $g)<option value="{{ $g }}">{{ $g }}</option>@endforeach
+                                    </select>
+                                </td>
+                            </tr>
+                        @endfor
+                    </tbody>
+                </table>
             </div>
         </section>
 

@@ -78,7 +78,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
 
 
     // --- Admission Management (legacy panel) — registrar/admin + ICT only ---
-    Route::middleware('role:registrar,ict,proprietor')->group(function () {
+    Route::middleware('role:registrar,proprietor,admission_officer,mis')->group(function () {
         Route::get('/admin/dashboard', [AdmissionDashboardController::class, 'index'])->name('admin.dashboard');
     });
     Route::middleware('role:'.Permissions::middleware('manage_admissions'))->group(function () {
@@ -95,23 +95,29 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
     // from view_students) — prevents a pupil from opening another pupil's
     // record/report by guessing the ID. Ordering matters so /create is not
     // captured by the /{student} wildcard.
+    // Create form must be registered before the /{student} wildcard, but stays
+    // gated by manage_students so the read-only registrar cannot open it.
+    Route::middleware('role:'.Permissions::middleware('manage_students'))->group(function () {
+        Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
+    });
+    Route::middleware('role:'.Permissions::middleware('edit_students'))->group(function () {
+        Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
+    });
+
     Route::middleware('role:'.Permissions::middleware('view_students'))->group(function () {
         Route::get('/students', [StudentController::class, 'index'])->name('students.index');
-        Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
         Route::get('/students/{student}', [StudentController::class, 'show'])->name('students.show');
-        Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
         Route::get('/students/{student}/report-card', [StudentController::class, 'reportCard'])->name('students.report');
         Route::get('/students/{student}/id-card', [StudentController::class, 'idCard'])->name('students.id-card');
     });
 
-    // Writes — Registrar/Admin only (proprietor is blocked globally by readonly).
-    // Admit / delete students — Registrar/Admin only.
+    // Writes — MIS only (proprietor is blocked globally by readonly).
     Route::middleware('role:'.Permissions::middleware('manage_students'))->group(function () {
         Route::post('/students', [StudentController::class, 'store'])->name('students.store');
         Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
     });
 
-    // Edit student info / class correction / promotion — Admin + ICT.
+    // Edit student info / class correction / promotion — MIS.
     Route::middleware('role:'.Permissions::middleware('edit_students'))->group(function () {
         Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
         Route::patch('/students/{student}', [StudentController::class, 'update']);
@@ -132,6 +138,11 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
         Route::post('/subjects', [SubjectController::class, 'store'])->name('subjects.store');
         Route::put('/subjects/{subject}', [SubjectController::class, 'update'])->name('subjects.update');
         Route::delete('/subjects/{subject}', [SubjectController::class, 'destroy'])->name('subjects.destroy');
+
+        // Academic Secretary — batch course builder (cascading + per-level).
+        Route::get('/courses/build', [\App\Http\Controllers\CourseBuilderController::class, 'index'])->name('courses.builder');
+        Route::get('/courses/build/list', [\App\Http\Controllers\CourseBuilderController::class, 'list'])->name('courses.builder.list');
+        Route::post('/courses/build', [\App\Http\Controllers\CourseBuilderController::class, 'save'])->name('courses.builder.save');
     });
 
     // --- Departments & Programs (Registrar owns the academic structure) ---
@@ -208,7 +219,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
 
     // --- Announcements / Communications (everyone can read) ---
     Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
-    Route::middleware(['role:proprietor,registrar,ict'])->group(function () {
+    Route::middleware(['role:proprietor,mis'])->group(function () {
         Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
         Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy');
 
@@ -257,7 +268,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
     });
 
     // --- Library --- (librarian + academic oversight)
-    Route::middleware('role:librarian,registrar,proprietor,ict')->group(function () {
+    Route::middleware('role:librarian,proprietor,mis')->group(function () {
         Route::get('/library', [LibraryController::class, 'index'])->name('library.index');
         Route::post('/library/issue', [LibraryController::class, 'issueBook'])->name('library.issue');
         Route::post('/library/return/{record}', [LibraryController::class, 'returnBook'])->name('library.return');
@@ -331,7 +342,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
 
     // --- Management-only modules: Transport, Alumni ---
     // (HR/Payroll moved to the dedicated payslip workflow below — bursar + principal only.)
-    Route::middleware(['role:proprietor,registrar,ict,bursar'])->group(function () {
+    Route::middleware(['role:proprietor,mis,bursar'])->group(function () {
         Route::get('/transport', [TransportationController::class, 'index'])->name('transport.index');
         Route::post('/transport/assign', [TransportationController::class, 'assignStudent'])->name('transport.assign');
 
@@ -370,11 +381,15 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
     // Superadmin Switching
     Route::get('/superadmin/switchboard', [DashboardController::class, 'switchboard'])
         ->name('superadmin.switchboard')
-        ->middleware('role:proprietor,ict');
+        ->middleware('role:proprietor,mis');
 
-    // Inventory + admissions list (Admin/ICT/Proprietor view)
-    Route::middleware(['role:registrar,ict,proprietor'])->group(function () {
+    // Inventory register (MIS / office secretary / proprietor)
+    Route::middleware('role:'.Permissions::middleware('manage_inventory').',proprietor')->group(function () {
         Route::resource('inventory', InventoryItemController::class);
+    });
+
+    // Applications list — Registrar & Admission Officer (+ proprietor view)
+    Route::middleware('role:'.Permissions::middleware('view_applications'))->group(function () {
         Route::get('/admin/admissions', [ApplicantController::class, 'index'])->name('admission.admin');
     });
 

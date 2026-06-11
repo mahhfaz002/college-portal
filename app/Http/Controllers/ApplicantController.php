@@ -56,14 +56,21 @@ class ApplicantController extends Controller
             'guardian_email'        => 'nullable|email|max:255',
             'guardian_address'      => 'nullable|string|max:255',
             'guardian_occupation'   => 'nullable|string|max:150',
-            // Section C — sponsor
-            'sponsor_name'         => 'required|string|max:255',
-            'sponsor_relationship' => 'required|string|max:100',
-            'sponsor_phone'        => 'required|string|max:50',
-            'sponsor_address'      => 'nullable|string|max:255',
+            // Section C — O'Level results
+            'exam_type'            => 'required|in:WAEC,NECO',
+            'exam_year'            => 'required|digits:4',
+            'results'              => 'required|array|min:5',
+            'results.*.subject'    => 'nullable|string|max:60',
+            'results.*.grade'      => 'nullable|in:A1,B2,B3,C4,C5,C6,D7,E8,F9',
             // Section D — passport
             'passport'             => 'required|file|mimes:jpg,jpeg,png|max:2048',
         ]);
+
+        // Keep only fully-filled result rows (subject + grade).
+        $results = collect($validated['results'] ?? [])
+            ->map(fn ($r) => ['subject' => strtoupper(trim($r['subject'] ?? '')), 'grade' => $r['grade'] ?? null])
+            ->filter(fn ($r) => $r['subject'] !== '' && $r['grade'])
+            ->values()->all();
 
         $program = \App\Models\Program::withoutGlobalScopes()->findOrFail($validated['first_choice_program_id']);
 
@@ -92,10 +99,9 @@ class ApplicantController extends Controller
             'guardian_email'        => $validated['guardian_email'] ?? null,
             'guardian_address'      => $validated['guardian_address'] ?? null,
             'guardian_occupation'   => $validated['guardian_occupation'] ?? null,
-            'sponsor_name'         => $validated['sponsor_name'],
-            'sponsor_relationship' => $validated['sponsor_relationship'],
-            'sponsor_phone'        => $validated['sponsor_phone'],
-            'sponsor_address'      => $validated['sponsor_address'] ?? null,
+            'exam_type'      => $validated['exam_type'],
+            'exam_year'      => $validated['exam_year'],
+            'olevel_results' => $results,
             'passport'     => $passport,
             'status'       => 'pending',
             'application_status' => 'pending_payment',

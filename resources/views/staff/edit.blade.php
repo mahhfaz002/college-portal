@@ -49,7 +49,12 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Department</label>
-                        <input type="text" name="department" value="{{ old('department', $staff->department) }}" class="w-full border-gray-300 rounded-md shadow-sm">
+                        <select name="department_id" class="w-full border-gray-300 rounded-md shadow-sm">
+                            <option value="">— None —</option>
+                            @foreach($departments as $d)
+                                <option value="{{ $d->id }}" {{ old('department_id', $staff->department_id)==$d->id ? 'selected' : '' }}>{{ $d->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Year of Employment</label>

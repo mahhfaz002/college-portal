@@ -26,12 +26,20 @@
                     </select>
                     <input name="name" required placeholder="Program name (e.g. ND Science Lab Tech)" class="border-gray-300 rounded-lg md:col-span-2">
                     <input name="acronym" placeholder="Acronym (e.g. ND-SLT)" class="border-gray-300 rounded-lg">
-                    <input name="level_system" placeholder="Level system (e.g. ND / HND)" class="border-gray-300 rounded-lg">
+                    <input name="level_system" placeholder="Level label (e.g. ND / HND)" class="border-gray-300 rounded-lg">
+                    <select name="program_type" required class="border-gray-300 rounded-lg" title="Programme type">
+                        <option value="UG">UG (Undergraduate)</option>
+                        <option value="DIP">DIP (Diploma)</option>
+                        <option value="CERT">CERT (Certificate)</option>
+                    </select>
+                    <input name="levels" type="number" min="1" max="8" value="2" placeholder="No. of levels" class="border-gray-300 rounded-lg" title="How many levels in this programme">
                     <input name="duration_years" type="number" min="1" max="7" value="2" placeholder="Duration (yrs)" class="border-gray-300 rounded-lg">
                     <input name="application_fee" type="number" step="0.01" placeholder="Application fee ₦" class="border-gray-300 rounded-lg">
                     <input name="acceptance_fee" type="number" step="0.01" placeholder="Acceptance fee ₦" class="border-gray-300 rounded-lg">
                     <input name="registration_fee" type="number" step="0.01" placeholder="Registration fee ₦" class="border-gray-300 rounded-lg">
-                    <button class="bg-indigo-600 text-white rounded-lg font-bold px-4 py-2 hover:bg-indigo-700 md:col-span-3">+ Add Program</button>
+                    <input name="id_format" value="{{ '{acronym}/{year}/{type}/{program}/{serial}' }}" placeholder="Student ID format" class="border-gray-300 rounded-lg md:col-span-2 font-mono text-xs">
+                    <p class="text-xs text-gray-400 md:col-span-3">ID tokens: <code>{acronym}</code> college · <code>{year}</code> · <code>{type}</code> UG/DIP/CERT · <code>{program}</code> course acronym · <code>{serial}</code></p>
+                    <button class="bg-indigo-600 text-white rounded-lg font-bold px-4 py-2 hover:bg-indigo-700 md:col-span-3">+ Add Course of Study</button>
                 </form>
             </div>
             @endif

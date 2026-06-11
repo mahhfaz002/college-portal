@@ -37,7 +37,7 @@ class Notifications
                 ResultQuery::where('status', 'open')->count(),
                 route('exams.queries'), 'open result queries'
             ),
-            'ict' => self::wrap(
+            'mis' => self::wrap(
                 SupportTicket::where('status', '!=', 'resolved')->count(),
                 route('support.index'), 'open support tickets'
             ),
@@ -138,7 +138,7 @@ class Notifications
                         'detail' => \Illuminate\Support\Str::limit($q->message ?? '', 120), 'url' => route('exams.queries'), 'time' => $q->created_at];
                 }
                 break;
-            case 'ict':
+            case 'mis':
                 foreach (SupportTicket::where('status', '!=', 'resolved')->latest()->get() as $t) {
                     $items[] = ['icon' => '🛠️', 'title' => 'Open support ticket',
                         'detail' => \Illuminate\Support\Str::limit($t->subject ?? $t->message ?? '', 120), 'url' => route('support.index'), 'time' => $t->created_at];

@@ -13,8 +13,12 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    /** Roles the principal may create. */
-    private const STAFF_ROLES = ['teacher', 'accountant', 'exam_officer', 'ict', 'admin', 'principal'];
+    /** Roles the registrar may create / assign when adding staff. */
+    private const STAFF_ROLES = [
+        'lecturer', 'bursar', 'exam_officer', 'mis', 'admission_officer',
+        'hod', 'assistant_hod', 'academic_secretary', 'student_affairs',
+        'librarian', 'office_secretary',
+    ];
 
     /**
      * List all staff with their assignments.
@@ -45,6 +49,7 @@ class UserController extends Controller
             'subjects' => Subject::orderBy('section')->orderBy('name')->get(),
             'roles'    => self::STAFF_ROLES,
             'sections' => Sections::ALL,
+            'departments' => \App\Models\Department::orderBy('name')->get(),
         ]);
     }
 
@@ -60,7 +65,7 @@ class UserController extends Controller
             'role'              => ['required', Rule::in(self::STAFF_ROLES)],
             'phone'             => 'nullable|string|max:30',
             'email'             => 'nullable|email|max:255|unique:users,email',
-            'department'        => 'nullable|string|max:255',
+            'department_id'     => 'nullable|exists:departments,id',
             'employed_year'     => 'nullable|string|max:9',
             'next_of_kin_name'  => 'nullable|string|max:255',
             'next_of_kin_phone' => 'nullable|string|max:30',
@@ -83,12 +88,13 @@ class UserController extends Controller
             'password'          => Hash::make($plainPassword),
             'role'              => $validated['role'],
             'phone'             => $validated['phone'] ?? null,
-            'department'        => $validated['department'] ?? null,
+            'department_id'     => $validated['department_id'] ?? null,
+            'department'        => optional(\App\Models\Department::find($validated['department_id'] ?? null))->name,
             'employed_year'     => $validated['employed_year'] ?? date('Y'),
             'next_of_kin_name'  => $validated['next_of_kin_name'] ?? null,
             'next_of_kin_phone' => $validated['next_of_kin_phone'] ?? null,
             'passport'          => $this->encodePassport($request),
-            'staff_id'          => $this->generateStaffId($validated['role'], $validated['employed_year'] ?? date('Y'), $validated['department'] ?? null),
+            'staff_id'          => $this->generateStaffId($validated['role'], $validated['employed_year'] ?? date('Y'), optional(\App\Models\Department::find($validated['department_id'] ?? null))->acronym),
             'status'            => 'active',
             'must_change_password' => true,
             // Keep legacy single-value columns in sync for back-compat views.
@@ -125,6 +131,7 @@ class UserController extends Controller
         return view('staff.edit', [
             'staff' => $user,
             'roles' => self::STAFF_ROLES,
+            'departments' => \App\Models\Department::orderBy('name')->get(),
         ]);
     }
 
@@ -139,7 +146,7 @@ class UserController extends Controller
             'role'              => ['required', Rule::in(self::STAFF_ROLES)],
             'email'             => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'phone'             => 'nullable|string|max:30',
-            'department'        => 'nullable|string|max:255',
+            'department_id'     => 'nullable|exists:departments,id',
             'employed_year'     => 'nullable|string|max:9',
             'next_of_kin_name'  => 'nullable|string|max:255',
             'next_of_kin_phone' => 'nullable|string|max:30',
@@ -148,6 +155,7 @@ class UserController extends Controller
         ]);
 
         $validated['name'] = trim($validated['first_name'].' '.$validated['surname']);
+        $validated['department'] = optional(\App\Models\Department::find($validated['department_id'] ?? null))->name;
 
         if ($request->hasFile('passport')) {
             $validated['passport'] = $this->encodePassport($request);

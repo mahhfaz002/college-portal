@@ -17,14 +17,22 @@
            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
     <h3 class="text-lg font-bold text-gray-700">All Registered Students</h3>
 
-    <form action="{{ route('students.index') }}" method="GET" class="flex gap-2">
+    <form action="{{ route('students.index') }}" method="GET" class="flex flex-wrap gap-2">
         <input type="text" name="search" value="{{ request('search') }}"
                placeholder="Search name or ID..."
-               class="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+               class="border-gray-300 rounded-md shadow-sm text-sm">
+        <select name="department_id" class="border-gray-300 rounded-md text-sm">
+            <option value="">All departments</option>
+            @foreach($departments as $d)<option value="{{ $d->id }}" @selected(request('department_id')==$d->id)>{{ $d->name }}</option>@endforeach
+        </select>
+        <select name="program_id" class="border-gray-300 rounded-md text-sm">
+            <option value="">All courses of study</option>
+            @foreach($programs as $p)<option value="{{ $p->id }}" @selected(request('program_id')==$p->id)>{{ $p->name }}</option>@endforeach
+        </select>
         <button type="submit" style="background-color: #4b5563; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold; font-size: 13px;">
-            Search
+            Filter
         </button>
-        @if(request('search'))
+        @if(request('search') || request('department_id') || request('program_id'))
             <a href="{{ route('students.index') }}" class="text-sm text-red-600 flex items-center underline">Clear</a>
         @endif
     </form>
@@ -113,6 +121,13 @@
                         @endforelse
                     </tbody>
                 </table>
+
+                @if($students instanceof \Illuminate\Pagination\LengthAwarePaginator)
+                    <div class="mt-4">
+                        <p class="text-xs text-gray-500 mb-2">Showing {{ $students->firstItem() }}–{{ $students->lastItem() }} of {{ $students->total() }} students (50 per page).</p>
+                        {{ $students->links() }}
+                    </div>
+                @endif
             </div>
         </div>
     </div>

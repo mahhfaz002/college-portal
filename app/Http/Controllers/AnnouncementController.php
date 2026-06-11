@@ -14,7 +14,7 @@ class AnnouncementController extends Controller
     /**
      * Roles allowed to create/delete announcements.
      */
-    private array $managers = ['proprietor', 'principal', 'admin', 'ict'];
+    private array $managers = ['proprietor', 'registrar', 'mis', 'student_affairs'];
 
     public function index()
     {
