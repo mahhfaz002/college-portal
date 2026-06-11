@@ -77,6 +77,9 @@
                         @can('view_attendance')
                             <x-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.*')">{{ __('Attendance') }}</x-nav-link>
                         @endcan
+                        @can('author_questions')
+                            <x-nav-link :href="route('exams.my')" :active="request()->routeIs('exams.my')">{{ __('Set Exams') }}</x-nav-link>
+                        @endcan
 
                         @can('view_staff')
                             <x-nav-link :href="route('staff.index')" :active="request()->routeIs('staff.*')">{{ __('Staff') }}</x-nav-link>
@@ -90,6 +93,8 @@
                         @endcan
 
                         @can('approve_registration')
+                            <x-nav-link :href="route('hod.students')" :active="request()->routeIs('hod.students')">{{ __('Dept Students') }}</x-nav-link>
+                            <x-nav-link :href="route('hod.resource-persons')" :active="request()->routeIs('hod.resource-persons')">{{ __('Resource Persons') }}</x-nav-link>
                             <x-nav-link :href="route('hod.registrations')" :active="request()->routeIs('hod.registrations')">{{ __('Registrations') }}</x-nav-link>
                         @endcan
 
@@ -216,6 +221,9 @@
             @can('view_attendance')
                 <x-responsive-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.*')">{{ __('Attendance') }}</x-responsive-nav-link>
             @endcan
+            @can('author_questions')
+                <x-responsive-nav-link :href="route('exams.my')" :active="request()->routeIs('exams.my')">{{ __('Set Exams') }}</x-responsive-nav-link>
+            @endcan
             @can('view_staff')
                 <x-responsive-nav-link :href="route('staff.index')" :active="request()->routeIs('staff.*')">{{ __('Staff') }}</x-responsive-nav-link>
             @endcan
@@ -231,6 +239,11 @@
             @can('manage_fees')
                 <x-responsive-nav-link :href="route('fees.index')" :active="request()->routeIs('fees.index')">{{ __('Fees') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('fees.orders.index')" :active="request()->routeIs('fees.orders.*')">{{ __('Payment Orders') }}</x-responsive-nav-link>
+            @endcan
+            @can('approve_registration')
+                <x-responsive-nav-link :href="route('hod.students')">{{ __('Dept Students') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('hod.resource-persons')">{{ __('Resource Persons') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('hod.registrations')">{{ __('Registrations') }}</x-responsive-nav-link>
             @endcan
             @can('manage_library')
                 <x-responsive-nav-link :href="route('library.index')">{{ __('Library') }}</x-responsive-nav-link>

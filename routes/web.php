@@ -304,8 +304,12 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
 
     // -- Teacher: author questions + grade --
     Route::middleware('role:'.Permissions::middleware('author_questions'))->group(function () {
+        Route::get('/my-exam-courses', [ExamWorkController::class, 'myExams'])->name('exams.my');
+        Route::get('/exam-questions-template', [ExamWorkController::class, 'template'])->name('exams.questions.template');
         Route::get('/exams/{exam}/questions', [ExamWorkController::class, 'questions'])->name('exams.questions');
         Route::post('/exams/{exam}/questions', [ExamWorkController::class, 'storeQuestion'])->name('exams.questions.store');
+        Route::post('/exams/{exam}/questions/import', [ExamWorkController::class, 'importCsv'])->name('exams.questions.import');
+        Route::post('/exams/{exam}/submit', [ExamWorkController::class, 'submitToOfficer'])->name('exams.submit');
         Route::delete('/exam-questions/{question}', [ExamWorkController::class, 'deleteQuestion'])->name('exams.questions.delete');
         Route::get('/exams/{exam}/grade', [ExamWorkController::class, 'grade'])->name('exams.grade');
         Route::post('/exams/{exam}/grade', [ExamWorkController::class, 'saveGrades'])->name('exams.grade.save');
@@ -438,6 +442,13 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::get('/hod/registrations', [$AW, 'hodRegistrations'])->name('hod.registrations');
         Route::post('/hod/registrations/{student}/approve', [$AW, 'hodApprove'])->name('hod.registrations.approve');
         Route::post('/hod/registrations/{student}/reject', [$AW, 'hodReject'])->name('hod.registrations.reject');
+
+        // Department students (read-only) + resource-person (lecturer) accounts.
+        $HOD = \App\Http\Controllers\HodController::class;
+        Route::get('/hod/students', [$HOD, 'students'])->name('hod.students');
+        Route::get('/hod/students/{student}', [$HOD, 'showStudent'])->name('hod.students.show');
+        Route::get('/hod/resource-persons', [$HOD, 'resourcePersons'])->name('hod.resource-persons');
+        Route::post('/hod/resource-persons', [$HOD, 'storeResourcePerson'])->name('hod.resource-persons.store');
     });
 });
 

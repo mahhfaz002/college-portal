@@ -43,6 +43,10 @@ class User extends Authenticatable
         'staff_category',
         'username',
         'platform_fee_paid',
+        'qualification',
+        'university',
+        'class_of_degree',
+        'address',
     ];
 
     public function departmentModel()

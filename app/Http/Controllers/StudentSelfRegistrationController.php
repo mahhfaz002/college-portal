@@ -52,7 +52,7 @@ class StudentSelfRegistrationController extends Controller
         $program = Program::withoutGlobalScopes()->with('department')->findOrFail($data['program_id']);
         $collegeId = $program->college_id;
 
-        $username = $this->uniqueUsername($data['first_name'], $data['other_name'] ?? null, $data['surname']);
+        $username = \App\Support\Usernames::generate($data['first_name'], $data['other_name'] ?? null, $data['surname']);
         $fullName = trim($data['surname'].' '.$data['first_name'].' '.($data['other_name'] ?? ''));
 
         $pp = $request->file('passport');
@@ -126,21 +126,4 @@ class StudentSelfRegistrationController extends Controller
         return redirect()->route('payments.initialize', $invoice);
     }
 
-    /** initials(first)+initials(other)+surname, lowercased, made unique. */
-    private function uniqueUsername(string $first, ?string $other, string $surname): string
-    {
-        $base = Str::lower(
-            Str::substr($first, 0, 1)
-            . ($other ? Str::substr($other, 0, 1) : '')
-            . preg_replace('/\s+/', '', $surname)
-        );
-        $base = preg_replace('/[^a-z0-9]/', '', $base);
-
-        $username = $base;
-        $n = 1;
-        while (User::where('username', $username)->exists()) {
-            $username = $base . (++$n);
-        }
-        return $username;
-    }
 }

@@ -8,10 +8,33 @@
             @if(session('success'))<div class="p-4 bg-green-100 border border-green-300 text-green-800 rounded-lg text-sm">{{ session('success') }}</div>@endif
             @if($errors->any())<div class="p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg text-sm"><ul class="list-disc ml-5">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
 
-            <div class="bg-white p-4 rounded-xl border text-sm text-gray-600">
-                Subject: <strong>{{ $exam->subject->name ?? '—' }}</strong> · Questions: {{ $exam->questions->count() }} · Total marks: {{ $exam->totalMarks() }}
-                @if($exam->status !== 'draft')<span class="ml-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">Exam already {{ $exam->status }} — editing locked by officer</span>@endif
+            <div class="bg-white p-4 rounded-xl border text-sm text-gray-600 flex items-center justify-between flex-wrap gap-2">
+                <span>Subject: <strong>{{ $exam->subject->name ?? '—' }}</strong> · Questions: {{ $exam->questions->count() }} · Total marks: {{ $exam->totalMarks() }}
+                @if($exam->isLocked())<span class="ml-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">Submitted to Exam Officer — editing locked</span>@endif</span>
+                @unless($exam->isLocked())
+                    @if($exam->questions->count() > 0)
+                    <form action="{{ route('exams.submit', $exam) }}" method="POST" onsubmit="return confirm('Submit to the Exam Officer? You will not be able to edit afterwards.')">
+                        @csrf<button class="bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-700">Submit to Exam Officer</button>
+                    </form>
+                    @endif
+                @endunless
             </div>
+
+            @unless($exam->isLocked())
+            {{-- Bulk CSV upload --}}
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-gray-700">Bulk Upload (CSV)</h3>
+                    <a href="{{ route('exams.questions.template') }}" class="text-xs font-bold text-indigo-600 hover:underline">⬇ Download template</a>
+                </div>
+                <form action="{{ route('exams.questions.import', $exam) }}" method="POST" enctype="multipart/form-data" class="flex flex-wrap gap-3 items-center">
+                    @csrf
+                    <input type="file" name="csv" accept=".csv,text/csv" required class="text-sm text-gray-600">
+                    <button class="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-900">Import Questions</button>
+                </form>
+                <p class="text-xs text-gray-400 mt-2">Columns: QUESTION, OPTION A, OPTION B, OPTION C, OPTION D, CORRECT ANSWER (A/B/C/D).</p>
+            </div>
+            @endunless
 
             <!-- Existing questions -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 divide-y">
