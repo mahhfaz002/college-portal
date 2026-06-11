@@ -69,51 +69,92 @@ class GatewayPaymentController extends Controller
     }
 
     /**
-     * Post-payment routing by purpose. For the application fee we create the
-     * applicant's limited account (if not already created) and log them in.
+     * Server-to-server webhook. Paystack POSTs charge.success here; we verify
+     * the signature against the invoice's own secret key, mark it paid and run
+     * the same fulfilment as the browser callback (idempotent). This is the
+     * source of truth — the callback is only for redirecting the user back.
+     */
+    public function webhook(Request $request)
+    {
+        $payload   = $request->getContent();
+        $signature = $request->header('x-paystack-signature');
+        $event     = json_decode($payload, true) ?: [];
+
+        $reference = $event['data']['reference'] ?? null;
+        $invoice = $reference
+            ? Invoice::withoutGlobalScopes()->where('reference', $reference)
+                ->orWhere('gateway_reference', $reference)->first()
+            : null;
+
+        // Verify HMAC-SHA512 of the raw body using the key that owns the txn.
+        $secret = $this->paystack->secretForInvoice($invoice);
+        if (!$secret || !$signature || !hash_equals(hash_hmac('sha512', $payload, $secret), $signature)) {
+            return response()->json(['status' => false], 401);
+        }
+
+        if (($event['event'] ?? null) === 'charge.success' && $invoice && !$invoice->isPaid()) {
+            $this->paystack->markPaid($invoice, $event['data']['reference'] ?? null, 'paystack');
+            $this->fulfill($invoice);
+        }
+
+        return response()->json(['status' => true]);
+    }
+
+    /**
+     * Idempotent side effects for a paid invoice (account creation, admission
+     * progression, registration). Shared by the callback, sandbox and webhook.
+     */
+    private function fulfill(Invoice $invoice): void
+    {
+        if ($invoice->purpose === 'platform_registration' && $invoice->user_id) {
+            User::withoutGlobalScopes()->where('id', $invoice->user_id)->update(['platform_fee_paid' => true]);
+            return;
+        }
+
+        $applicant = $invoice->applicant_id ? Applicant::withoutGlobalScopes()->find($invoice->applicant_id) : null;
+        if (!$applicant) {
+            return;
+        }
+
+        if ($invoice->purpose === 'application_fee') {
+            $this->ensureApplicantAccount($applicant);
+        } elseif ($invoice->purpose === 'acceptance_fee') {
+            $applicant->update(['application_status' => 'accepted']);
+            $this->ensureRegistrationInvoice($applicant);
+        } elseif ($invoice->purpose === 'registration_fee') {
+            $this->completeRegistration($applicant);
+        }
+    }
+
+    /**
+     * Post-payment routing for the browser flow: run fulfilment, then log the
+     * payer in (where applicable) and redirect with a friendly message.
      */
     private function afterPaid(Invoice $invoice)
     {
+        $this->fulfill($invoice);
         $applicant = $invoice->applicant_id ? Applicant::withoutGlobalScopes()->find($invoice->applicant_id) : null;
 
-        // Platform onboarding fee → unlock the self-registered student account.
         if ($invoice->purpose === 'platform_registration' && $invoice->user_id) {
-            User::withoutGlobalScopes()->where('id', $invoice->user_id)->update(['platform_fee_paid' => true]);
             Auth::loginUsingId($invoice->user_id);
-
             return redirect()->route('dashboard')->with('success',
                 'Platform registration fee paid. Welcome — your student account is now active.');
         }
 
         if ($invoice->purpose === 'application_fee' && $applicant) {
-            $tempPassword = $this->ensureApplicantAccount($applicant);
-
             if ($applicant->user_id) {
                 Auth::loginUsingId($applicant->user_id);
             }
-
-            $msg = 'Application fee paid successfully. Your applicant account is ready.';
-            if ($tempPassword) {
-                $msg .= " Your login email is {$applicant->email} and temporary password is {$tempPassword} — please change it after logging in.";
-            }
-
-            return redirect()->route('dashboard')->with('success', $msg);
+            return redirect()->route('dashboard')->with('success',
+                "Application fee paid successfully. Your applicant account is ready (login email {$applicant->email}). If this is your first login, use the temporary password emailed/shown to you and change it.");
         }
 
-        // Acceptance fee → unlock admission letter + raise the registration fee.
         if ($invoice->purpose === 'acceptance_fee' && $applicant) {
-            $applicant->update(['application_status' => 'accepted']);
-            $this->ensureRegistrationInvoice($applicant);
-
             return redirect()->route('dashboard')->with('success',
                 'Acceptance fee paid. You can now download your admission letter and pay your registration fee.');
         }
 
-        // Registration fee → create the Student, assign the registration number,
-        // promote the account to a student and unlock the student dashboard.
         if ($invoice->purpose === 'registration_fee' && $applicant) {
-            $this->completeRegistration($applicant);
-
             return redirect()->route('dashboard')->with('success',
                 'Registration fee paid. Your student dashboard is unlocked — please upload your documents to complete registration.');
         }

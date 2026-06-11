@@ -62,6 +62,20 @@ class PaystackService
         return $invoice->purpose === 'platform_registration';
     }
 
+    /**
+     * The secret key that owns a given invoice's transaction — platform key for
+     * platform invoices, otherwise the college key (falling back to platform).
+     * Used to verify the webhook signature. Null invoice → platform/default key.
+     */
+    public function secretForInvoice(?Invoice $invoice): ?string
+    {
+        if (!$invoice || $this->isPlatformInvoice($invoice)) {
+            return config('services.paystack.secret_key');
+        }
+        $college = $invoice->college_id ? College::withoutGlobalScopes()->find($invoice->college_id) : null;
+        return $this->secretKey($college);
+    }
+
     public function initialize(Invoice $invoice, string $callbackUrl): string
     {
         $college = $invoice->college_id ? College::withoutGlobalScopes()->find($invoice->college_id) : null;

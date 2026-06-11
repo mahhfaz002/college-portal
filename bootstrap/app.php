@@ -26,6 +26,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SecurityHeaders::class,
             \App\Http\Middleware\SetCollegeContext::class,
         ]);
+
+        // Paystack posts webhooks server-to-server (no CSRF token).
+        $middleware->validateCsrfTokens(except: [
+            'paystack/webhook',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         // Report unhandled exceptions to Sentry (no-op until SENTRY_LARAVEL_DSN is set).

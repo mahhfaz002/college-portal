@@ -54,6 +54,8 @@ Route::post('/student/register', [\App\Http\Controllers\StudentSelfRegistrationC
 // applicant account exists. Gateway init/callback look invoices up by id/ref.
 Route::get('/pay/{invoice}', [\App\Http\Controllers\GatewayPaymentController::class, 'initialize'])->name('payments.initialize');
 Route::get('/payments/callback', [\App\Http\Controllers\GatewayPaymentController::class, 'callback'])->name('payments.callback');
+// Server-to-server webhook (signature-verified; CSRF-exempt in bootstrap/app.php).
+Route::post('/paystack/webhook', [\App\Http\Controllers\GatewayPaymentController::class, 'webhook'])->name('paystack.webhook');
 Route::get('/pay/{invoice}/sandbox', [\App\Http\Controllers\GatewayPaymentController::class, 'sandbox'])->name('payments.sandbox');
 
 
