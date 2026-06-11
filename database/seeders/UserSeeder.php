@@ -98,6 +98,7 @@ class UserSeeder extends Seeder
             ['College Registrar',   'registrar@mahhfaz.edu.ng',  'registrar'],
             ['MIS Administrator',   'mis@mahhfaz.edu.ng',        'mis'],
             ['Admission Officer',   'admissions@mahhfaz.edu.ng', 'admission_officer'],
+            ['College Bursar',      'bursar@mahhfaz.edu.ng',     'bursar'],
         ];
 
         foreach ($users as [$name, $email, $role]) {

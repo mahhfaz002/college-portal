@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'force.password.change' => \App\Http\Middleware\ForcePasswordChange::class,
             'readonly' => \App\Http\Middleware\EnforceReadOnly::class,
+            'platform.fee' => \App\Http\Middleware\EnsurePlatformFeePaid::class,
         ]);
 
         // Defensive response headers on every web request.

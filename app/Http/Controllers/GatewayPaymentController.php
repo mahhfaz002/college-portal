@@ -76,6 +76,15 @@ class GatewayPaymentController extends Controller
     {
         $applicant = $invoice->applicant_id ? Applicant::withoutGlobalScopes()->find($invoice->applicant_id) : null;
 
+        // Platform onboarding fee → unlock the self-registered student account.
+        if ($invoice->purpose === 'platform_registration' && $invoice->user_id) {
+            User::withoutGlobalScopes()->where('id', $invoice->user_id)->update(['platform_fee_paid' => true]);
+            Auth::loginUsingId($invoice->user_id);
+
+            return redirect()->route('dashboard')->with('success',
+                'Platform registration fee paid. Welcome — your student account is now active.');
+        }
+
         if ($invoice->purpose === 'application_fee' && $applicant) {
             $tempPassword = $this->ensureApplicantAccount($applicant);
 

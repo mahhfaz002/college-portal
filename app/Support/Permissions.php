@@ -23,7 +23,7 @@ class Permissions
         // Student records (create/edit/delete) — MIS. Registrar is READ-ONLY now.
         'manage_students'      => ['mis'],
         'edit_students'        => ['mis'],
-        'view_students'        => ['proprietor', 'registrar', 'bursar', 'mis', 'exam_officer', 'lecturer', 'hod', 'assistant_hod', 'student_affairs', 'office_secretary', 'admission_officer'],
+        'view_students'        => ['proprietor', 'registrar', 'mis', 'exam_officer', 'lecturer', 'hod', 'assistant_hod', 'student_affairs', 'office_secretary', 'admission_officer'],
 
         // Managed class/level registry — MIS.
         'manage_classes'       => ['mis'],

@@ -36,12 +36,38 @@ class PaystackService
     }
 
     /**
-     * Begin a payment for an invoice. Returns a URL to redirect the payer to.
+     * Naira amount grossed up so the PAYER bears Paystack's transaction fee.
+     * NG card fee = 1.5% + ₦100 (₦100 waived under ₦2,500), capped at ₦2,000.
      */
+    public static function grossUpForFees(float $amount): float
+    {
+        $rate = 0.015;
+        $flat = $amount < 2500 ? 0 : 100;
+        $gross = ($amount + $flat) / (1 - $rate);
+        $fee = $gross - $amount;
+        if ($fee > 2000) {            // fee is capped, so add the cap directly
+            $gross = $amount + 2000;
+        }
+        return ceil($gross);
+    }
+
+    /**
+     * Begin a payment for an invoice. Returns a URL to redirect the payer to.
+     * When $platform is true the PLATFORM owner's keys are used regardless of
+     * the college (used for the student onboarding fee).
+     */
+    /** Platform-level invoices (onboarding fee) settle to the platform owner. */
+    public function isPlatformInvoice(Invoice $invoice): bool
+    {
+        return $invoice->purpose === 'platform_registration';
+    }
+
     public function initialize(Invoice $invoice, string $callbackUrl): string
     {
         $college = $invoice->college_id ? College::withoutGlobalScopes()->find($invoice->college_id) : null;
-        $secret = $this->secretKey($college);
+        $secret = $this->isPlatformInvoice($invoice)
+            ? config('services.paystack.secret_key')
+            : $this->secretKey($college);
 
         // Sandbox fallback (no keys yet) — only outside production.
         if (empty($secret)) {
@@ -83,7 +109,9 @@ class PaystackService
     public function verify(Invoice $invoice): bool
     {
         $college = $invoice->college_id ? College::withoutGlobalScopes()->find($invoice->college_id) : null;
-        $secret = $this->secretKey($college);
+        $secret = $this->isPlatformInvoice($invoice)
+            ? config('services.paystack.secret_key')
+            : $this->secretKey($college);
 
         if (empty($secret)) {
             // Sandbox: nothing to verify against the gateway.

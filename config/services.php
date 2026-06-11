@@ -51,6 +51,9 @@ return [
         'public_key' => env('PAYSTACK_PUBLIC_KEY'),
         'secret_key' => env('PAYSTACK_SECRET_KEY'),
         'base_url'   => env('PAYSTACK_BASE_URL', 'https://api.paystack.co'),
+        // One-off student platform-onboarding fee — settled to the PLATFORM
+        // owner's Paystack account (the env keys above), not the college's.
+        'platform_registration_fee' => env('PLATFORM_REGISTRATION_FEE', 5000),
     ],
 
 ];

@@ -44,6 +44,12 @@ Route::get('/apply', [ApplicantController::class, 'showForm'])->name('admission.
 Route::post('/apply', [ApplicantController::class, 'submit'])
     ->middleware('throttle:6,1')->name('admission.submit'); // spam guard on public form
 
+// Student self-onboarding (existing students create their own account).
+Route::get('/student/login', fn () => view('auth.student_login'))->name('student.login');
+Route::get('/student/register', [\App\Http\Controllers\StudentSelfRegistrationController::class, 'showForm'])->name('student.register');
+Route::post('/student/register', [\App\Http\Controllers\StudentSelfRegistrationController::class, 'store'])
+    ->middleware('throttle:6,1')->name('student.register.store');
+
 // Online payments (Paystack). Public: the application fee is paid before the
 // applicant account exists. Gateway init/callback look invoices up by id/ref.
 Route::get('/pay/{invoice}', [\App\Http\Controllers\GatewayPaymentController::class, 'initialize'])->name('payments.initialize');
@@ -65,13 +71,16 @@ Route::middleware(['auth'])->group(function () {
 // ==========================================
 // 3. FULLY PROTECTED ROUTES (Locked until Password Changed)
 // ==========================================
-Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->group(function () {
+Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 'readonly'])->group(function () {
 
     // --- Core Dashboard ---
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // --- Online-payment invoice receipt (owner or finance staff) ---
     Route::get('/invoices/{invoice}/receipt', [\App\Http\Controllers\InvoiceController::class, 'receipt'])->name('invoices.receipt');
+
+    // Gate redirect target for students who haven't paid the platform fee.
+    Route::get('/platform/fee', [\App\Http\Controllers\StudentSelfRegistrationController::class, 'pay'])->name('platform.fee.pay');
 
     // --- Notifications (aggregated, role-aware) ---
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
@@ -96,10 +105,8 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
     // record/report by guessing the ID. Ordering matters so /create is not
     // captured by the /{student} wildcard.
     // Create form must be registered before the /{student} wildcard, but stays
-    // gated by manage_students so the read-only registrar cannot open it.
-    Route::middleware('role:'.Permissions::middleware('manage_students'))->group(function () {
-        Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
-    });
+    // Students self-register & onboard themselves now — staff can no longer
+    // create/admit student accounts (students.create/store removed).
     Route::middleware('role:'.Permissions::middleware('edit_students'))->group(function () {
         Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
     });
@@ -113,7 +120,6 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'readonly'])->gr
 
     // Writes — MIS only (proprietor is blocked globally by readonly).
     Route::middleware('role:'.Permissions::middleware('manage_students'))->group(function () {
-        Route::post('/students', [StudentController::class, 'store'])->name('students.store');
         Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
     });
 

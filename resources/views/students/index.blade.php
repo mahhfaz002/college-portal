@@ -37,12 +37,7 @@
         @endif
     </form>
 
-    @can('manage_students')
-    <a href="{{ route('students.create') }}"
-       style="background-color: #2563eb; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">
-        + Admit New Student
-    </a>
-    @endcan
+    {{-- Students self-register online — staff no longer admit students here. --}}
 </div>
 
                 <table class="min-w-full border-collapse border border-gray-300">

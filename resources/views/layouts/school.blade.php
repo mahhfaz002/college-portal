@@ -26,7 +26,8 @@
             <a href="{{ route('home') }}" class="text-gray-600 hover:text-indigo-600">Home</a>
             <a href="{{ route('about') }}" class="text-gray-600 hover:text-indigo-600">About</a>
             <a href="{{ route('admission.form') }}" class="text-gray-600 hover:text-indigo-600">Admission</a>
-            <a href="{{ route('login') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-full hover:bg-indigo-700">Login</a>
+            <a href="{{ route('student.login') }}" class="text-gray-600 hover:text-indigo-600">Returning Students</a>
+            <a href="{{ route('login') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-full hover:bg-indigo-700">Staff Login</a>
         </div>
     </div>
 </nav>

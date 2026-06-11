@@ -200,40 +200,44 @@
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">{{ __('Dashboard') }}</x-responsive-nav-link>
 
-            @if($isStaff)
+            {{-- Capability-driven (mirrors the desktop menu) --}}
+            @can('view_students')
                 <x-responsive-nav-link :href="route('students.index')" :active="request()->routeIs('students.*')">{{ __('Students') }}</x-responsive-nav-link>
-                @if(in_array($role, ['registrar', 'proprietor']))
-                    <x-responsive-nav-link :href="route('departments.index')">{{ __('Departments') }}</x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('programs.index')">{{ __('Programs') }}</x-responsive-nav-link>
-                @endif
-                @if(in_array($role, $academic))
-                    <x-responsive-nav-link :href="route('subjects.index')" :active="request()->routeIs('subjects.*')">{{ __('Courses') }}</x-responsive-nav-link>
-                @endif
-                @if(in_array($role, ['lecturer','exam_officer','registrar','proprietor','hod']))
-                    <x-responsive-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.*')">{{ __('Attendance') }}</x-responsive-nav-link>
-                @endif
-                @if(\Illuminate\Support\Facades\Route::has('announcements.index'))
-                    <x-responsive-nav-link :href="route('announcements.index')" :active="request()->routeIs('announcements.*')">{{ __('Announcements') }}</x-responsive-nav-link>
-                @endif
-            @endif
-
-            @if(in_array($role, ['registrar', 'proprietor', 'academic_secretary']))
+            @endcan
+            @can('manage_departments')
+                <x-responsive-nav-link :href="route('departments.index')">{{ __('Departments') }}</x-responsive-nav-link>
+            @endcan
+            @can('manage_programs')
+                <x-responsive-nav-link :href="route('programs.index')">{{ __('Programs') }}</x-responsive-nav-link>
+            @endcan
+            @can('view_subjects')
+                <x-responsive-nav-link :href="route('subjects.index')" :active="request()->routeIs('subjects.*')">{{ __('Courses') }}</x-responsive-nav-link>
+            @endcan
+            @can('view_attendance')
+                <x-responsive-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.*')">{{ __('Attendance') }}</x-responsive-nav-link>
+            @endcan
+            @can('view_staff')
                 <x-responsive-nav-link :href="route('staff.index')" :active="request()->routeIs('staff.*')">{{ __('Staff') }}</x-responsive-nav-link>
-            @endif
-
-            @if(in_array($role, ['registrar', 'mis', 'proprietor', 'office_secretary', 'admission_officer']))
+            @endcan
+            @can('view_applications')
+                <x-responsive-nav-link :href="route('admission.admin')" :active="request()->routeIs('admission.admin')">{{ __('Applications') }}</x-responsive-nav-link>
+            @endcan
+            @can('manage_admissions')
+                <x-responsive-nav-link :href="route('admissions.review')" :active="request()->routeIs('admissions.review')">{{ __('Admission Queue') }}</x-responsive-nav-link>
+            @endcan
+            @can('manage_inventory')
                 <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">{{ __('Inventory') }}</x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admission.admin')" :active="request()->routeIs('admission.admin')">{{ __('Admissions') }}</x-responsive-nav-link>
-            @endif
-
-            @if(in_array($role, ['bursar', 'proprietor', 'registrar']))
-                <x-responsive-nav-link :href="route('fees.index')" :active="request()->routeIs('fees.*')">{{ __('Fees') }}</x-responsive-nav-link>
-            @endif
-
-            @if($isStaff)
-                <x-responsive-nav-link :href="route('timetable.index')">{{ __('Timetable') }}</x-responsive-nav-link>
+            @endcan
+            @can('manage_fees')
+                <x-responsive-nav-link :href="route('fees.index')" :active="request()->routeIs('fees.index')">{{ __('Fees') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('fees.orders.index')" :active="request()->routeIs('fees.orders.*')">{{ __('Payment Orders') }}</x-responsive-nav-link>
+            @endcan
+            @can('manage_library')
                 <x-responsive-nav-link :href="route('library.index')">{{ __('Library') }}</x-responsive-nav-link>
-            @endif
+            @endcan
+            @can('manage_announcements')
+                <x-responsive-nav-link :href="route('announcements.index')" :active="request()->routeIs('announcements.*')">{{ __('Announcements') }}</x-responsive-nav-link>
+            @endcan
         </div>
 
         <div class="pt-4 pb-1 border-t border-gray-200">
