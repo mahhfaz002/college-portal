@@ -97,26 +97,78 @@ class UserSeeder extends Seeder
             );
         }
 
-        // --- Minimal bootstrap logins (no demo teaching/finance staff) ---
+        // --- Sample login for every role (password: "password") ---
+        // [name, email, role, department acronym|null]
         $users = [
-            ['Proprietor (Owner)',  'proprietor@mahhfaz.edu.ng', 'proprietor'],
-            ['College Registrar',   'registrar@mahhfaz.edu.ng',  'registrar'],
-            ['MIS Administrator',   'mis@mahhfaz.edu.ng',        'mis'],
-            ['Admission Officer',   'admissions@mahhfaz.edu.ng', 'admission_officer'],
-            ['College Bursar',      'bursar@mahhfaz.edu.ng',     'bursar'],
+            ['Proprietor (Owner)',     'proprietor@mahhfaz.edu.ng', 'proprietor',        null],
+            ['College Registrar',      'registrar@mahhfaz.edu.ng',  'registrar',         null],
+            ['MIS Administrator',      'mis@mahhfaz.edu.ng',        'mis',               null],
+            ['Admission Officer',      'admissions@mahhfaz.edu.ng', 'admission_officer', null],
+            ['College Bursar',         'bursar@mahhfaz.edu.ng',     'bursar',            null],
+            ['Exams Officer',          'exams@mahhfaz.edu.ng',      'exam_officer',      null],
+            ['HOD — SLT',              'hod@mahhfaz.edu.ng',        'hod',               'SLT'],
+            ['Assistant HOD — SLT',    'asst.hod@mahhfaz.edu.ng',   'assistant_hod',     'SLT'],
+            ['Academic Secretary',     'acadsec@mahhfaz.edu.ng',    'academic_secretary',null],
+            ['Student Affairs Officer','affairs@mahhfaz.edu.ng',    'student_affairs',   null],
+            ['College Librarian',      'library@mahhfaz.edu.ng',    'librarian',         null],
+            ['Office Secretary',       'office@mahhfaz.edu.ng',     'office_secretary',  null],
+            ['Lecturer — SLT',         'lecturer@mahhfaz.edu.ng',   'lecturer',          'SLT'],
         ];
 
-        foreach ($users as [$name, $email, $role]) {
+        foreach ($users as [$name, $email, $role, $deptAcr]) {
             User::updateOrCreate(
                 ['email' => $email],
                 [
-                    'name' => $name,
-                    'password' => Hash::make('password'),
-                    'role' => $role,
-                    'college_id' => $mahhfaz->id,
+                    'name'                 => $name,
+                    'password'             => Hash::make('password'),
+                    'role'                 => $role,
+                    'college_id'           => $mahhfaz->id,
+                    'department_id'        => $deptAcr ? $deptModels[$deptAcr]->id : null,
+                    'department'           => $deptAcr ? $deptModels[$deptAcr]->name : null,
+                    'platform_fee_paid'    => true,
                     'must_change_password' => false,
                 ]
             );
         }
+
+        // Give the sample lecturer a couple of SLT courses (so attendance / exam
+        // menu / scoring have data to work with).
+        $lecturer = User::where('email', 'lecturer@mahhfaz.edu.ng')->first();
+        if ($lecturer) {
+            $sltSubjectIds = Subject::where('department_id', $deptModels['SLT']->id)->pluck('id');
+            $lecturer->subjects()->syncWithoutDetaching($sltSubjectIds);
+        }
+
+        // --- Sample STUDENT + linked Student record (fully registered) ---
+        $studentEmail = 'student@mahhfaz.edu.ng';
+        User::updateOrCreate(
+            ['email' => $studentEmail],
+            [
+                'name'                 => 'Sample Student',
+                'password'             => Hash::make('password'),
+                'role'                 => 'student',
+                'college_id'           => $mahhfaz->id,
+                'platform_fee_paid'    => true,
+                'must_change_password' => false,
+            ]
+        );
+
+        $ndSlt = $progModels['ND-SLT'];
+        \App\Models\Student::updateOrCreate(
+            ['email' => $studentEmail],
+            [
+                'full_name'           => 'Sample Student',
+                'admission_number'    => $mahhfaz->acronym.'/ADM/'.date('Y').'/0001',
+                'registration_number' => app(\App\Services\StudentIdGenerator::class)->generate($ndSlt),
+                'college_id'          => $mahhfaz->id,
+                'department_id'       => $ndSlt->department_id,
+                'program_id'          => $ndSlt->id,
+                'level'               => '100',
+                'class_arm'           => $ndSlt->name,
+                'parent_phone'        => '+234 800 000 0000',
+                'fees_balance'        => 0,
+                'registration_status' => 'registered',
+            ]
+        );
     }
 }
