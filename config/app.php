@@ -15,6 +15,10 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    // Platform root domain for tenant subdomains, e.g. "myplatform.com" makes
+    // each college reachable at <acronym>.myplatform.com (one wildcard DNS).
+    'platform_domain' => env('PLATFORM_DOMAIN'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

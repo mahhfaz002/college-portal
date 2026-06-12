@@ -93,6 +93,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::put('/platform/colleges/{college}', [$PF, 'update'])->name('platform.colleges.update');
         Route::post('/platform/colleges/{college}/admins', [$PF, 'addAdmin'])->name('platform.colleges.admins.add');
         Route::delete('/platform/colleges/{college}/admins/{user}', [$PF, 'removeAdmin'])->name('platform.colleges.admins.remove');
+        Route::post('/platform/colleges/{college}/admins/{user}/reset', [$PF, 'resetAdmin'])->name('platform.colleges.admins.reset');
         Route::post('/platform/colleges/{college}/toggle', [$PF, 'toggle'])->name('platform.colleges.toggle');
         Route::delete('/platform/colleges/{college}', [$PF, 'destroy'])->name('platform.colleges.destroy');
     });

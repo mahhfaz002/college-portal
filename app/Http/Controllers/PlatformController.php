@@ -178,6 +178,17 @@ class PlatformController extends Controller
         return back()->with('success', 'Admin account removed.');
     }
 
+    /** Reset a college admin's password and force a change on next login. */
+    public function resetAdmin(Request $request, College $college, User $user)
+    {
+        abort_unless($user->college_id === $college->id && in_array($user->role, self::ADMIN_ROLES, true), 403);
+
+        $temp = $request->input('password') ?: \Illuminate\Support\Str::password(10, true, true, false);
+        $user->update(['password' => Hash::make($temp), 'must_change_password' => true]);
+
+        return back()->with('success', "Password reset for {$user->email}. Temporary password: {$temp} (they will be prompted to change it).");
+    }
+
     public function toggle(College $college)
     {
         $college->update(['is_active' => !$college->is_active]);

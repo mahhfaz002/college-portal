@@ -42,6 +42,6 @@ class LandingPageController extends Controller
                  . 'compassionate and ethical professionals who will serve their communities and the world.',
         ];
 
-        return view('home', compact('college', 'programs', 'calendar', 'provost'));
+        return view('landing', compact('college', 'programs', 'calendar', 'provost'));
     }
 }

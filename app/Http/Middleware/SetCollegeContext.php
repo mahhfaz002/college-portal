@@ -25,9 +25,19 @@ class SetCollegeContext
         } else {
             // Guests: resolve the tenant by the request domain so the public
             // landing page and frontend render that college's branding/content.
-            $college = \App\Models\College::where('domain', $request->getHost())
-                ->where('is_active', true)
-                ->first();
+            $host = $request->getHost();
+
+            // 1) Exact custom-domain match (e.g. albazchst.edu.ng).
+            $college = \App\Models\College::where('domain', $host)->where('is_active', true)->first();
+
+            // 2) Subdomain of the platform domain (e.g. albaz.myplatform.com):
+            //    one wildcard DNS serves every college as <acronym>.platform.
+            $platform = config('app.platform_domain');
+            if (!$college && $platform && str_ends_with($host, '.'.$platform)) {
+                $label = substr($host, 0, -strlen('.'.$platform));   // first label
+                $college = \App\Models\College::whereRaw('LOWER(acronym) = ?', [strtolower($label)])
+                    ->where('is_active', true)->first();
+            }
 
             if ($college) {
                 app()->instance('current_college_id', (int) $college->id);

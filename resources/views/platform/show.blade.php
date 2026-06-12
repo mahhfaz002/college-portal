@@ -26,8 +26,11 @@
                                 <td class="px-6 py-3 font-semibold text-gray-800">{{ $a->name }}</td>
                                 <td class="px-6 py-3 text-gray-500">{{ $a->email }}</td>
                                 <td class="px-6 py-3"><span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">{{ str_replace('_',' ',$a->role) }}</span></td>
-                                <td class="px-6 py-3 text-right">
-                                    <form method="POST" action="{{ route('platform.colleges.admins.remove', [$college, $a]) }}" onsubmit="return confirm('Remove this admin account?')">
+                                <td class="px-6 py-3 text-right whitespace-nowrap">
+                                    <form method="POST" action="{{ route('platform.colleges.admins.reset', [$college, $a]) }}" class="inline" onsubmit="return confirm('Reset this admin password? A new temporary password will be shown.')">
+                                        @csrf<button class="text-indigo-600 text-xs font-bold hover:underline">Reset password</button>
+                                    </form>
+                                    <form method="POST" action="{{ route('platform.colleges.admins.remove', [$college, $a]) }}" class="inline ml-3" onsubmit="return confirm('Remove this admin account?')">
                                         @csrf @method('DELETE')<button class="text-red-500 text-xs font-bold hover:underline">Remove</button>
                                     </form>
                                 </td>
