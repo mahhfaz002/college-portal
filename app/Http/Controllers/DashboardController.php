@@ -22,6 +22,7 @@ class DashboardController extends Controller
         return match ($user->role) {
             'superadmin'         => app(\App\Http\Controllers\PlatformController::class)->dashboard($request),
             'proprietor'         => $this->proprietorDashboard($request),
+            'provost'            => $this->proprietorDashboard($request),   // academic head — oversight
             'registrar'          => $this->registrarDashboard($request),   // Registrar = read-only oversight + staff + admissions
             'mis'                => $this->ictDashboard($request),         // MIS (formerly ICT)
             'bursar'             => $this->accountantDashboard($request),   // Bursar = finance

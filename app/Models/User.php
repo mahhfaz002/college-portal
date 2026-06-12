@@ -85,7 +85,9 @@ class User extends Authenticatable
 
     public function isReadOnly(): bool
     {
-        return $this->role === 'proprietor';
+        // Proprietor (owner) and Provost (academic head) are oversight roles:
+        // they see everything in their college but change nothing.
+        return in_array($this->role, ['proprietor', 'provost'], true);
     }
 
     public function canManage(string $capability): bool

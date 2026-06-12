@@ -27,15 +27,7 @@
                     <p class="text-xs text-gray-400 mt-2">The domain makes this college's landing page open under its own address (point the DNS / add the domain in hosting). Leave blank to use the shared address.</p>
                 </div>
 
-                <div class="border-t pt-5">
-                    <h3 class="font-bold text-gray-800 mb-3">First Administrator (Registrar)</h3>
-                    <div class="grid md:grid-cols-2 gap-4">
-                        <input name="admin_name" value="{{ old('admin_name') }}" required placeholder="Admin full name *" class="border-gray-300 rounded-lg">
-                        <input name="admin_email" type="email" value="{{ old('admin_email') }}" required placeholder="Admin email *" class="border-gray-300 rounded-lg">
-                        <input name="admin_password" required placeholder="Temporary password *" class="border-gray-300 rounded-lg md:col-span-2">
-                    </div>
-                    <p class="text-xs text-gray-400 mt-2">This Registrar account can then register the college's staff and build its academic structure. They will be prompted to change the password on first login.</p>
-                </div>
+                <p class="text-xs text-gray-500 bg-gray-50 border rounded-lg p-3">After registering, you'll create the college's leadership accounts (Proprietor, Provost, Registrar, Bursar, MIS, Academic Secretary) on its management page. The Registrar then creates the rest of the staff.</p>
 
                 <button class="bg-emerald-600 text-white px-8 py-2.5 rounded-full font-bold hover:bg-emerald-700">Register College</button>
             </form>

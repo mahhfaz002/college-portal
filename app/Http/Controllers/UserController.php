@@ -13,10 +13,14 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    /** Roles the registrar may create / assign when adding staff. */
+    /**
+     * Operational staff the Registrar may create. The college's leadership
+     * accounts (proprietor, provost, registrar, bursar, mis, academic_secretary)
+     * are created by the platform super-admin, not here.
+     */
     private const STAFF_ROLES = [
-        'lecturer', 'bursar', 'exam_officer', 'mis', 'admission_officer',
-        'hod', 'assistant_hod', 'academic_secretary', 'student_affairs',
+        'lecturer', 'exam_officer', 'admission_officer',
+        'hod', 'assistant_hod', 'student_affairs',
         'librarian', 'office_secretary',
     ];
 

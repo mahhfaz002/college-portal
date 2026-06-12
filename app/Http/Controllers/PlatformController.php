@@ -76,22 +76,21 @@ class PlatformController extends Controller
         return view('platform.register');
     }
 
-    /** Register a new college (tenant) + its first administrator accounts. */
+    /** Leadership accounts the super-admin creates per college. */
+    public const ADMIN_ROLES = ['proprietor', 'provost', 'registrar', 'bursar', 'mis', 'academic_secretary'];
+
+    /** Register a new college (tenant). Admin accounts are added afterwards. */
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'           => 'required|string|max:255',
-            'acronym'        => 'required|string|max:20',
-            'domain'         => 'nullable|string|max:255|unique:colleges,domain',
-            'email'          => 'nullable|email|max:255',
-            'phone'          => 'nullable|string|max:50',
-            'address'        => 'nullable|string|max:255',
-            'primary_color'  => 'nullable|string|max:20',
-            'tagline'        => 'nullable|string|max:255',
-            // First administrator
-            'admin_name'     => 'required|string|max:255',
-            'admin_email'    => 'required|email|max:255|unique:users,email',
-            'admin_password' => 'required|string|min:6',
+            'name'          => 'required|string|max:255',
+            'acronym'       => 'required|string|max:20',
+            'domain'        => 'nullable|string|max:255|unique:colleges,domain',
+            'email'         => 'nullable|email|max:255',
+            'phone'         => 'nullable|string|max:50',
+            'address'       => 'nullable|string|max:255',
+            'primary_color' => 'nullable|string|max:20',
+            'tagline'       => 'nullable|string|max:255',
         ]);
 
         $college = College::create([
@@ -107,36 +106,98 @@ class PlatformController extends Controller
             'is_active' => true,
         ]);
 
-        // First Registrar (primary admin) + an MIS account so the college can
-        // immediately build its academic structure and register staff.
+        return redirect()->route('platform.colleges.show', $college)
+            ->with('success', "“{$college->name}” registered. Now create its leadership accounts below.");
+    }
+
+    public function show(College $college)
+    {
+        $students   = Student::where('college_id', $college->id)->count();
+        $staff      = User::where('college_id', $college->id)->whereNotIn('role', ['student', 'applicant'])->count();
+        $applicants = Applicant::where('college_id', $college->id)->count();
+        $revenue    = Invoice::where('college_id', $college->id)->where('status', 'paid')->sum('amount');
+        $admins     = User::where('college_id', $college->id)->whereIn('role', self::ADMIN_ROLES)->orderBy('role')->get();
+
+        return view('platform.show', [
+            'college' => $college, 'students' => $students, 'staff' => $staff,
+            'applicants' => $applicants, 'revenue' => $revenue, 'admins' => $admins,
+            'adminRoles' => self::ADMIN_ROLES,
+        ]);
+    }
+
+    /** Edit a college's branding / domain. */
+    public function update(Request $request, College $college)
+    {
+        $data = $request->validate([
+            'name'          => 'required|string|max:255',
+            'acronym'       => 'required|string|max:20',
+            'domain'        => 'nullable|string|max:255|unique:colleges,domain,'.$college->id,
+            'email'         => 'nullable|email|max:255',
+            'phone'         => 'nullable|string|max:50',
+            'address'       => 'nullable|string|max:255',
+            'primary_color' => 'nullable|string|max:20',
+            'tagline'       => 'nullable|string|max:255',
+            'motto'         => 'nullable|string|max:255',
+            'about'         => 'nullable|string|max:2000',
+            'provost_name'  => 'nullable|string|max:255',
+            'provost_message' => 'nullable|string|max:2000',
+        ]);
+        $data['acronym'] = strtoupper($data['acronym']);
+        $college->update($data);
+
+        return back()->with('success', 'College details updated.');
+    }
+
+    /** Create a leadership account for a college. */
+    public function addAdmin(Request $request, College $college)
+    {
+        $data = $request->validate([
+            'role'     => ['required', 'in:'.implode(',', self::ADMIN_ROLES)],
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|max:255|unique:users,email',
+            'password' => 'required|string|min:6',
+        ]);
+
         User::create([
-            'name'                 => $data['admin_name'],
-            'email'                => $data['admin_email'],
-            'password'             => Hash::make($data['admin_password']),
-            'role'                 => 'registrar',
+            'name'                 => $data['name'],
+            'email'                => $data['email'],
+            'password'             => Hash::make($data['password']),
+            'role'                 => $data['role'],
             'college_id'           => $college->id,
             'platform_fee_paid'    => true,
             'must_change_password' => true,
         ]);
 
-        return redirect()->route('platform.colleges')
-            ->with('success', "“{$college->name}” registered. Registrar login: {$data['admin_email']} (temporary password set; they will be prompted to change it).");
+        return back()->with('success', ucfirst(str_replace('_', ' ', $data['role']))." account created for {$college->name}.");
     }
 
-    public function show(College $college)
+    public function removeAdmin(College $college, User $user)
     {
-        $students = Student::where('college_id', $college->id)->count();
-        $staff    = User::where('college_id', $college->id)->whereNotIn('role', ['student', 'applicant'])->count();
-        $applicants = Applicant::where('college_id', $college->id)->count();
-        $revenue  = Invoice::where('college_id', $college->id)->where('status', 'paid')->sum('amount');
-        $admins   = User::where('college_id', $college->id)->whereIn('role', ['registrar', 'mis', 'proprietor'])->get();
-
-        return view('platform.show', compact('college', 'students', 'staff', 'applicants', 'revenue', 'admins'));
+        abort_unless($user->college_id === $college->id && in_array($user->role, self::ADMIN_ROLES, true), 403);
+        $user->delete();
+        return back()->with('success', 'Admin account removed.');
     }
 
     public function toggle(College $college)
     {
         $college->update(['is_active' => !$college->is_active]);
         return back()->with('success', $college->name.' is now '.($college->is_active ? 'active' : 'suspended').'.');
+    }
+
+    /** Permanently delete a college and ALL of its data. */
+    public function destroy(College $college)
+    {
+        $id = $college->id;
+        foreach ([
+            \App\Models\StudentDocument::class, \App\Models\Invoice::class, \App\Models\FeeOrder::class,
+            \App\Models\Applicant::class, \App\Models\Student::class, \App\Models\Subject::class,
+            \App\Models\Program::class, \App\Models\Department::class, \App\Models\GradingScheme::class,
+            User::class,
+        ] as $model) {
+            $model::withoutGlobalScopes()->where('college_id', $id)->delete();
+        }
+        $college->delete();
+
+        return redirect()->route('platform.colleges')->with('success', 'College and all its data were permanently deleted.');
     }
 }

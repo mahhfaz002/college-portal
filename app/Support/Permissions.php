@@ -18,12 +18,12 @@ class Permissions
     public const MATRIX = [
         // Staff management — Registrar registers/manages all staff.
         'manage_staff'         => ['registrar'],
-        'view_staff'           => ['registrar', 'proprietor', 'academic_secretary', 'mis'],
+        'view_staff'           => ['registrar', 'proprietor', 'provost', 'academic_secretary', 'mis'],
 
         // Student records (create/edit/delete) — MIS. Registrar is READ-ONLY now.
         'manage_students'      => ['mis'],
         'edit_students'        => ['mis'],
-        'view_students'        => ['proprietor', 'registrar', 'mis', 'exam_officer', 'lecturer', 'hod', 'assistant_hod', 'student_affairs', 'office_secretary', 'admission_officer'],
+        'view_students'        => ['proprietor', 'provost', 'registrar', 'mis', 'exam_officer', 'lecturer', 'hod', 'assistant_hod', 'student_affairs', 'office_secretary', 'admission_officer'],
 
         // Managed class/level registry — MIS.
         'manage_classes'       => ['mis'],
@@ -31,7 +31,7 @@ class Permissions
         // Departments & courses of study (programs) — MIS owns the structure.
         'manage_departments'   => ['mis'],
         'manage_programs'      => ['mis'],
-        'view_departments'     => ['registrar', 'proprietor', 'academic_secretary', 'hod', 'assistant_hod', 'exam_officer', 'mis', 'admission_officer'],
+        'view_departments'     => ['registrar', 'proprietor', 'provost', 'academic_secretary', 'hod', 'assistant_hod', 'exam_officer', 'mis', 'admission_officer'],
 
         // Timetable generation & approval — MIS. Everyone else views.
         'manage_timetable'     => ['mis'],
@@ -42,29 +42,29 @@ class Permissions
 
         // Fees / payments — Bursar.
         'manage_fees'          => ['bursar'],
-        'view_fees'            => ['proprietor', 'bursar'],
+        'view_fees'            => ['proprietor', 'provost', 'bursar'],
 
         // Admissions: applicants apply online; Registrar & Admission Officer
         // share the approval queue. Applications list is viewable by both.
         'manage_admissions'    => ['registrar', 'admission_officer'],
-        'view_applications'    => ['registrar', 'admission_officer', 'proprietor'],
+        'view_applications'    => ['registrar', 'admission_officer', 'proprietor', 'provost'],
 
         // Academic term/session control — MIS.
         'manage_term'          => ['mis'],
 
         // Exam lifecycle — Exam Officer (+ MIS support during exams).
         'manage_exams'         => ['exam_officer', 'mis'],
-        'view_exams'           => ['exam_officer', 'mis', 'proprietor', 'hod'],
+        'view_exams'           => ['exam_officer', 'mis', 'proprietor', 'provost', 'hod'],
         'enter_scores'         => ['lecturer', 'exam_officer'],
         'author_questions'     => ['lecturer'],
         'take_exams'           => ['student'],
 
         // Attendance — Lecturers take it for their classes.
         'take_attendance'      => ['lecturer', 'exam_officer'],
-        'view_attendance'      => ['lecturer', 'exam_officer', 'proprietor', 'hod'],
+        'view_attendance'      => ['lecturer', 'exam_officer', 'proprietor', 'provost', 'hod'],
 
         // Courses (formerly subjects) — academic staff view.
-        'view_subjects'        => ['lecturer', 'exam_officer', 'proprietor', 'mis', 'academic_secretary', 'hod', 'assistant_hod'],
+        'view_subjects'        => ['lecturer', 'exam_officer', 'proprietor', 'provost', 'mis', 'academic_secretary', 'hod', 'assistant_hod'],
 
         // Academic Secretary creates courses and assigns them to lecturers.
         'manage_subjects'      => ['academic_secretary'],
@@ -86,7 +86,7 @@ class Permissions
         'clock_attendance'     => ['lecturer', 'bursar', 'exam_officer', 'mis', 'registrar', 'admission_officer', 'hod', 'assistant_hod', 'academic_secretary', 'student_affairs', 'librarian', 'office_secretary'],
 
         // Staff-attendance oversight report.
-        'view_staff_attendance'=> ['registrar', 'proprietor', 'mis'],
+        'view_staff_attendance'=> ['registrar', 'proprietor', 'provost', 'mis'],
 
         // Technical support — MIS handles tickets; anyone can raise one.
         'handle_tickets'       => ['mis'],
