@@ -9,8 +9,10 @@ class LandingPageController extends Controller
 {
     public function index()
     {
-        // Public page (no tenant context) — show the primary college's prospectus.
-        $college = College::where('is_active', true)->orderBy('id')->first();
+        // Resolve the tenant from the request domain (bound by SetCollegeContext);
+        // fall back to the first active college for the shared/platform address.
+        $college = current_college()
+            ?? College::where('is_active', true)->orderBy('id')->first();
 
         $programs = collect();
         if ($college) {
@@ -21,7 +23,7 @@ class LandingPageController extends Controller
                 ->get();
         }
 
-        // Academic calendar / key dates (static for now; editable in a later phase).
+        // Academic calendar / key dates (static defaults; per-college editable later).
         $calendar = [
             ['title' => 'Admission Application Opens',  'date' => '1 July 2026'],
             ['title' => 'Application Deadline',         'date' => '30 September 2026'],
@@ -31,16 +33,13 @@ class LandingPageController extends Controller
             ['title' => 'First Semester Lectures Begin', 'date' => '17 November 2026'],
         ];
 
-        // Message from the Provost.
+        // Provost message comes from the college record (per-tenant branding).
         $provost = [
-            'name'    => 'Prof. (Mrs.) A. Mahhfaz',
-            'title'   => 'Provost',
-            'message' => "On behalf of the management, staff and students, I warmly welcome you to MAHHFAZ "
-                . "College of Health Sciences and Technology, Jalingo. Our mission is to train competent, "
-                . "compassionate and ethical health professionals who will serve Taraba State, Nigeria and "
-                . "the world. With modern laboratories, experienced lecturers and a supportive learning "
-                . "environment, we are committed to producing graduates of distinction. I invite you to "
-                . "join our community and begin a rewarding journey in health sciences and technology.",
+            'name'    => $college->provost_name ?? 'The Provost',
+            'title'   => $college->provost_title ?? 'Provost',
+            'message' => $college->provost_message
+                ?? 'Welcome to our college. We are committed to producing competent, '
+                 . 'compassionate and ethical professionals who will serve their communities and the world.',
         ];
 
         return view('home', compact('college', 'programs', 'calendar', 'provost'));

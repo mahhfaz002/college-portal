@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $school['name'] ?? 'School Portal' }}</title>
+    <title>{{ current_college()?->name ?? ($school['name'] ?? 'College Portal') }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .hero-bg {
@@ -18,8 +18,9 @@
 <nav class="bg-white shadow-md">
     <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
         <a href="{{ route('home') }}" class="text-2xl font-bold text-indigo-900 flex items-center gap-2">
-            @if(!empty($school['logo']))<img src="{{ media_url($school['logo']) }}" class="h-8 w-8 object-contain">@endif
-            {{ $school['name'] ?? 'School Portal' }}
+            @php $brandLogo = current_college()?->logo_path ?? ($school['logo'] ?? null); @endphp
+            @if($brandLogo)<img src="{{ media_url($brandLogo) }}" class="h-8 w-8 object-contain">@endif
+            {{ current_college()?->name ?? ($school['name'] ?? 'College Portal') }}
         </a>
 
         <div class="space-x-4 flex items-center">
@@ -38,7 +39,7 @@
 
     <footer class="bg-indigo-900 text-white py-8 mt-12">
         <div class="max-w-7xl mx-auto px-6 text-center">
-            <p>&copy; {{ date('Y') }} {{ $school['name'] ?? 'School Portal' }}. All rights reserved.</p>
+            <p>&copy; {{ date('Y') }} {{ current_college()?->name ?? ($school['name'] ?? 'College Portal') }}. All rights reserved.</p>
         </div>
     </footer>
 

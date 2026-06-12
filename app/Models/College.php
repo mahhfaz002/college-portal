@@ -14,7 +14,14 @@ class College extends Model
         'name', 'acronym', 'logo_path', 'address', 'phone', 'email',
         'primary_color', 'paystack_public_key', 'paystack_secret_key',
         'registration_no_format', 'is_active',
+        'domain', 'tagline', 'motto', 'about', 'established_year',
+        'provost_name', 'provost_title', 'provost_message',
     ];
+
+    public function students()
+    {
+        return $this->hasMany(Student::class);
+    }
 
     protected $casts = [
         'is_active' => 'boolean',

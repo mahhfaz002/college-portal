@@ -11,14 +11,13 @@
 
         <div class="relative max-w-7xl mx-auto px-6 text-center">
             <span class="inline-block bg-white/20 text-white text-sm font-semibold px-4 py-1.5 rounded-full mb-4 backdrop-blur-sm">
-                {{ $school['tagline'] ?? 'Knowledge • Service • Excellence in Health Education' }}
+                {{ $college->tagline ?? ($school['tagline'] ?? 'Knowledge • Service • Excellence') }}
             </span>
             <h2 class="text-4xl md:text-6xl font-extrabold mb-6 leading-tight tracking-tight">
-                {{ $college->name ?? ($school['name'] ?? 'MAHHFAZ College of Health Sciences and Technology, Jalingo') }}
+                {{ $college->name ?? ($school['name'] ?? 'Our College') }}
             </h2>
             <p class="text-lg md:text-2xl mb-10 max-w-3xl mx-auto text-indigo-100">
-                Training the next generation of health and technology professionals through quality education,
-                modern laboratories and hands-on clinical practice in Jalingo, Taraba State.
+                {{ $college->about ?? 'Training the next generation of professionals through quality education, modern facilities and hands-on practice.' }}
             </p>
 
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -36,9 +35,8 @@
     <div id="about" class="py-20 bg-gray-50">
         <div class="max-w-7xl mx-auto px-6">
             <div class="text-center mb-14">
-                <h3 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why MAHHFAZ College?</h3>
-                <p class="text-lg text-gray-600 max-w-2xl mx-auto">A focused health-sciences institution combining
-                    academic rigour with practical, profession-ready training.</p>
+                <h3 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why {{ $college->acronym ?? 'Choose Us' }}?</h3>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">{{ $college->motto ?? 'A focused institution combining academic rigour with practical, profession-ready training.' }}</p>
             </div>
 
             <div class="grid md:grid-cols-3 gap-10">

@@ -33,8 +33,18 @@ class UserSeeder extends Seeder
                 'phone'   => '+234 800 000 0000',
                 'email'   => 'info@mahhfaz.edu.ng',
                 'primary_color' => '#1d4ed8',
-                'registration_no_format' => '{acronym}/{year}/{dept}/{program}/{serial}',
+                'registration_no_format' => '{acronym}/{year}/{type}/{program}/{serial}',
                 'is_active' => true,
+                'tagline'  => 'Knowledge • Service • Excellence in Health Education',
+                'motto'    => 'Training Hands that Heal',
+                'established_year' => '2008',
+                'about'    => 'A focused health-sciences institution in Jalingo combining academic rigour '
+                            . 'with practical, profession-ready training across diploma and certificate programmes.',
+                'provost_name'    => 'Prof. (Mrs.) A. Mahhfaz',
+                'provost_title'   => 'Provost',
+                'provost_message' => 'On behalf of management, staff and students, I warmly welcome you to '
+                            . 'MAHHFAZ College of Health Sciences and Technology, Jalingo. We are committed to '
+                            . 'producing competent, compassionate and ethical health professionals.',
             ]
         );
 
@@ -96,6 +106,19 @@ class UserSeeder extends Seeder
                  'department_id' => $deptModels[$deptAcr]->id, 'program_id' => $progModels[$progAcr]->id]
             );
         }
+
+        // --- Platform super-admin (no college → sees ALL colleges) ---
+        User::updateOrCreate(
+            ['email' => 'superadmin@mahhfaz.edu.ng'],
+            [
+                'name'                 => 'Platform Super Admin',
+                'password'             => Hash::make('password'),
+                'role'                 => 'superadmin',
+                'college_id'           => null,
+                'platform_fee_paid'    => true,
+                'must_change_password' => false,
+            ]
+        );
 
         // --- Sample login for every role (password: "password") ---
         // [name, email, role, department acronym|null]

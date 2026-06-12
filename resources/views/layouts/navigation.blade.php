@@ -1,8 +1,8 @@
 @php
     $role = Auth::user()->role ?? 'guest';
-    // Applicants (pre-registration) and students are not staff — they get a
-    // minimal menu, not the staff modules.
-    $isStaff = !in_array($role, ['student', 'applicant']);
+    // Applicants/students get a minimal menu; the platform super-admin has its
+    // own cross-college menu (no per-college staff modules).
+    $isStaff = !in_array($role, ['student', 'applicant', 'superadmin']);
     // Roles with system-wide oversight / settings access.
     $isAdminish = in_array($role, ['proprietor', 'registrar', 'mis']);
     // Roles that see the academic structure (departments / programs / courses).
@@ -34,6 +34,12 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+
+                    @if($role === 'superadmin')
+                        <x-nav-link :href="route('platform.dashboard')" :active="request()->routeIs('platform.dashboard')">{{ __('Overview') }}</x-nav-link>
+                        <x-nav-link :href="route('platform.colleges')" :active="request()->routeIs('platform.colleges')">{{ __('Colleges') }}</x-nav-link>
+                        <x-nav-link :href="route('platform.register')" :active="request()->routeIs('platform.register')">{{ __('Register College') }}</x-nav-link>
+                    @endif
 
                     @if($role === 'applicant')
                         <x-nav-link :href="route('dashboard')">{{ __('Admission') }}</x-nav-link>

@@ -15,8 +15,23 @@ class SetCollegeContext
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (auth()->check() && auth()->user()->college_id) {
-            app()->instance('current_college_id', (int) auth()->user()->college_id);
+        if (auth()->check()) {
+            // Authenticated users are scoped to THEIR college. A super-admin has
+            // no college (college_id null) and is intentionally left unscoped so
+            // the platform panel can see every college.
+            if (auth()->user()->college_id) {
+                app()->instance('current_college_id', (int) auth()->user()->college_id);
+            }
+        } else {
+            // Guests: resolve the tenant by the request domain so the public
+            // landing page and frontend render that college's branding/content.
+            $college = \App\Models\College::where('domain', $request->getHost())
+                ->where('is_active', true)
+                ->first();
+
+            if ($college) {
+                app()->instance('current_college_id', (int) $college->id);
+            }
         }
 
         return $next($request);

@@ -81,6 +81,18 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
     // --- Online-payment invoice receipt (owner or finance staff) ---
     Route::get('/invoices/{invoice}/receipt', [\App\Http\Controllers\InvoiceController::class, 'receipt'])->name('invoices.receipt');
 
+    // --- Platform super-admin (cross-college analytics + college registration) ---
+    Route::middleware('role:superadmin')->group(function () {
+        $PF = \App\Http\Controllers\PlatformController::class;
+        Route::get('/platform', [$PF, 'dashboard'])->name('platform.dashboard');
+        Route::get('/platform/stats', [$PF, 'liveStats'])->name('platform.stats');
+        Route::get('/platform/colleges', [$PF, 'colleges'])->name('platform.colleges');
+        Route::get('/platform/colleges/register', [$PF, 'create'])->name('platform.register');
+        Route::post('/platform/colleges', [$PF, 'store'])->name('platform.colleges.store');
+        Route::get('/platform/colleges/{college}', [$PF, 'show'])->name('platform.colleges.show');
+        Route::post('/platform/colleges/{college}/toggle', [$PF, 'toggle'])->name('platform.colleges.toggle');
+    });
+
     // Gate redirect target for students who haven't paid the platform fee.
     Route::get('/platform/fee', [\App\Http\Controllers\StudentSelfRegistrationController::class, 'pay'])->name('platform.fee.pay');
 

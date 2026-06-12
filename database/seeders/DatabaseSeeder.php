@@ -25,13 +25,18 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Safety net: stamp any college-less rows onto the primary college.
+        // NOTE: the platform super-admin intentionally has college_id = null
+        // (it spans all tenants), so it is excluded from the users backfill.
         $primary = \App\Models\College::where('acronym', 'MAHHFAZ')->value('id');
         if ($primary) {
-            foreach (['students', 'payments', 'fee_bills', 'subjects', 'announcements', 'users'] as $table) {
+            foreach (['students', 'payments', 'fee_bills', 'subjects', 'announcements'] as $table) {
                 if (\Illuminate\Support\Facades\Schema::hasColumn($table, 'college_id')) {
                     \Illuminate\Support\Facades\DB::table($table)->whereNull('college_id')->update(['college_id' => $primary]);
                 }
             }
+            \Illuminate\Support\Facades\DB::table('users')
+                ->whereNull('college_id')->where('role', '!=', 'superadmin')
+                ->update(['college_id' => $primary]);
         }
 
         // You can keep or remove the default test user below
