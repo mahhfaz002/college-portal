@@ -58,10 +58,9 @@
                         @endcan
 
                         @can('manage_departments')
+                            <x-nav-link :href="route('structure.index')" :active="request()->routeIs('structure.*')">{{ __('Academic Structure') }}</x-nav-link>
+                        @elsecan('view_departments')
                             <x-nav-link :href="route('departments.index')" :active="request()->routeIs('departments.*')">{{ __('Departments') }}</x-nav-link>
-                        @endcan
-                        @can('manage_programs')
-                            <x-nav-link :href="route('programs.index')" :active="request()->routeIs('programs.*')">{{ __('Courses of Study') }}</x-nav-link>
                         @endcan
 
                         @can('manage_subjects')
@@ -95,6 +94,7 @@
                         @can('approve_registration')
                             <x-nav-link :href="route('hod.students')" :active="request()->routeIs('hod.students')">{{ __('Dept Students') }}</x-nav-link>
                             <x-nav-link :href="route('hod.resource-persons')" :active="request()->routeIs('hod.resource-persons')">{{ __('Resource Persons') }}</x-nav-link>
+                            <x-nav-link :href="route('hod.grading')" :active="request()->routeIs('hod.grading')">{{ __('Grading') }}</x-nav-link>
                             <x-nav-link :href="route('hod.registrations')" :active="request()->routeIs('hod.registrations')">{{ __('Registrations') }}</x-nav-link>
                         @endcan
 

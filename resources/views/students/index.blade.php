@@ -1,130 +1,108 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Student List - Nigerian Secondary School Portal') }}
-        </h2>
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">🎓 {{ __('Students') }}</h2>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-10">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            @if(session('success'))<div class="mb-4 p-4 bg-green-100 border border-green-300 text-green-800 rounded-lg text-sm">{{ session('success') }}</div>@endif
 
-            @if(session('success'))
-                <div class="mb-4 p-4 bg-green-500 text-white rounded shadow-md">
-                    {{ session('success') }}
-                </div>
-            @endif
+            {{-- Cascading filter: Section → Department → Course of Study → Level --}}
+            <div class="bg-white rounded-2xl shadow-sm border p-5 mb-6"
+                 x-data="{
+                    section: '{{ request('section') }}',
+                    department_id: '{{ request('department_id') }}',
+                    program_id: '{{ request('program_id') }}',
+                    depts: {{ Illuminate\Support\Js::from($departments->map(fn($d)=>['id'=>$d->id,'name'=>$d->name,'section'=>$d->section])) }},
+                    progs: {{ Illuminate\Support\Js::from($programs->map(fn($p)=>['id'=>$p->id,'name'=>$p->name,'department_id'=>$p->department_id,'levels'=>$p->levels])) }},
+                    get deptOptions(){ return this.section ? this.depts.filter(d=>d.section==this.section) : this.depts },
+                    get progOptions(){ return this.department_id ? this.progs.filter(p=>p.department_id==this.department_id) : [] },
+                    get levelCount(){ const p=this.progs.find(p=>p.id==this.program_id); return p ? Number(p.levels) : 0 },
+                 }">
+                <form action="{{ route('students.index') }}" method="GET" class="flex flex-wrap gap-2 items-center">
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search name / reg no…" class="border-gray-300 rounded-lg text-sm">
 
-           <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-    <h3 class="text-lg font-bold text-gray-700">All Registered Students</h3>
+                    <select name="section" x-model="section" @change="department_id=''; program_id=''" class="border-gray-300 rounded-lg text-sm">
+                        <option value="">All sections</option>
+                        @foreach($sections as $s)<option value="{{ $s }}">{{ $sectionLabels[$s] }}</option>@endforeach
+                    </select>
 
-    <form action="{{ route('students.index') }}" method="GET" class="flex flex-wrap gap-2">
-        <input type="text" name="search" value="{{ request('search') }}"
-               placeholder="Search name or ID..."
-               class="border-gray-300 rounded-md shadow-sm text-sm">
-        <select name="department_id" class="border-gray-300 rounded-md text-sm">
-            <option value="">All departments</option>
-            @foreach($departments as $d)<option value="{{ $d->id }}" @selected(request('department_id')==$d->id)>{{ $d->name }}</option>@endforeach
-        </select>
-        <select name="program_id" class="border-gray-300 rounded-md text-sm">
-            <option value="">All courses of study</option>
-            @foreach($programs as $p)<option value="{{ $p->id }}" @selected(request('program_id')==$p->id)>{{ $p->name }}</option>@endforeach
-        </select>
-        <button type="submit" style="background-color: #4b5563; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold; font-size: 13px;">
-            Filter
-        </button>
-        @if(request('search') || request('department_id') || request('program_id'))
-            <a href="{{ route('students.index') }}" class="text-sm text-red-600 flex items-center underline">Clear</a>
-        @endif
-    </form>
+                    <select name="department_id" x-model="department_id" @change="program_id=''" class="border-gray-300 rounded-lg text-sm">
+                        <option value="">All departments</option>
+                        <template x-for="d in deptOptions" :key="d.id"><option :value="d.id" x-text="d.name"></option></template>
+                    </select>
 
-    {{-- Students self-register online — staff no longer admit students here. --}}
-</div>
+                    <select name="program_id" x-model="program_id" class="border-gray-300 rounded-lg text-sm" :disabled="!department_id">
+                        <option value="">All courses of study</option>
+                        <template x-for="p in progOptions" :key="p.id"><option :value="p.id" x-text="p.name"></option></template>
+                    </select>
 
-                <table class="min-w-full border-collapse border border-gray-300">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="border p-2">S/N</th>
-                            <th class="border p-2">Full Name</th>
-                            <th class="border p-2">Admission No</th>
-                            <th class="border p-2">Class</th>
-                            <th class="border p-2">Fees Balance</th>
-                            <th class="border p-2">Actions</th>
+                    <select name="level" class="border-gray-300 rounded-lg text-sm">
+                        <option value="">All levels</option>
+                        <template x-for="n in levelCount" :key="n"><option :value="n*100" x-text="(n*100)" {{ request('level') ? '' : '' }}></option></template>
+                    </select>
+
+                    <button class="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-bold">Filter</button>
+                    @if(request()->hasAny(['search','section','department_id','program_id','level']))
+                        <a href="{{ route('students.index') }}" class="text-sm text-red-600 underline">Clear</a>
+                    @endif
+                </form>
+                @if(request('level'))<p class="text-xs text-gray-400 mt-2">Showing level {{ request('level') }}.</p>@endif
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+                        <tr>
+                            <th class="px-4 py-3 text-left">S/N</th>
+                            <th class="px-4 py-3 text-left">Full Name</th>
+                            <th class="px-4 py-3 text-left">Reg / Adm No</th>
+                            <th class="px-4 py-3 text-left">Course of Study</th>
+                            <th class="px-4 py-3 text-left">Level</th>
+                            <th class="px-4 py-3 text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="divide-y">
                         @forelse($students as $student)
                             <tr class="hover:bg-gray-50">
-                                <td class="border p-2 text-center">{{ $loop->iteration }}</td>
-
-                                <td class="border p-2 font-semibold">
-                                    <a href="{{ route('students.show', $student->id) }}" class="text-blue-600 hover:underline" title="View Statement of Account">
-                                        {{ $student->full_name }}
-                                    </a>
+                                <td class="px-4 py-2 text-gray-400">{{ $students->firstItem() + $loop->index }}</td>
+                                <td class="px-4 py-2 font-semibold">
+                                    <a href="{{ route('students.show', $student->id) }}" class="text-blue-600 hover:underline">{{ $student->full_name }}</a>
                                 </td>
-
-                                <td class="border p-2">{{ $student->admission_number }}</td>
-                                <td class="border p-2">{{ $student->class_arm }}</td>
-                                <td class="border p-2 text-red-600 font-bold">₦{{ number_format($student->fees_balance, 2) }}</td>
-                                <td class="border p-2">
-                                    <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
-
-                                        <a href="{{ route('students.show', $student->id) }}"
-                                           style="background-color: #6b7280; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; white-space: nowrap;">
-                                            View
-                                        </a>
-
+                                <td class="px-4 py-2 text-gray-600">{{ $student->registration_number ?? $student->admission_number }}</td>
+                                <td class="px-4 py-2 text-gray-600">{{ $student->program->name ?? $student->class_arm }}</td>
+                                <td class="px-4 py-2">{{ $student->level }}</td>
+                                <td class="px-4 py-2">
+                                    <div class="flex justify-end items-center gap-2">
+                                        <a href="{{ route('students.show', $student->id) }}" class="bg-gray-100 text-gray-700 px-3 py-1 rounded text-xs font-bold hover:bg-gray-200">View</a>
                                         @can('manage_fees')
-                                        <a href="{{ route('payments.create', $student->id) }}"
-                                           style="background-color: #059669; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; white-space: nowrap;">
-                                            Pay Fees
-                                        </a>
+                                            <a href="{{ route('payments.create', $student->id) }}" class="bg-emerald-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-emerald-700">Pay Fees</a>
                                         @endcan
-
+                                        @can('edit_students')
+                                            <a href="{{ route('students.edit', $student->id) }}" class="bg-indigo-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-indigo-700">Edit</a>
+                                        @endcan
                                         @can('manage_students')
-                                        <a href="{{ route('students.edit', $student->id) }}"
-                                           style="background-color: #4b5563; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; white-space: nowrap;">
-                                            Edit
-                                        </a>
-                                        @endcan
-
-                                        @can('enter_scores')
-                                        <a href="{{ route('scores.create', ['class' => $student->class_arm]) }}"
-                                           style="background-color: #2563eb; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 11px; font-weight: bold; white-space: nowrap;">
-                                            Scores
-                                        </a>
-                                        @endcan
-
-                                        @can('manage_students')
-                                        <form action="{{ route('students.destroy', $student->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this student?');" style="margin: 0;">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit"
-                                                    style="background-color: #dc2626; color: white; padding: 6px 12px; border-radius: 4px; border: none; font-size: 12px; font-weight: bold; cursor: pointer; white-space: nowrap;">
-                                                Delete
-                                            </button>
-                                        </form>
+                                            <form action="{{ route('students.destroy', $student->id) }}" method="POST" onsubmit="return confirm('Delete this student?');" class="inline">
+                                                @csrf @method('DELETE')
+                                                <button class="bg-red-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-red-700">Delete</button>
+                                            </form>
                                         @endcan
                                     </div>
                                 </td>
                             </tr>
                         @empty
-                            <tr>
-                                <td colspan="6" class="border p-8 text-center text-gray-500 italic">
-                                    No students found in the database. Click "+ Admit New Student" to begin.
-                                </td>
-                            </tr>
+                            <tr><td colspan="6" class="px-4 py-10 text-center text-gray-400 italic">No students match the selected filters.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
-
-                @if($students instanceof \Illuminate\Pagination\LengthAwarePaginator)
-                    <div class="mt-4">
-                        <p class="text-xs text-gray-500 mb-2">Showing {{ $students->firstItem() }}–{{ $students->lastItem() }} of {{ $students->total() }} students (50 per page).</p>
-                        {{ $students->links() }}
-                    </div>
-                @endif
             </div>
+
+            @if($students instanceof \Illuminate\Pagination\LengthAwarePaginator && $students->total() > 0)
+                <div class="mt-4">
+                    <p class="text-xs text-gray-500 mb-2">Showing {{ $students->firstItem() }}–{{ $students->lastItem() }} of {{ $students->total() }} students (50 per page).</p>
+                    {{ $students->links() }}
+                </div>
+            @endif
         </div>
     </div>
-
 </x-app-layout>

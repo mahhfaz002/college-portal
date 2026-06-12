@@ -165,6 +165,15 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::post('/programs', [\App\Http\Controllers\ProgramController::class, 'store'])->name('programs.store');
         Route::put('/programs/{program}', [\App\Http\Controllers\ProgramController::class, 'update'])->name('programs.update');
         Route::delete('/programs/{program}', [\App\Http\Controllers\ProgramController::class, 'destroy'])->name('programs.destroy');
+
+        // MIS academic-structure builder (section → department → courses of study).
+        $MIS = \App\Http\Controllers\MisStructureController::class;
+        Route::get('/academic-structure', [$MIS, 'index'])->name('structure.index');
+        Route::post('/academic-structure', [$MIS, 'store'])->name('structure.store');
+        Route::post('/academic-structure/{department}/courses', [$MIS, 'addCourse'])->name('structure.courses.add');
+        Route::put('/academic-structure/courses/{program}', [$MIS, 'updateCourse'])->name('structure.courses.update');
+        Route::delete('/academic-structure/courses/{program}', [$MIS, 'destroyCourse'])->name('structure.courses.destroy');
+        Route::delete('/academic-structure/{department}', [$MIS, 'destroyDepartment'])->name('structure.departments.destroy');
     });
 
     // --- Academic Secretary: assign courses to lecturers ---
@@ -405,12 +414,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::get('/admin/admissions', [ApplicantController::class, 'index'])->name('admission.admin');
     });
 
-    // ICT creates admission applications (with section + class + documents).
-    Route::middleware('role:'.Permissions::middleware('create_admissions'))->group(function () {
-        Route::get('/admissions/apply', [ApplicantController::class, 'createApplication'])->name('admission.apply');
-        Route::post('/admissions/apply', [ApplicantController::class, 'storeApplication'])
-            ->middleware('throttle:30,1')->name('admission.apply.store');
-    });
+    // (Staff no longer create applicants manually — applicants apply online.)
 
     // Admin/Registrar approves or rejects (ICT can no longer approve).
     Route::middleware('role:'.Permissions::middleware('manage_admissions'))->group(function () {
@@ -451,6 +455,8 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::get('/hod/students/{student}', [$HOD, 'showStudent'])->name('hod.students.show');
         Route::get('/hod/resource-persons', [$HOD, 'resourcePersons'])->name('hod.resource-persons');
         Route::post('/hod/resource-persons', [$HOD, 'storeResourcePerson'])->name('hod.resource-persons.store');
+        Route::get('/hod/grading', [$HOD, 'grading'])->name('hod.grading');
+        Route::post('/hod/grading', [$HOD, 'saveGrading'])->name('hod.grading.save');
     });
 });
 

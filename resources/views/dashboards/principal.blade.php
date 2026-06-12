@@ -35,8 +35,8 @@
                     <p class="text-[11px] text-indigo-600 font-bold mt-1">View classroom activity →</p>
                 </a>
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <p class="text-xs font-bold text-gray-400 uppercase">Current Term</p>
-                    <h3 class="text-2xl font-black text-indigo-600">{{ $school['term'] ?: '1st Term' }}</h3>
+                    <p class="text-xs font-bold text-gray-400 uppercase">Current Semester</p>
+                    <h3 class="text-2xl font-black text-indigo-600">{{ $school['term'] ?: 'First Semester' }}</h3>
                 </div>
             </div>
 
@@ -72,10 +72,10 @@
                         </div>
                     </div>
 
-                    <!-- Term / Session control -->
+                    <!-- Semester / Session control -->
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                        <h3 class="font-bold text-gray-700 mb-1 text-lg">📅 Academic Term Control</h3>
-                        <p class="text-xs text-gray-500 mb-4">Set the active session &amp; term. This updates fees, exams, scores and every dashboard.</p>
+                        <h3 class="font-bold text-gray-700 mb-1 text-lg">📅 Academic Semester Control</h3>
+                        <p class="text-xs text-gray-500 mb-4">Set the active session &amp; semester. This updates fees, exams, scores and every dashboard.</p>
                         <form method="POST" action="{{ route('term.update') }}" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             @csrf
                             <div>
@@ -89,7 +89,7 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Term</label>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Semester</label>
                                 <select name="current_term" class="w-full rounded-lg border-gray-300">
                                     @foreach(\App\Http\Controllers\TermController::TERMS as $t)
                                         <option value="{{ $t }}" {{ setting('current_term') === $t ? 'selected' : '' }}>{{ $t }}</option>
@@ -97,15 +97,15 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Term Starts</label>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Semester Starts</label>
                                 <input type="date" name="term_start" value="{{ setting('term_start') }}" class="w-full rounded-lg border-gray-300" required>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Term Ends</label>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Semester Ends</label>
                                 <input type="date" name="term_end" value="{{ setting('term_end') }}" class="w-full rounded-lg border-gray-300" required>
                             </div>
                             <div class="md:col-span-2">
-                                <button class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-bold hover:bg-indigo-700 transition">Execute — Set Active Term</button>
+                                <button class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-bold hover:bg-indigo-700 transition">Execute — Set Active Semester</button>
                             </div>
                         </form>
                         <form method="POST" action="{{ route('term.clear-assignments') }}" class="mt-4 pt-4 border-t"

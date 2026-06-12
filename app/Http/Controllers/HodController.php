@@ -120,4 +120,50 @@ class HodController extends Controller
     {
         abort_unless($deptId !== null && $deptId === $this->deptId(), 403, 'Not in your department.');
     }
+
+    /* --------------------------------------------------------------------
+     | Department grading scheme (score → grade), applied to all dept students
+     |--------------------------------------------------------------------*/
+
+    public function grading()
+    {
+        $deptId = $this->deptId();
+        $department = Department::find($deptId);
+        $bands = \App\Models\GradingScheme::where('department_id', $deptId)
+            ->orderByDesc('min_score')->get();
+
+        return view('hod.grading', compact('department', 'bands'));
+    }
+
+    public function saveGrading(Request $request)
+    {
+        $deptId = $this->deptId();
+
+        $data = $request->validate([
+            'grade'     => 'required|array|min:1',
+            'grade.*'   => 'nullable|string|max:10',
+            'min_score' => 'required|array',
+            'max_score' => 'required|array',
+            'remark'    => 'nullable|array',
+        ]);
+
+        \App\Models\GradingScheme::where('department_id', $deptId)->delete();
+
+        foreach ($data['grade'] as $i => $grade) {
+            if ($grade === null || $grade === '') {
+                continue;
+            }
+            \App\Models\GradingScheme::create([
+                'college_id'    => auth()->user()->college_id,
+                'department_id' => $deptId,
+                'grade'         => $grade,
+                'min_score'     => (int) ($data['min_score'][$i] ?? 0),
+                'max_score'     => (int) ($data['max_score'][$i] ?? 0),
+                'remark'        => $data['remark'][$i] ?? null,
+                'sort'          => $i,
+            ]);
+        }
+
+        return back()->with('success', 'Department grading scheme saved. It applies to all students in your department.');
+    }
 }

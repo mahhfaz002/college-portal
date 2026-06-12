@@ -19,21 +19,33 @@ class StudentController extends Controller
     {
         $search = $request->query('search');
 
+        $departments = \App\Models\Department::orderBy('name')->get();
+        $programs    = \App\Models\Program::with('department')->orderBy('name')->get();
+
+        // Section filter maps to the departments in that section.
+        $sectionDeptIds = $request->filled('section')
+            ? $departments->where('section', $request->section)->pluck('id')
+            : null;
+
         $students = Student::with(['department', 'program'])
             ->when($search, fn ($q) => $q->where(fn ($w) => $w
                 ->where('full_name', 'LIKE', "%{$search}%")
                 ->orWhere('admission_number', 'LIKE', "%{$search}%")
                 ->orWhere('registration_number', 'LIKE', "%{$search}%")))
+            ->when($sectionDeptIds !== null, fn ($q) => $q->whereIn('department_id', $sectionDeptIds))
             ->when($request->filled('department_id'), fn ($q) => $q->where('department_id', $request->department_id))
             ->when($request->filled('program_id'), fn ($q) => $q->where('program_id', $request->program_id))
+            ->when($request->filled('level'), fn ($q) => $q->where('level', $request->level))
             ->orderBy('full_name')
             ->paginate(50)
             ->withQueryString();
 
         return view('students.index', [
-            'students'    => $students,
-            'departments' => \App\Models\Department::orderBy('name')->get(),
-            'programs'    => \App\Models\Program::with('department')->orderBy('name')->get(),
+            'students'      => $students,
+            'departments'   => $departments,
+            'programs'      => $programs,
+            'sections'      => \App\Support\Sections::ALL,
+            'sectionLabels' => \App\Support\Sections::LABELS,
         ]);
     }
 

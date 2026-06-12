@@ -24,7 +24,7 @@ class SettingsSeeder extends Seeder
 
             // Academic
             'currency_symbol'    => ['₦', 'academic'],
-            'current_term'       => ['First Term', 'academic'],
+            'current_term'       => ['First Semester', 'academic'],
             'current_session'    => ['2025/2026', 'academic'],
             'ca_max_score'       => ['40', 'academic'],
             'exam_max_score'     => ['60', 'academic'],

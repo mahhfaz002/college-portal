@@ -47,28 +47,33 @@ class UserSeeder extends Seeder
             ['Pharmacy Technician', 'PHT'],
         ];
 
+        // Each department is placed in a section: UG / DIP / CERT.
+        $deptSections = ['SLT' => 'DIP', 'CHEW' => 'CERT', 'EHT' => 'DIP', 'HIM' => 'DIP', 'PHT' => 'DIP'];
+
         $deptModels = [];
         foreach ($departments as [$name, $acr]) {
             $deptModels[$acr] = Department::updateOrCreate(
                 ['college_id' => $mahhfaz->id, 'name' => $name],
-                ['acronym' => $acr]
+                ['acronym' => $acr, 'section' => $deptSections[$acr] ?? 'DIP']
             );
         }
 
+        // [dept, name, acronym, type(UG/DIP/CERT), levels, app, acc, reg]
         $programs = [
-            ['SLT',  'ND Science Laboratory Technology', 'ND-SLT', 'ND', 2, 5000, 20000, 75000],
-            ['SLT',  'HND Science Laboratory Technology', 'HND-SLT', 'HND', 2, 7500, 25000, 95000],
-            ['CHEW', 'Community Health Extension Worker', 'CHEW', 'Certificate', 3, 5000, 15000, 60000],
-            ['EHT',  'ND Environmental Health Technology', 'ND-EHT', 'ND', 2, 5000, 20000, 70000],
-            ['HIM',  'ND Health Information Management', 'ND-HIM', 'ND', 2, 5000, 20000, 70000],
-            ['PHT',  'ND Pharmacy Technician', 'ND-PHT', 'ND', 2, 5000, 20000, 80000],
+            ['SLT',  'ND Science Laboratory Technology', 'ND-SLT', 'DIP', 4, 5000, 20000, 75000],
+            ['SLT',  'HND Science Laboratory Technology', 'HND-SLT', 'UG', 4, 7500, 25000, 95000],
+            ['CHEW', 'Community Health Extension Worker', 'CHEW', 'CERT', 6, 5000, 15000, 60000],
+            ['EHT',  'ND Environmental Health Technology', 'ND-EHT', 'DIP', 4, 5000, 20000, 70000],
+            ['HIM',  'ND Health Information Management', 'ND-HIM', 'DIP', 4, 5000, 20000, 70000],
+            ['PHT',  'ND Pharmacy Technician', 'ND-PHT', 'DIP', 4, 5000, 20000, 80000],
         ];
 
         $progModels = [];
-        foreach ($programs as [$deptAcr, $name, $acr, $level, $yrs, $app, $acc, $reg]) {
+        foreach ($programs as [$deptAcr, $name, $acr, $type, $levels, $app, $acc, $reg]) {
             $progModels[$acr] = Program::updateOrCreate(
                 ['college_id' => $mahhfaz->id, 'department_id' => $deptModels[$deptAcr]->id, 'name' => $name],
-                ['acronym' => $acr, 'level_system' => $level, 'duration_years' => $yrs,
+                ['acronym' => $acr, 'program_type' => $type, 'levels' => $levels,
+                 'level_system' => $type, 'duration_years' => max(1, (int) ceil($levels / 2)),
                  'application_fee' => $app, 'acceptance_fee' => $acc, 'registration_fee' => $reg]
             );
         }

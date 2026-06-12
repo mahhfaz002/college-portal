@@ -46,7 +46,6 @@ class Permissions
 
         // Admissions: applicants apply online; Registrar & Admission Officer
         // share the approval queue. Applications list is viewable by both.
-        'create_admissions'    => ['mis'],
         'manage_admissions'    => ['registrar', 'admission_officer'],
         'view_applications'    => ['registrar', 'admission_officer', 'proprietor'],
 

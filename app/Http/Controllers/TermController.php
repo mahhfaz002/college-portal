@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class TermController extends Controller
 {
-    public const TERMS = ['First Term', 'Second Term', 'Third Term'];
+    public const TERMS = ['First Semester', 'Second Semester'];
 
     /**
      * Principal sets the active session + term and its start/end dates.

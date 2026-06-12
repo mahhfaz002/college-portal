@@ -176,11 +176,16 @@ class ExamWorkController extends Controller
             'exam' => 'required|array',
         ]);
 
+        // Prefer the student's department grading scheme (set by the HOD);
+        // fall back to the global default bands.
         foreach ($request->input('ca') as $studentId => $ca) {
             $ca = (int) $ca;
             $examScore = (int) ($request->input("exam.$studentId", 0));
             $total = $ca + $examScore;
-            $g = grade_for($total);
+
+            $deptId = Student::where('id', $studentId)->value('department_id');
+            $band = $deptId ? \App\Models\GradingScheme::gradeFor($deptId, $total) : null;
+            $gradeLetter = $band ? $band->grade : grade_for($total)['grade'];
 
             Score::updateOrCreate(
                 [
@@ -193,7 +198,7 @@ class ExamWorkController extends Controller
                     'ca_score'   => $ca,
                     'exam_score' => $examScore,
                     'total'      => $total,
-                    'grade'      => $g['grade'],
+                    'grade'      => $gradeLetter,
                     'exam_id'    => $exam->id,
                     'status'     => 'submitted',   // forwarded to exam officer
                 ]

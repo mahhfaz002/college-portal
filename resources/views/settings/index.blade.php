@@ -70,7 +70,7 @@
                             <input name="currency_symbol" value="{{ $settings['currency_symbol'] ?? '₦' }}" class="w-full rounded-lg border-gray-300">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Current Term</label>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Current Semester</label>
                             <input name="current_term" value="{{ $settings['current_term'] ?? '' }}" class="w-full rounded-lg border-gray-300">
                         </div>
                         <div>
