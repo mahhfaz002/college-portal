@@ -42,7 +42,7 @@ class AcademicSecretaryController extends Controller
     {
         return Subject::whereNotNull('program_id')
             ->orderBy('level')->orderBy('course_code')
-            ->get(['id', 'name', 'course_code', 'course_unit', 'department_id', 'program_id', 'level'])
+            ->get(['id', 'name', 'course_code', 'course_unit', 'department_id', 'program_id', 'level', 'semester'])
             ->map(fn ($s) => [
                 'id'          => $s->id,
                 'name'        => $s->name,
@@ -51,6 +51,7 @@ class AcademicSecretaryController extends Controller
                 'dept_id'     => $s->department_id,
                 'program_id'  => $s->program_id,
                 'level'       => (string) $s->level,
+                'semester'    => $s->semester,
             ])->values();
     }
 
@@ -84,6 +85,7 @@ class AcademicSecretaryController extends Controller
             'programs'    => $this->programsForJs(),
             'departments' => Department::orderBy('name')->get(['id', 'name', 'section']),
             'subjects'    => $this->subjectsForJs(),
+            'semesters'   => \App\Support\Semesters::ALL,
         ]);
     }
 

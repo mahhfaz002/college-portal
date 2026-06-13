@@ -11,7 +11,7 @@
                  x-data="courseBuilder(@js($programs))">
 
                 {{-- Cascading selectors --}}
-                <div class="grid md:grid-cols-4 gap-3 mb-5">
+                <div class="grid md:grid-cols-5 gap-3 mb-5">
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Programme</label>
                         <select x-model="type" @change="reset()" class="w-full border-gray-300 rounded-lg text-sm">
@@ -21,33 +21,41 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Department</label>
-                        <select x-model="deptId" @change="programId=''; level=''; courses=[]" class="w-full border-gray-300 rounded-lg text-sm" :disabled="!type">
+                        <select x-model="deptId" @change="programId=''; level=''; semester=''; courses=[]" class="w-full border-gray-300 rounded-lg text-sm" :disabled="!type">
                             <option value="">— Department —</option>
                             <template x-for="d in departments()" :key="d.id"><option :value="d.id" x-text="d.dept_name"></option></template>
                         </select>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Course of Study</label>
-                        <select x-model="programId" @change="level=''; courses=[]" class="w-full border-gray-300 rounded-lg text-sm" :disabled="!deptId">
+                        <select x-model="programId" @change="level=''; semester=''; courses=[]" class="w-full border-gray-300 rounded-lg text-sm" :disabled="!deptId">
                             <option value="">— Course —</option>
                             <template x-for="p in coursesOfStudy()" :key="p.id"><option :value="p.id" x-text="p.name"></option></template>
                         </select>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Level</label>
-                        <select x-model="level" @change="loadExisting()" class="w-full border-gray-300 rounded-lg text-sm" :disabled="!programId">
+                        <select x-model="level" @change="semester=''; courses=[]" class="w-full border-gray-300 rounded-lg text-sm" :disabled="!programId">
                             <option value="">— Level —</option>
                             <template x-for="l in levelOptions()" :key="l"><option :value="l" x-text="l"></option></template>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Semester</label>
+                        <select x-model="semester" @change="loadExisting()" class="w-full border-gray-300 rounded-lg text-sm" :disabled="!level">
+                            <option value="">— Semester —</option>
+                            @foreach($semesters as $sem)<option value="{{ $sem }}">{{ $sem }}</option>@endforeach
                         </select>
                     </div>
                 </div>
 
                 {{-- Course rows --}}
-                <template x-if="programId && level">
+                <template x-if="programId && level && semester">
                     <form method="POST" action="{{ route('courses.builder.save') }}" @submit="syncHidden()">
                         @csrf
                         <input type="hidden" name="program_id" :value="programId">
                         <input type="hidden" name="level" :value="level">
+                        <input type="hidden" name="semester" :value="semester">
 
                         <div class="overflow-x-auto border rounded-xl">
                             <table class="w-full text-sm">
@@ -74,7 +82,7 @@
                         </div>
                     </form>
                 </template>
-                <p x-show="!(programId && level)" class="text-sm text-gray-400">Select programme type, department, course of study and level to begin.</p>
+                <p x-show="!(programId && level && semester)" class="text-sm text-gray-400">Select programme type, department, course of study, level and semester to begin.</p>
             </div>
         </div>
     </div>
@@ -82,7 +90,7 @@
     <script>
         function courseBuilder(programs) {
             return {
-                all: programs, type: '', deptId: '', programId: '', level: '', courses: [],
+                all: programs, type: '', deptId: '', programId: '', level: '', semester: '', courses: [],
                 departments() {
                     const seen = {}; const out = [];
                     this.all.filter(p => !this.type || p.type === this.type).forEach(p => {
@@ -99,11 +107,11 @@
                     for (let i = 1; i <= n; i++) out.push(String(i * 100));
                     return out;
                 },
-                reset() { this.deptId=''; this.programId=''; this.level=''; this.courses=[]; },
+                reset() { this.deptId=''; this.programId=''; this.level=''; this.semester=''; this.courses=[]; },
                 async loadExisting() {
                     this.courses = [];
-                    if (!this.programId || !this.level) return;
-                    const url = `{{ route('courses.builder.list') }}?program_id=${this.programId}&level=${encodeURIComponent(this.level)}`;
+                    if (!this.programId || !this.level || !this.semester) return;
+                    const url = `{{ route('courses.builder.list') }}?program_id=${this.programId}&level=${encodeURIComponent(this.level)}&semester=${encodeURIComponent(this.semester)}`;
                     const res = await fetch(url, {headers: {'Accept': 'application/json'}});
                     const data = await res.json();
                     this.courses = (data.courses || []).map(c => ({name: c.name, course_code: c.course_code, course_unit: c.course_unit}));

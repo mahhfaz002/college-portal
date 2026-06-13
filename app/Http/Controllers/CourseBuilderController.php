@@ -32,31 +32,38 @@ class CourseBuilderController extends Controller
 
         $departments = Department::orderBy('name')->get(['id', 'name']);
 
-        return view('courses.builder', compact('programs', 'departments'));
+        return view('courses.builder', [
+            'programs'    => $programs,
+            'departments' => $departments,
+            'semesters'   => \App\Support\Semesters::ALL,
+        ]);
     }
 
-    /** JSON: existing courses for a program + level. */
+    /** JSON: existing courses for a program + level + semester. */
     public function list(Request $request)
     {
         $data = $request->validate([
             'program_id' => 'required|exists:programs,id',
             'level'      => 'required|string',
+            'semester'   => 'required|in:'.implode(',', \App\Support\Semesters::ALL),
         ]);
 
         $courses = Subject::where('program_id', $data['program_id'])
             ->where('level', $data['level'])
+            ->where('semester', $data['semester'])
             ->orderBy('course_code')
             ->get(['id', 'name', 'course_code', 'course_unit']);
 
         return response()->json(['courses' => $courses]);
     }
 
-    /** Replace the course set for a program + level with the submitted rows. */
+    /** Replace the course set for a program + level + semester with the submitted rows. */
     public function save(Request $request)
     {
         $data = $request->validate([
             'program_id'        => 'required|exists:programs,id',
             'level'             => 'required|string|max:20',
+            'semester'          => 'required|in:'.implode(',', \App\Support\Semesters::ALL),
             'courses'           => 'required|array|min:1',
             'courses.*.name'    => 'required|string|max:200',
             'courses.*.course_code' => 'required|string|max:30',
@@ -66,8 +73,11 @@ class CourseBuilderController extends Controller
         $program = Program::findOrFail($data['program_id']);
 
         DB::transaction(function () use ($data, $program) {
-            // Re-sync this level's courses.
-            Subject::where('program_id', $program->id)->where('level', $data['level'])->delete();
+            // Re-sync this level + semester's courses.
+            Subject::where('program_id', $program->id)
+                ->where('level', $data['level'])
+                ->where('semester', $data['semester'])
+                ->delete();
 
             foreach ($data['courses'] as $c) {
                 Subject::create([
@@ -75,6 +85,7 @@ class CourseBuilderController extends Controller
                     'department_id' => $program->department_id,
                     'program_id'    => $program->id,
                     'level'         => $data['level'],
+                    'semester'      => $data['semester'],
                     'name'          => $c['name'],
                     'course_code'   => strtoupper($c['course_code']),
                     'course_unit'   => $c['course_unit'],
@@ -82,6 +93,6 @@ class CourseBuilderController extends Controller
             }
         });
 
-        return back()->with('success', count($data['courses']).' course(s) saved for level '.$data['level'].'.');
+        return back()->with('success', count($data['courses']).' course(s) saved for level '.$data['level'].' · '.$data['semester'].'.');
     }
 }

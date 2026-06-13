@@ -15,7 +15,7 @@ class Subject extends Model
 
     protected $fillable = [
         'name', 'section', 'college_id',
-        'course_code', 'course_unit', 'department_id', 'program_id', 'level',
+        'course_code', 'course_unit', 'department_id', 'program_id', 'level', 'semester',
     ];
 
     public function teachers()

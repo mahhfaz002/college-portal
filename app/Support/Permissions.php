@@ -31,7 +31,7 @@ class Permissions
         // Departments & courses of study (programs) — MIS owns the structure.
         'manage_departments'   => ['mis'],
         'manage_programs'      => ['mis'],
-        'view_departments'     => ['registrar', 'proprietor', 'provost', 'academic_secretary', 'hod', 'assistant_hod', 'exam_officer', 'mis', 'admission_officer'],
+        'view_departments'     => ['registrar', 'proprietor', 'provost', 'academic_secretary', 'exam_officer', 'mis', 'admission_officer'],
 
         // Timetable generation & approval — Academic Secretary ONLY.
         // Everyone else (incl. MIS, lecturers, students) sees the published one.
@@ -55,7 +55,7 @@ class Permissions
 
         // Exam lifecycle — Exam Officer (+ MIS support during exams).
         'manage_exams'         => ['exam_officer', 'mis'],
-        'view_exams'           => ['exam_officer', 'mis', 'hod'],
+        'view_exams'           => ['exam_officer', 'mis'],
         'enter_scores'         => ['lecturer', 'exam_officer'],
         'author_questions'     => ['lecturer'],
         'take_exams'           => ['student'],
@@ -66,7 +66,7 @@ class Permissions
 
         // Courses (formerly subjects) — academic staff view. (Proprietor & Provost
         // see courses inside the Departments browse instead of a separate menu.)
-        'view_subjects'        => ['lecturer', 'exam_officer', 'mis', 'academic_secretary', 'hod', 'assistant_hod'],
+        'view_subjects'        => ['lecturer', 'exam_officer', 'mis', 'academic_secretary'],
 
         // Academic Secretary creates courses and assigns them to lecturers.
         'manage_subjects'      => ['academic_secretary'],

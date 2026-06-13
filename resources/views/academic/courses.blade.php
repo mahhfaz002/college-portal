@@ -5,11 +5,11 @@
 
     <div class="py-10">
         <div class="max-w-6xl mx-auto sm:px-6 lg:px-8 space-y-6"
-             x-data="courseList(@js($programs), @js($departments), @js($subjects))">
+             x-data="courseList(@js($programs), @js($departments), @js($subjects), @js($semesters))">
 
             <div class="bg-white rounded-2xl shadow-sm border p-6">
                 <p class="text-sm text-gray-500 mb-4">All courses created in <span class="font-semibold">Create Courses</span>. Use the filters to narrow by section, department, course of study and level.</p>
-                <div class="grid md:grid-cols-4 gap-3">
+                <div class="grid md:grid-cols-5 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Programme</label>
                         <select x-model="type" @change="deptId='';programId='';level=''" class="w-full border-gray-300 rounded-lg text-sm">
@@ -38,6 +38,13 @@
                             <template x-for="l in levelOptions()" :key="l"><option :value="l" x-text="'L'+l"></option></template>
                         </select>
                     </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Semester</label>
+                        <select x-model="semester" class="w-full border-gray-300 rounded-lg text-sm">
+                            <option value="">All semesters</option>
+                            <template x-for="s in semesters" :key="s"><option :value="s" x-text="s"></option></template>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -53,6 +60,7 @@
                             <th class="px-6 py-3 text-left">Unit</th>
                             <th class="px-6 py-3 text-left">Course of Study</th>
                             <th class="px-6 py-3 text-left">Level</th>
+                            <th class="px-6 py-3 text-left">Semester</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y">
@@ -63,10 +71,11 @@
                                 <td class="px-6 py-3" x-text="c.course_unit ?? '—'"></td>
                                 <td class="px-6 py-3 text-gray-500" x-text="programName(c.program_id)"></td>
                                 <td class="px-6 py-3" x-text="c.level ? 'L'+c.level : '—'"></td>
+                                <td class="px-6 py-3 text-gray-500" x-text="c.semester || '—'"></td>
                             </tr>
                         </template>
                         <tr x-show="filtered().length===0">
-                            <td colspan="5" class="px-6 py-8 text-center text-gray-400">No courses match.</td>
+                            <td colspan="6" class="px-6 py-8 text-center text-gray-400">No courses match.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -75,10 +84,10 @@
     </div>
 
     <script>
-        function courseList(programs, departments, subjects) {
+        function courseList(programs, departments, subjects, semesters) {
             return {
-                programs, departments, subjects,
-                type: '', deptId: '', programId: '', level: '',
+                programs, departments, subjects, semesters,
+                type: '', deptId: '', programId: '', level: '', semester: '',
                 departmentOptions() {
                     if (!this.type) return this.departments.map(d => ({id: d.id, dept_name: d.name}));
                     const seen = {}, out = [];
@@ -103,6 +112,7 @@
                         (!this.deptId || String(s.dept_id) === String(this.deptId)) &&
                         (!this.programId || String(s.program_id) === String(this.programId)) &&
                         (!this.level || String(s.level) === String(this.level)) &&
+                        (!this.semester || s.semester === this.semester) &&
                         (!this.type || this.programs.some(p => String(p.id) === String(s.program_id) && p.type === this.type)));
                 },
             }

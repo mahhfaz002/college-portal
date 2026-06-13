@@ -110,6 +110,7 @@
                         @endcan
 
                         @can('approve_registration')
+                            <x-nav-link :href="route('hod.courses')" :active="request()->routeIs('hod.courses')">{{ __('Courses') }}</x-nav-link>
                             <x-nav-link :href="route('hod.students')" :active="request()->routeIs('hod.students')">{{ __('Dept Students') }}</x-nav-link>
                             <x-nav-link :href="route('hod.resource-persons')" :active="request()->routeIs('hod.resource-persons')">{{ __('Resource Persons') }}</x-nav-link>
                             <x-nav-link :href="route('hod.grading')" :active="request()->routeIs('hod.grading')">{{ __('Grading') }}</x-nav-link>
@@ -164,7 +165,7 @@
                             <x-dropdown-link :href="route('timetable.index')">{{ __('Timetable') }}</x-dropdown-link>
                         @endunless
                         <x-dropdown-link :href="route('library.index')">{{ __('Library') }}</x-dropdown-link>
-                        @if(in_array($role, ['exam_officer','mis','hod']))
+                        @if(in_array($role, ['exam_officer','mis']))
                             <x-dropdown-link :href="route('exams.index')">{{ __('Exams') }}</x-dropdown-link>
                             <x-dropdown-link :href="route('exams.queries')">{{ __('Result Queries') }}</x-dropdown-link>
                         @endif
@@ -283,8 +284,10 @@
                 <x-responsive-nav-link :href="route('printables.index')" :active="request()->routeIs('printables.*')">{{ __('Printables') }}</x-responsive-nav-link>
             @endcan
             @can('approve_registration')
+                <x-responsive-nav-link :href="route('hod.courses')" :active="request()->routeIs('hod.courses')">{{ __('Courses') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('hod.students')">{{ __('Dept Students') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('hod.resource-persons')">{{ __('Resource Persons') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('hod.grading')">{{ __('Grading') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('hod.registrations')">{{ __('Registrations') }}</x-responsive-nav-link>
             @endcan
             @can('manage_library')

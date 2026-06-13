@@ -482,6 +482,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
 
         // Department students (read-only) + resource-person (lecturer) accounts.
         $HOD = \App\Http\Controllers\HodController::class;
+        Route::get('/hod/courses', [$HOD, 'courses'])->name('hod.courses');
         Route::get('/hod/students', [$HOD, 'students'])->name('hod.students');
         Route::get('/hod/students/{student}', [$HOD, 'showStudent'])->name('hod.students.show');
         Route::get('/hod/resource-persons', [$HOD, 'resourcePersons'])->name('hod.resource-persons');

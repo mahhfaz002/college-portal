@@ -23,6 +23,43 @@ class HodController extends Controller
         return auth()->user()->department_id;
     }
 
+    /**
+     * Read-only courses in the HOD's department, filterable by course of study,
+     * level and semester. The HOD does not create or edit courses.
+     */
+    public function courses()
+    {
+        $deptId     = $this->deptId();
+        $department = Department::find($deptId);
+
+        $programs = Program::where('department_id', $deptId)->orderBy('name')->get()->map(fn ($p) => [
+            'id'     => $p->id,
+            'name'   => $p->name,
+            'levels' => (int) ($p->levels ?: 1),
+        ])->values();
+
+        $subjects = \App\Models\Subject::where('department_id', $deptId)
+            ->whereNotNull('program_id')
+            ->orderBy('level')->orderBy('course_code')
+            ->get(['id', 'name', 'course_code', 'course_unit', 'program_id', 'level', 'semester'])
+            ->map(fn ($s) => [
+                'id'          => $s->id,
+                'name'        => $s->name,
+                'course_code' => $s->course_code,
+                'course_unit' => $s->course_unit,
+                'program_id'  => $s->program_id,
+                'level'       => (string) $s->level,
+                'semester'    => $s->semester,
+            ])->values();
+
+        return view('hod.courses', [
+            'department' => $department,
+            'programs'   => $programs,
+            'subjects'   => $subjects,
+            'semesters'  => \App\Support\Semesters::ALL,
+        ]);
+    }
+
     /** Students in the HOD's department, with registration status. */
     public function students()
     {
