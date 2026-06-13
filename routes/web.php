@@ -435,8 +435,8 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         ->name('superadmin.switchboard')
         ->middleware('role:proprietor,mis');
 
-    // Inventory register (MIS / office secretary / proprietor)
-    Route::middleware('role:'.Permissions::middleware('manage_inventory').',proprietor')->group(function () {
+    // Inventory register (MIS / office secretary write; proprietor + provost read-only)
+    Route::middleware('role:'.Permissions::middleware('manage_inventory').',proprietor,provost')->group(function () {
         Route::resource('inventory', InventoryItemController::class);
     });
 

@@ -69,7 +69,7 @@
                         @elsecan('assign_courses')
                             <x-nav-link :href="route('academic.departments')" :active="request()->routeIs('academic.departments')">{{ __('Departments') }}</x-nav-link>
                         @elsecan('view_departments')
-                            @if($role === 'proprietor')
+                            @if(in_array($role, ['proprietor', 'provost']))
                                 <x-nav-link :href="route('departments.browse')" :active="request()->routeIs('departments.browse')">{{ __('Departments') }}</x-nav-link>
                             @else
                                 <x-nav-link :href="route('departments.index')" :active="request()->routeIs('departments.*')">{{ __('Departments') }}</x-nav-link>
@@ -135,7 +135,7 @@
                             <x-nav-link :href="route('announcements.index')" :active="request()->routeIs('announcements.*')">{{ __('Announcements') }}</x-nav-link>
                         @endcan
 
-                        @if(in_array($role, ['proprietor', 'mis', 'office_secretary']))
+                        @if(in_array($role, ['proprietor', 'provost', 'mis', 'office_secretary']))
                             <x-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">{{ __('Inventory') }}</x-nav-link>
                         @endif
                     @endif
@@ -160,7 +160,7 @@
                         </button>
                     </x-slot>
                     <x-slot name="content">
-                        @unless($role === 'proprietor')
+                        @unless(in_array($role, ['proprietor', 'provost']))
                             <x-dropdown-link :href="route('timetable.index')">{{ __('Timetable') }}</x-dropdown-link>
                         @endunless
                         <x-dropdown-link :href="route('library.index')">{{ __('Library') }}</x-dropdown-link>
@@ -235,7 +235,7 @@
             @elsecan('assign_courses')
                 <x-responsive-nav-link :href="route('academic.departments')" :active="request()->routeIs('academic.departments')">{{ __('Departments') }}</x-responsive-nav-link>
             @elsecan('view_departments')
-                @if($role === 'proprietor')
+                @if(in_array($role, ['proprietor', 'provost']))
                     <x-responsive-nav-link :href="route('departments.browse')" :active="request()->routeIs('departments.browse')">{{ __('Departments') }}</x-responsive-nav-link>
                 @else
                     <x-responsive-nav-link :href="route('departments.index')">{{ __('Departments') }}</x-responsive-nav-link>
@@ -273,7 +273,7 @@
             @can('manage_admissions')
                 <x-responsive-nav-link :href="route('admissions.review')" :active="request()->routeIs('admissions.review')">{{ __('Admission Queue') }}</x-responsive-nav-link>
             @endcan
-            @if(in_array($role, ['proprietor', 'mis', 'office_secretary']))
+            @if(in_array($role, ['proprietor', 'provost', 'mis', 'office_secretary']))
                 <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">{{ __('Inventory') }}</x-responsive-nav-link>
             @endif
             @can('view_fees')

@@ -22,7 +22,7 @@ class DashboardController extends Controller
         return match ($user->role) {
             'superadmin'         => app(\App\Http\Controllers\PlatformController::class)->dashboard($request),
             'proprietor'         => $this->proprietorDashboard($request),
-            'provost'            => $this->proprietorDashboard($request),   // academic head — oversight
+            'provost'            => $this->provostDashboard($request),      // academic head — oversight
             'registrar'          => $this->registrarDashboard($request),   // Registrar = read-only oversight + staff + admissions
             'mis'                => $this->ictDashboard($request),         // MIS (formerly ICT)
             'bursar'             => $this->accountantDashboard($request),   // Bursar = finance
@@ -80,6 +80,36 @@ class DashboardController extends Controller
             'deptBreakdown',
             'topStudents',
             'recentPayments'
+        ));
+    }
+
+    /**
+     * PROVOST — academic-head oversight. Same finance/stats as the proprietor
+     * but the structure panel shows the 20 most recently registered students
+     * (not the department breakdown).
+     */
+    private function provostDashboard(Request $request)
+    {
+        $studentCount = Student::count();
+        $staffCount   = \App\Models\User::whereNotIn('role', ['student', 'applicant', 'superadmin'])->count();
+
+        $totalCollected   = \App\Models\Invoice::where('status', 'paid')->sum('amount');
+        $totalOutstanding = \App\Models\Invoice::where('status', 'pending')->sum('amount');
+
+        // 20 most recently registered students.
+        $recentStudents = Student::with('program')->latest()->take(20)->get();
+
+        $topStudents = Score::select('student_id', DB::raw('AVG(ca_score + exam_score) as average_score'))
+            ->groupBy('student_id')->orderByDesc('average_score')
+            ->with('student.program')->take(5)->get();
+
+        $recentPayments = \App\Models\Invoice::where('status', 'paid')
+            ->whereNotNull('paid_at')->with('student')
+            ->latest('paid_at')->take(6)->get();
+
+        return view('dashboards.provost', compact(
+            'studentCount', 'staffCount', 'totalCollected', 'totalOutstanding',
+            'recentStudents', 'topStudents', 'recentPayments'
         ));
     }
 
