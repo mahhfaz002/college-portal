@@ -7,7 +7,7 @@
     $isAdminish = in_array($role, ['proprietor', 'registrar', 'mis']);
     // Roles that see the academic structure (departments / programs / courses).
     $academic = ['registrar', 'proprietor', 'mis', 'academic_secretary', 'exam_officer', 'lecturer', 'hod', 'assistant_hod'];
-    $brandName = current_college()->name ?? ($school['name'] ?? 'MAHHFAZ College of Health Sciences and Technology, Jalingo');
+    $brandName = current_college()->name ?? ($school['name'] ?? 'College Portal');
     // Student registration state drives the "Registration" prompt until the HOD approves.
     $studentReg = $role === 'student'
         ? \App\Models\Student::where('email', Auth::user()->email)->value('registration_status')
@@ -18,15 +18,16 @@
         <div class="flex justify-between h-16">
             <div class="flex">
                 <div class="shrink-0 flex items-center gap-2">
-                    <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
+                    @php $brandAcr = current_college()?->acronym ?? \Illuminate\Support\Str::substr($brandName, 0, 2); @endphp
+                    <a href="{{ route('dashboard') }}" class="flex items-center gap-2.5">
                         @if(current_college()?->logo_path)
-                            <img src="{{ media_url(current_college()->logo_path) }}" alt="Logo" class="h-9 w-9 rounded object-contain">
+                            <img src="{{ media_url(current_college()->logo_path) }}" alt="Logo" class="h-9 w-9 rounded-lg object-contain bg-white p-0.5 shadow-sm">
                         @elseif(!empty($school['logo']))
-                            <img src="{{ media_url($school['logo']) }}" alt="Logo" class="h-9 w-9 rounded object-contain">
+                            <img src="{{ media_url($school['logo']) }}" alt="Logo" class="h-9 w-9 rounded-lg object-contain bg-white p-0.5 shadow-sm">
                         @else
-                            <x-application-logo class="block h-9 w-auto fill-current" style="color: var(--brand)" />
+                            <span class="h-9 w-9 rounded-lg grid place-items-center text-white font-bold bg-brand shadow-sm shrink-0">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($brandAcr,0,2)) }}</span>
                         @endif
-                        <span class="font-bold text-gray-800 hidden md:inline truncate max-w-[18rem]">{{ $brandName }}</span>
+                        <span class="font-bold text-slate-900 hidden md:inline truncate max-w-[18rem]">{{ $brandName }}</span>
                     </a>
                 </div>
 

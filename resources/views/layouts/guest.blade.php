@@ -5,33 +5,35 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ setting('school_name', config('app.name', 'School Portal')) }}</title>
-        <style>:root { --brand: {{ setting('primary_color', '#2563eb') }}; }</style>
+        <title>{{ $school['name'] ?? 'College Portal' }}</title>
+        <style>:root { --brand: {{ $school['color'] ?? '#4F46E5' }}; } [x-cloak]{display:none!important;}</style>
 
-        <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-        <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans text-gray-900 antialiased">
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
-            <div class="flex flex-col items-center">
-                <a href="/">
-                    @if(setting('school_logo'))
-                        <img src="{{ media_url(setting('school_logo')) }}" alt="Logo" class="w-20 h-20 object-contain">
+    <body class="font-sans text-gray-900 antialiased overflow-x-hidden">
+        <x-public-header :solid="true" />
+
+        <div class="min-h-screen flex flex-col justify-center items-center px-4 pt-24 pb-10 bg-gradient-to-b from-slate-50 to-slate-100">
+            <div class="flex flex-col items-center text-center">
+                <a href="/" class="flex flex-col items-center">
+                    @if($school['logo'])
+                        <img src="{{ media_url($school['logo']) }}" alt="Logo" class="w-16 h-16 object-contain rounded-xl bg-white p-1 shadow">
                     @else
-                        <x-application-logo class="w-20 h-20 fill-current" style="color: var(--brand)" />
+                        <span class="w-16 h-16 rounded-2xl grid place-items-center text-white text-2xl font-bold bg-brand shadow">
+                            {{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr(current_college()?->acronym ?? ($school['name'] ?? 'CP'), 0, 2)) }}
+                        </span>
                     @endif
                 </a>
-                <h1 class="mt-3 text-xl font-bold text-gray-800">{{ setting('school_name', 'School Portal') }}</h1>
-                @if(setting('school_tagline'))
-                    <p class="text-xs text-gray-500">{{ setting('school_tagline') }}</p>
+                <h1 class="mt-4 text-xl font-bold text-slate-800">{{ $school['name'] ?? 'College Portal' }}</h1>
+                @if(!empty($school['tagline']))
+                    <p class="text-xs text-slate-500 mt-1">{{ $school['tagline'] }}</p>
                 @endif
             </div>
 
-            <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
+            <div class="w-full sm:max-w-md mt-6 px-6 py-6 bg-white shadow-xl border border-slate-100 overflow-hidden rounded-2xl">
                 {{ $slot }}
             </div>
         </div>

@@ -11,8 +11,8 @@ class SettingsSeeder extends Seeder
     {
         $defaults = [
             // Branding
-            'school_name'        => ['MAHHFAZ College of Health Sciences and Technology, Jalingo', 'branding'],
-            'school_tagline'     => ['Knowledge • Service • Excellence in Health Education', 'branding'],
+            'school_name'        => ['College Portal', 'branding'],
+            'school_tagline'     => ['', 'branding'],
             'school_logo'        => [null, 'branding'],
             'primary_color'      => ['#1d4ed8', 'branding'],
             'school_address'     => ['Jalingo, Taraba State, Nigeria', 'branding'],

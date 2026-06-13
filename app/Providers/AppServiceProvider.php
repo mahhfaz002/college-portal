@@ -41,10 +41,11 @@ class AppServiceProvider extends ServiceProvider
         View::composer('*', function ($view) {
             $college = function_exists('current_college') ? current_college() : null;
             $view->with('school', [
-                'name'     => $college?->name ?? setting('school_name', config('app.name', 'MAHHFAZ College of Health Sciences and Technology, Jalingo')),
-                'tagline'  => setting('school_tagline', ''),
-                'logo'     => $college?->logo_path ?? setting('school_logo'),
-                'color'    => $college?->primary_color ?? setting('primary_color', '#2563eb'),
+                // Neutral when no college is resolved (platform / super-admin pages).
+                'name'     => $college?->name ?? 'College Portal',
+                'tagline'  => $college?->tagline ?? '',
+                'logo'     => $college?->logo_path,
+                'color'    => $college?->primary_color ?? '#4F46E5',
                 'currency' => setting('currency_symbol', '₦'),
                 'term'     => setting('current_term', ''),
                 'session'  => setting('current_session', ''),

@@ -1,3 +1,32 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ---- College brand theming ----
+   --brand is set per tenant by an inline <style> in each layout (from the
+   college's primary_color). We deliberately do NOT declare a :root default here,
+   because this stylesheet loads after that inline style and would override it.
+   The var() fallbacks below cover the rare case where --brand is unset. */
+
+@layer components {
+    .bg-brand        { background-color: var(--brand, #4F46E5); }
+    .text-brand,
+    .brand           { color: var(--brand, #4F46E5); }
+    .border-brand    { border-color: var(--brand, #4F46E5); }
+    .ring-brand      { --tw-ring-color: var(--brand, #4F46E5); }
+    .bg-brand-soft   { background-color: color-mix(in srgb, var(--brand, #4F46E5) 12%, #ffffff); }
+
+    .btn-brand {
+        background-color: var(--brand, #4F46E5);
+        color: #fff;
+        font-weight: 700;
+        transition: filter .15s ease, transform .1s ease;
+    }
+    .btn-brand:hover  { filter: brightness(1.08); }
+    .btn-brand:active { transform: scale(.97); }
+
+    .bg-brand-grad {
+        background: radial-gradient(120% 120% at 80% -10%,
+            color-mix(in srgb, var(--brand, #4F46E5) 55%, #0b1120) 0%, #0b1120 60%);
+    }
+}

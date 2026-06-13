@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="max-w-4xl mx-auto py-10 px-4">
-    <h1 class="text-3xl font-bold text-indigo-900 mb-2">Online Admission Application</h1>
+    <h1 class="text-3xl font-bold text-slate-900 mb-2">Online Admission Application</h1>
     <p class="text-gray-600 mb-6">{{ $college->name ?? 'Our College' }}</p>
 
     @if ($errors->any())
@@ -14,7 +14,7 @@
         </div>
     @endif
 
-    <div class="bg-indigo-50 p-5 rounded-lg mb-8 border border-indigo-200 text-sm text-indigo-900">
+    <div class="bg-brand-soft p-5 rounded-lg mb-8 border border-slate-200 text-sm text-slate-700">
         Complete all sections, choose your first and second program of interest, upload your passport photograph,
         then proceed to pay the <span class="font-bold">application fee</span> online. After successful payment an
         applicant account is created for you to track your admission.
@@ -173,9 +173,9 @@
             <p class="text-xs text-gray-500 mt-1">Recent passport photograph (JPG/PNG, max 2MB).</p>
         </section>
 
-        <div class="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl p-5">
-            <p class="text-sm text-emerald-800">You will be redirected to pay the application fee securely after submitting.</p>
-            <button class="bg-emerald-600 text-white px-8 py-3 rounded-full font-bold hover:bg-emerald-700 shadow">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-brand-soft border border-slate-200 rounded-xl p-5">
+            <p class="text-sm text-slate-600">You will be redirected to pay the application fee securely after submitting.</p>
+            <button class="btn-brand px-8 py-3 rounded-full shadow whitespace-nowrap">
                 Submit &amp; Pay Application Fee
             </button>
         </div>
