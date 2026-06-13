@@ -70,14 +70,8 @@ class UserController extends Controller
             'email'             => 'nullable|email|max:255|unique:users,email',
             'department_id'     => 'nullable|exists:departments,id',
             'employed_year'     => 'nullable|string|max:9',
-            'next_of_kin_name'  => 'nullable|string|max:255',
-            'next_of_kin_phone' => 'nullable|string|max:30',
             'password'          => 'nullable|string|min:6',
             'passport'          => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'class_ids'         => 'nullable|array',
-            'class_ids.*'       => 'integer|exists:classes,id',
-            'subject_ids'       => 'nullable|array',
-            'subject_ids.*'     => 'integer|exists:subjects,id',
         ]);
 
         $email = $validated['email'] ?? $this->generateEmail($validated['first_name'], $validated['surname']);
@@ -94,18 +88,11 @@ class UserController extends Controller
             'department_id'     => $validated['department_id'] ?? null,
             'department'        => optional(\App\Models\Department::find($validated['department_id'] ?? null))->name,
             'employed_year'     => $validated['employed_year'] ?? date('Y'),
-            'next_of_kin_name'  => $validated['next_of_kin_name'] ?? null,
-            'next_of_kin_phone' => $validated['next_of_kin_phone'] ?? null,
             'passport'          => $this->encodePassport($request),
             'staff_id'          => $this->generateStaffId($validated['role'], $validated['employed_year'] ?? date('Y'), optional(\App\Models\Department::find($validated['department_id'] ?? null))->acronym),
             'status'            => 'active',
             'must_change_password' => true,
-            // Keep legacy single-value columns in sync for back-compat views.
-            'class_assigned'    => null,
-            'subject_assigned'  => null,
         ]);
-
-        $this->syncAssignments($user, $request);
 
         return redirect()->route('staff.show', $user)->with('success',
             "Staff account created. Login email: {$email} | Temp password: {$plainPassword} | Staff ID: {$user->staff_id}");
@@ -258,7 +245,13 @@ class UserController extends Controller
      */
     private function generateStaffId(string $role, string $year, ?string $department): string
     {
-        $acronym = Str::upper(setting('school_acronym', Str::substr(setting('school_name', 'SCH'), 0, 3)));
+        // Use the registering college's own acronym/name (NOT a global setting),
+        // so each tenant's staff IDs carry that college's identity.
+        $college = current_college();
+        $acronym = Str::upper(
+            $college?->acronym
+            ?: Str::substr($college?->name ?? setting('school_name', 'SCH'), 0, 3)
+        );
         $dept = $department ? '/'.Str::upper(Str::substr($department, 0, 3)) : '';
 
         $n = User::whereNotNull('staff_id')->count() + 1;

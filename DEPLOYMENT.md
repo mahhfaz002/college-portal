@@ -13,12 +13,15 @@ npm ci && npm run build
 
 **Deploy command** (runs on every release)
 ```
+php artisan optimize:clear
 php artisan migrate --force
 php artisan storage:link
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 ```
+> `optimize:clear` runs first so a release never serves stale config/route/view
+> caches from the previous build.
 
 > First deploy only — seed the clean college + bootstrap logins:
 > ```

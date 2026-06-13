@@ -66,66 +66,6 @@
                 </div>
 
                 <div>
-                    <h3 class="font-bold text-gray-700 border-b pb-2 mb-4">Next of Kin</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Name</label>
-                            <input type="text" name="next_of_kin_name" value="{{ old('next_of_kin_name') }}" class="w-full border-gray-300 rounded-md shadow-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Phone</label>
-                            <input type="text" name="next_of_kin_phone" value="{{ old('next_of_kin_phone') }}" class="w-full border-gray-300 rounded-md shadow-sm">
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <h3 class="font-bold text-gray-700 border-b pb-2 mb-4">Assignments <span class="text-xs font-normal text-gray-400">(for teachers — select multiple)</span></h3>
-                    <div class="mb-3">
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Filter by Section</label>
-                        <select id="sectionFilter" class="w-full sm:w-64 border-gray-300 rounded-md shadow-sm text-sm">
-                            <option value="">All sections</option>
-                            @foreach($sections as $s)<option value="{{ $s }}">{{ $s }}</option>@endforeach
-                        </select>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Classes</label>
-                            <div class="grid grid-cols-2 gap-1 max-h-44 overflow-y-auto border rounded-md p-2">
-                                @forelse($classes as $c)
-                                    <label class="assign-item flex items-center gap-2 text-sm py-1" data-section="{{ $c->section }}">
-                                        <input type="checkbox" name="class_ids[]" value="{{ $c->id }}" class="rounded"> {{ $c->name }}
-                                    </label>
-                                @empty
-                                    <p class="text-xs text-gray-400">No classes defined.</p>
-                                @endforelse
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Subjects</label>
-                            <div class="grid grid-cols-2 gap-1 max-h-44 overflow-y-auto border rounded-md p-2">
-                                @forelse($subjects as $s)
-                                    <label class="assign-item flex items-center gap-2 text-sm py-1" data-section="{{ $s->section }}">
-                                        <input type="checkbox" name="subject_ids[]" value="{{ $s->id }}" class="rounded"> {{ $s->name }}
-                                    </label>
-                                @empty
-                                    <p class="text-xs text-gray-400">No subjects defined.</p>
-                                @endforelse
-                            </div>
-                        </div>
-                    </div>
-                    <script>
-                        document.getElementById('sectionFilter')?.addEventListener('change', function () {
-                            const sec = this.value;
-                            document.querySelectorAll('.assign-item').forEach(el => {
-                                // Items with no section (null) stay visible (e.g. cross-section subjects).
-                                el.style.display = (!sec || !el.dataset.section || el.dataset.section === sec) ? 'flex' : 'none';
-                            });
-                        });
-                    </script>
-                </div>
-
-                <div>
                     <h3 class="font-bold text-gray-700 border-b pb-2 mb-4">Login Credentials</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
