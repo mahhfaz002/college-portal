@@ -58,7 +58,8 @@ class Permissions
         'view_exams'           => ['exam_officer', 'mis'],
         'enter_scores'         => ['lecturer', 'exam_officer'],
         'author_questions'     => ['lecturer'],
-        'take_exams'           => ['student'],
+        // Online exam-taking removed from the platform (offline portal handles it).
+        'take_exams'           => [],
 
         // Attendance — Lecturers take it for their classes.
         'take_attendance'      => ['lecturer', 'exam_officer'],

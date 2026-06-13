@@ -67,15 +67,8 @@ class Notifications
 
     private static function studentActions(User $user): array
     {
-        $student = Student::where('email', $user->email)->first();
-        if (!$student) {
-            return self::wrap(0, route('dashboard'), '');
-        }
-        $available = Exam::where('status', 'released')->get()
-            ->filter(fn ($e) => in_array($student->class_arm, $e->class_arms, true))
-            ->count();
-
-        return self::wrap($available, route('myexams.available'), 'exams available');
+        // Online exam-taking has been removed; students have no exam actions here.
+        return self::wrap(0, route('dashboard'), '');
     }
 
     private static function wrap(int $count, string $url, string $label): array
@@ -161,14 +154,7 @@ class Notifications
                     }
                 }
                 break;
-            case 'student':
-                $student = Student::where('email', $user->email)->first();
-                if ($student) {
-                    foreach (Exam::where('status', 'released')->get()->filter(fn ($e) => in_array($student->class_arm, $e->class_arms, true)) as $e) {
-                        $items[] = ['icon' => '📝', 'title' => 'Exam available', 'detail' => $e->title ?? '', 'url' => route('myexams.available'), 'time' => $e->updated_at];
-                    }
-                }
-                break;
+            // Student exam-taking removed — no student exam notifications.
         }
 
         // Newest first; undated items sink to the bottom.

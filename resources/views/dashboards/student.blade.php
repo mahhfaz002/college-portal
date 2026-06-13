@@ -38,12 +38,6 @@
                 </div>
             @endif
 
-            @if(($availableExams ?? 0) > 0)
-            <div class="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg flex justify-between items-center">
-                <p class="font-bold text-indigo-800">📝 You have {{ $availableExams }} exam(s) available to take.</p>
-                <a href="{{ route('myexams.available') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 text-sm">Go to My Exams →</a>
-            </div>
-            @endif
 
             @if(isset($todayLessons) && $todayLessons->count())
             <div class="mb-6 bg-white rounded-xl shadow-sm border border-blue-200 overflow-hidden">
@@ -125,7 +119,6 @@
                                 <th class="px-6 py-3 text-center">Exam (60)</th>
                                 <th class="px-6 py-3 text-center">Total</th>
                                 <th class="px-6 py-3 text-center">Grade</th>
-                                <th class="px-6 py-3 text-center">Query</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -148,20 +141,10 @@
                                         {{ $grade }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-center">
-                                    <details class="inline-block text-left">
-                                        <summary class="cursor-pointer text-xs text-indigo-600 font-bold">Raise</summary>
-                                        <form action="{{ route('results.query', $score) }}" method="POST" class="mt-2 w-48">
-                                            @csrf
-                                            <textarea name="message" rows="2" placeholder="Describe the issue…" class="w-full border-gray-300 rounded text-xs" required></textarea>
-                                            <button class="mt-1 bg-indigo-600 text-white text-xs px-3 py-1 rounded font-bold">Send</button>
-                                        </form>
-                                    </details>
-                                </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="6" class="p-8 text-center text-gray-400 italic text-sm">No results published for this term yet.</td>
+                                <td colspan="5" class="p-8 text-center text-gray-400 italic text-sm">No results published for this term yet.</td>
                             </tr>
                             @endforelse
                         </tbody>

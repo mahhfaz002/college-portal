@@ -276,9 +276,6 @@ class DashboardController extends Controller
             ->where('status', 'published')
             ->with('subject')->get();
         $payments = Payment::where('student_id', $student->id)->latest()->take(5)->get();
-        $availableExams = \App\Models\Exam::where('status', 'released')->get()
-            ->filter(fn ($e) => in_array($student->class_arm, $e->class_arms, true))
-            ->count();
 
         $announcements = \App\Models\Announcement::visibleTo('student', $student->class_arm)
             ->with('author')->latest()->take(5)->get();
@@ -299,7 +296,7 @@ class DashboardController extends Controller
         // Online payment orders / invoices assigned to this student (Phase 4).
         $invoices = \App\Models\Invoice::where('student_id', $student->id)->latest()->get();
 
-        return view('dashboards.student', compact('student', 'scores', 'payments', 'attendanceRate', 'availableExams', 'announcements', 'todayLessons', 'invoices'));
+        return view('dashboards.student', compact('student', 'scores', 'payments', 'attendanceRate', 'announcements', 'todayLessons', 'invoices'));
     }
 
     /**

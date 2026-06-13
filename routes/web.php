@@ -24,7 +24,6 @@ use App\Http\Controllers\PayslipController;
 use App\Http\Controllers\AlumniController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamWorkController;
-use App\Http\Controllers\StudentExamController;
 use App\Http\Controllers\TimetableController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\TermController;
@@ -328,15 +327,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
     // EXAM WORKFLOW
     // ==========================================
 
-    // -- Student exam taking (define before /exams/{exam} wildcards) --
-    Route::middleware('role:'.Permissions::middleware('take_exams'))->group(function () {
-        Route::get('/my-exams', [StudentExamController::class, 'available'])->name('myexams.available');
-        Route::get('/my-exams/{exam}', [StudentExamController::class, 'take'])->name('myexams.take');
-        Route::post('/my-exams/{exam}/unlock', [StudentExamController::class, 'unlock'])
-            ->middleware('throttle:10,1')->name('myexams.unlock'); // brute-force guard on exam password
-        Route::post('/my-exams/{exam}/submit', [StudentExamController::class, 'submit'])->name('myexams.submit');
-        Route::post('/results/{score}/query', [StudentExamController::class, 'query'])->name('results.query');
-    });
+    // Online student exam-taking has been removed from the platform.
 
     // -- Exam officer: create / store (before {exam} wildcard) --
     Route::middleware('role:'.Permissions::middleware('manage_exams'))->group(function () {
