@@ -8,7 +8,8 @@
             @if(session('success'))<div class="p-4 bg-green-100 border border-green-300 text-green-800 rounded-lg text-sm">{{ session('success') }}</div>@endif
             @if(session('error'))<div class="p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg text-sm">{{ session('error') }}</div>@endif
 
-            {{-- Create order --}}
+            {{-- Create order (bursar only; oversight roles see this read-only) --}}
+            @can('manage_fees')
             <div class="bg-white rounded-2xl shadow-sm border p-6" x-data="{ scope: 'all' }">
                 <h3 class="font-bold text-gray-800 mb-4">Create a Payment Order</h3>
                 <form method="POST" action="{{ route('fees.orders.store') }}" class="space-y-4">
@@ -66,6 +67,7 @@
                     <button class="bg-emerald-600 text-white px-8 py-2.5 rounded-full font-bold hover:bg-emerald-700">Create Payment Order</button>
                 </form>
             </div>
+            @endcan
 
             {{-- Student directory filter --}}
             <div class="bg-white rounded-2xl shadow-sm border p-6">

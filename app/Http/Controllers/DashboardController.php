@@ -196,19 +196,45 @@ class DashboardController extends Controller
         return back()->with('success', "Teacher Account Created! Email: $email | Temp Password: $randomPassword");
     }
 
+    /**
+     * BURSAR — collections overview built on the Phase-4 Invoice / FeeOrder
+     * engine. Invoice is college-scoped automatically via CollegeScope, so
+     * every figure here reflects only the current tenant's money movement.
+     */
     private function accountantDashboard(Request $request)
     {
-        $totalRevenue = Payment::sum('amount');
-        $totalDebt = Student::sum('fees_balance');
-        $debtors = Student::where('fees_balance', '>', 0)
-            ->orderByDesc('fees_balance')
-            ->take(10)
-            ->get();
-        $recentPayments = Payment::with('student')
-            ->latest()
-            ->take(5)
-            ->get();
-        return view('dashboards.accountant', compact('totalRevenue', 'totalDebt', 'debtors', 'recentPayments'));
+        $totalBilled      = \App\Models\Invoice::sum('amount');
+        $totalCollected   = \App\Models\Invoice::where('status', 'paid')->sum('amount');
+        $totalOutstanding = \App\Models\Invoice::where('status', 'pending')->sum('amount');
+        $collectionRate   = $totalBilled > 0 ? (int) round($totalCollected / $totalBilled * 100) : 0;
+
+        // Most recent settled invoices.
+        $recentPayments = \App\Models\Invoice::where('status', 'paid')
+            ->whereNotNull('paid_at')
+            ->with('student')
+            ->latest('paid_at')->take(6)->get();
+
+        // Students carrying the largest unpaid balance across all their invoices.
+        $topDebtors = \App\Models\Invoice::where('status', 'pending')
+            ->whereNotNull('student_id')
+            ->select('student_id', DB::raw('SUM(amount) as outstanding'), DB::raw('COUNT(*) as bills'))
+            ->groupBy('student_id')
+            ->orderByDesc('outstanding')
+            ->with('student')
+            ->take(10)->get();
+
+        // Per-order collection progress (latest orders).
+        $orders = \App\Models\FeeOrder::withCount([
+                'invoices',
+                'invoices as paid_count' => fn ($q) => $q->where('status', 'paid'),
+            ])
+            ->withSum(['invoices as collected' => fn ($q) => $q->where('status', 'paid')], 'amount')
+            ->latest()->take(6)->get();
+
+        return view('dashboards.accountant', compact(
+            'totalBilled', 'totalCollected', 'totalOutstanding', 'collectionRate',
+            'recentPayments', 'topDebtors', 'orders'
+        ));
     }
 
     /**

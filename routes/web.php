@@ -4,7 +4,6 @@ use App\Http\Controllers\Auth\PasswordChangeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\FeeController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\StaffAttendanceController;
 use App\Http\Controllers\DashboardController;
@@ -205,24 +204,20 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::post('/scores/store', [ScoreController::class, 'store'])->name('scores.store');
     });
 
-    // --- Fees & Finance --- (Bursar/Accountant only for taking payments)
+    // --- Fees & Finance --- Payment Orders (Paystack) is the single billing tool.
     Route::middleware('role:'.Permissions::middleware('manage_fees'))->group(function () {
         Route::get('/students/{student}/pay', [PaymentController::class, 'create'])->name('payments.create');
         Route::post('/students/{student}/pay', [PaymentController::class, 'store'])->name('payments.store');
 
-        // Fee billing actions
-        Route::post('/fees/student', [FeeController::class, 'storeStudentFee'])->name('fees.student');
-        Route::post('/fees/class', [FeeController::class, 'storeClassFee'])->name('fees.class');
-
-        // Phase 4 — online payment orders (Paystack). Bursar creates/fans out.
-        Route::get('/fees/orders', [\App\Http\Controllers\FeeOrderController::class, 'index'])->name('fees.orders.index');
+        // Bursar creates a payment order and fans it out to invoices.
         Route::post('/fees/orders', [\App\Http\Controllers\FeeOrderController::class, 'store'])->name('fees.orders.store');
-        Route::get('/fees/orders/{feeOrder}', [\App\Http\Controllers\FeeOrderController::class, 'show'])->name('fees.orders.show');
     });
 
-    // Fee hub is viewable by finance + oversight roles (writes still gated above).
+    // Payment Orders list/detail viewable by finance + oversight roles
+    // (the create form inside is gated to manage_fees in the view).
     Route::middleware('role:'.Permissions::middleware('view_fees'))->group(function () {
-        Route::get('/fees', [FeeController::class, 'index'])->name('fees.index');
+        Route::get('/fees/orders', [\App\Http\Controllers\FeeOrderController::class, 'index'])->name('fees.orders.index');
+        Route::get('/fees/orders/{feeOrder}', [\App\Http\Controllers\FeeOrderController::class, 'show'])->name('fees.orders.show');
     });
     // Receipts — finance/oversight staff + the owning student (authorized in controller).
     Route::get('/payments/{payment}/receipt', [PaymentController::class, 'show'])->name('payments.receipt');

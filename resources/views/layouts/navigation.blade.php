@@ -105,15 +105,9 @@
                             <x-nav-link :href="route('hod.registrations')" :active="request()->routeIs('hod.registrations')">{{ __('Registrations') }}</x-nav-link>
                         @endcan
 
-                        @can('manage_fees')
-                            <x-nav-link :href="route('fees.index')" :active="request()->routeIs('fees.index')">{{ __('Fees') }}</x-nav-link>
+                        @can('view_fees')
                             <x-nav-link :href="route('fees.orders.index')" :active="request()->routeIs('fees.orders.*')">{{ __('Payment Orders') }}</x-nav-link>
                         @endcan
-                        @cannot('manage_fees')
-                            @can('view_fees')
-                                <x-nav-link :href="route('fees.index')" :active="request()->routeIs('fees.index')">{{ __('Fees') }}</x-nav-link>
-                            @endcan
-                        @endcannot
 
                         @can('manage_library')
                             <x-nav-link :href="route('library.index')" :active="request()->routeIs('library.*')">{{ __('Library') }}</x-nav-link>
@@ -243,8 +237,7 @@
             @can('manage_inventory')
                 <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">{{ __('Inventory') }}</x-responsive-nav-link>
             @endcan
-            @can('manage_fees')
-                <x-responsive-nav-link :href="route('fees.index')" :active="request()->routeIs('fees.index')">{{ __('Fees') }}</x-responsive-nav-link>
+            @can('view_fees')
                 <x-responsive-nav-link :href="route('fees.orders.index')" :active="request()->routeIs('fees.orders.*')">{{ __('Payment Orders') }}</x-responsive-nav-link>
             @endcan
             @can('approve_registration')
