@@ -33,8 +33,9 @@ class Permissions
         'manage_programs'      => ['mis'],
         'view_departments'     => ['registrar', 'proprietor', 'provost', 'academic_secretary', 'hod', 'assistant_hod', 'exam_officer', 'mis', 'admission_officer'],
 
-        // Timetable generation & approval — MIS. Everyone else views.
-        'manage_timetable'     => ['mis'],
+        // Timetable generation & approval — Academic Secretary ONLY.
+        // Everyone else (incl. MIS, lecturers, students) sees the published one.
+        'manage_timetable'     => ['academic_secretary'],
 
         // Payroll — Bursar runs it; MIS reviews/approves.
         'manage_payroll'       => ['bursar'],

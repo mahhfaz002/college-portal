@@ -19,13 +19,31 @@ class CourseAssignmentController extends Controller
             'user_id'    => 'required|exists:users,id',
         ]);
 
-        $lecturer = User::where('role', 'lecturer')->findOrFail($data['user_id']);
+        $lecturer = User::whereIn('role', ['lecturer', 'hod', 'assistant_hod'])->findOrFail($data['user_id']);
         $course = Subject::findOrFail($data['subject_id']);
 
         // syncWithoutDetaching avoids duplicate pivot rows.
         $course->teachers()->syncWithoutDetaching([$lecturer->id]);
 
         return back()->with('success', "Assigned “{$course->name}” to {$lecturer->name}.");
+    }
+
+    /** Assign several courses to one lecturer at once (batch). */
+    public function storeBatch(Request $request)
+    {
+        $data = $request->validate([
+            'subject_ids'   => 'required|array|min:1',
+            'subject_ids.*' => 'integer|exists:subjects,id',
+            'user_id'       => 'required|exists:users,id',
+        ]);
+
+        $lecturer = User::whereIn('role', ['lecturer', 'hod', 'assistant_hod'])->findOrFail($data['user_id']);
+
+        foreach ($data['subject_ids'] as $subjectId) {
+            Subject::findOrFail($subjectId)->teachers()->syncWithoutDetaching([$lecturer->id]);
+        }
+
+        return back()->with('success', count($data['subject_ids'])." course(s) assigned to {$lecturer->name}.");
     }
 
     public function destroy(Request $request)

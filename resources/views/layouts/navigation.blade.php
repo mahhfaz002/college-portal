@@ -66,18 +66,23 @@
 
                         @can('manage_departments')
                             <x-nav-link :href="route('structure.index')" :active="request()->routeIs('structure.*')">{{ __('Academic Structure') }}</x-nav-link>
+                        @elsecan('assign_courses')
+                            <x-nav-link :href="route('academic.departments')" :active="request()->routeIs('academic.departments')">{{ __('Departments') }}</x-nav-link>
                         @elsecan('view_departments')
                             <x-nav-link :href="route('departments.index')" :active="request()->routeIs('departments.*')">{{ __('Departments') }}</x-nav-link>
                         @endcan
 
                         @can('manage_subjects')
                             <x-nav-link :href="route('courses.builder')" :active="request()->routeIs('courses.builder')">{{ __('Create Courses') }}</x-nav-link>
-                        @endcan
-                        @can('view_subjects')
+                            <x-nav-link :href="route('academic.courses')" :active="request()->routeIs('academic.courses')">{{ __('Courses') }}</x-nav-link>
+                        @elsecan('view_subjects')
                             <x-nav-link :href="route('subjects.index')" :active="request()->routeIs('subjects.*')">{{ __('Courses') }}</x-nav-link>
                         @endcan
                         @can('assign_courses')
-                            <x-nav-link :href="route('subjects.index')" :active="false">{{ __('Assign Courses') }}</x-nav-link>
+                            <x-nav-link :href="route('academic.assign')" :active="request()->routeIs('academic.assign')">{{ __('Assign Courses') }}</x-nav-link>
+                        @endcan
+                        @can('manage_timetable')
+                            <x-nav-link :href="route('timetable.index')" :active="request()->routeIs('timetable.*')">{{ __('Timetable') }}</x-nav-link>
                         @endcan
 
                         @can('view_attendance')
@@ -87,7 +92,9 @@
                             <x-nav-link :href="route('exams.my')" :active="request()->routeIs('exams.my')">{{ __('Set Exams') }}</x-nav-link>
                         @endcan
 
-                        @can('view_staff')
+                        @can('assign_courses')
+                            <x-nav-link :href="route('academic.staff')" :active="request()->routeIs('academic.staff')">{{ __('Staff') }}</x-nav-link>
+                        @elsecan('view_staff')
                             <x-nav-link :href="route('staff.index')" :active="request()->routeIs('staff.*')">{{ __('Staff') }}</x-nav-link>
                         @endcan
 
@@ -212,12 +219,23 @@
             @endcan
             @can('manage_departments')
                 <x-responsive-nav-link :href="route('departments.index')">{{ __('Departments') }}</x-responsive-nav-link>
+            @elsecan('assign_courses')
+                <x-responsive-nav-link :href="route('academic.departments')" :active="request()->routeIs('academic.departments')">{{ __('Departments') }}</x-responsive-nav-link>
             @endcan
             @can('manage_programs')
                 <x-responsive-nav-link :href="route('programs.index')">{{ __('Programs') }}</x-responsive-nav-link>
             @endcan
-            @can('view_subjects')
+            @can('manage_subjects')
+                <x-responsive-nav-link :href="route('courses.builder')" :active="request()->routeIs('courses.builder')">{{ __('Create Courses') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('academic.courses')" :active="request()->routeIs('academic.courses')">{{ __('Courses') }}</x-responsive-nav-link>
+            @elsecan('view_subjects')
                 <x-responsive-nav-link :href="route('subjects.index')" :active="request()->routeIs('subjects.*')">{{ __('Courses') }}</x-responsive-nav-link>
+            @endcan
+            @can('assign_courses')
+                <x-responsive-nav-link :href="route('academic.assign')" :active="request()->routeIs('academic.assign')">{{ __('Assign Courses') }}</x-responsive-nav-link>
+            @endcan
+            @can('manage_timetable')
+                <x-responsive-nav-link :href="route('timetable.index')" :active="request()->routeIs('timetable.*')">{{ __('Timetable') }}</x-responsive-nav-link>
             @endcan
             @can('view_attendance')
                 <x-responsive-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.*')">{{ __('Attendance') }}</x-responsive-nav-link>
@@ -225,7 +243,9 @@
             @can('author_questions')
                 <x-responsive-nav-link :href="route('exams.my')" :active="request()->routeIs('exams.my')">{{ __('Set Exams') }}</x-responsive-nav-link>
             @endcan
-            @can('view_staff')
+            @can('assign_courses')
+                <x-responsive-nav-link :href="route('academic.staff')" :active="request()->routeIs('academic.staff')">{{ __('Staff') }}</x-responsive-nav-link>
+            @elsecan('view_staff')
                 <x-responsive-nav-link :href="route('staff.index')" :active="request()->routeIs('staff.*')">{{ __('Staff') }}</x-responsive-nav-link>
             @endcan
             @can('view_applications')

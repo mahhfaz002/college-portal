@@ -27,12 +27,12 @@ class TimetableController extends Controller
         if ($user->role === 'student') {
             return $this->studentView($user);
         }
-        if ($user->role === 'teacher') {
+        if ($user->hasRole('lecturer', 'hod', 'assistant_hod')) {
             return $this->teacherView($user);
         }
 
-        // Principal manages; every other staff role sees the published timetable read-only.
-        $canManage = $user->canManage('manage_timetable'); // principal only
+        // Academic Secretary manages; every other staff role sees it read-only.
+        $canManage = $user->canManage('manage_timetable'); // academic_secretary only
         $approved = TimetablePlan::where('status', 'approved')->latest()->with('entries.subject', 'entries.teacher')->first();
         $draft = $canManage
             ? TimetablePlan::where('status', 'draft')->latest()->with('entries.subject', 'entries.teacher')->first()
@@ -62,7 +62,7 @@ class TimetableController extends Controller
         $plan = $this->service->generate(array_filter($data, fn ($v) => $v !== null), auth()->id());
 
         $msg = $plan->entries->isEmpty()
-            ? 'No timetable could be built — assign teachers to classes & subjects first.'
+            ? 'No timetable could be built — assign courses to lecturers first (Assign Courses).'
             : "Draft timetable generated ({$plan->engine}). Review and approve to publish.";
 
         return redirect()->route('timetable.index')->with('success', $msg);
@@ -107,16 +107,22 @@ class TimetableController extends Controller
     private function studentView($user)
     {
         $student = Student::where('email', $user->email)->first();
-        $classArm = $student->class_arm ?? null;
 
+        // Tertiary model: a student's timetable is their programme + level.
         $plan = TimetablePlan::where('status', 'approved')->latest()->first();
-        $entries = ($plan && $classArm)
-            ? TimetableEntry::where('plan_id', $plan->id)->where('class_arm', $classArm)
+        $entries = ($plan && $student && $student->program_id)
+            ? TimetableEntry::where('plan_id', $plan->id)
+                ->where('program_id', $student->program_id)
+                ->when($student->level, fn ($q) => $q->where('level', $student->level))
                 ->with('subject', 'teacher')->orderBy('period_no')->get()
             : collect();
 
+        $label = $student && $student->program_id
+            ? optional($entries->first())->class_arm
+            : null;
+
         return view('timetable.personal', [
-            'title' => 'My Class Timetable'.($classArm ? " — {$classArm}" : ''),
+            'title' => 'My Class Timetable'.($label ? " — {$label}" : ''),
             'plan' => $plan,
             'entries' => $entries,
             'params' => $plan ? $plan->params : $this->service->defaultParams(),

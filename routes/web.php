@@ -195,7 +195,16 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
 
     // --- Academic Secretary: assign courses to lecturers ---
     Route::middleware('role:'.Permissions::middleware('assign_courses'))->group(function () {
+        $AC = \App\Http\Controllers\AcademicSecretaryController::class;
+        // Read-only browse screens.
+        Route::get('/academic/courses', [$AC, 'coursesList'])->name('academic.courses');
+        Route::get('/academic/departments', [$AC, 'departments'])->name('academic.departments');
+        // Course-centric + lecturer-centric assignment screens.
+        Route::get('/academic/assign', [$AC, 'assign'])->name('academic.assign');
+        Route::get('/academic/staff', [$AC, 'staff'])->name('academic.staff');
+
         Route::post('/course-assignments', [\App\Http\Controllers\CourseAssignmentController::class, 'store'])->name('course-assignments.store');
+        Route::post('/course-assignments/batch', [\App\Http\Controllers\CourseAssignmentController::class, 'storeBatch'])->name('course-assignments.batch');
         Route::delete('/course-assignments', [\App\Http\Controllers\CourseAssignmentController::class, 'destroy'])->name('course-assignments.destroy');
     });
 

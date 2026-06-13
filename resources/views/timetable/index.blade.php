@@ -10,8 +10,8 @@
 
             @if($canManage)
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <h3 class="font-bold text-gray-700 border-b pb-2 mb-4">Generate Weekly Timetable (AI)</h3>
-                <p class="text-sm text-gray-500 mb-4">Uses your classes, subjects and teacher assignments. The AI proposes a layout and the system guarantees no teacher is double-booked. Mon–Fri, recurring weekly.</p>
+                <h3 class="font-bold text-gray-700 border-b pb-2 mb-4">Generate Weekly Timetable</h3>
+                <p class="text-sm text-gray-500 mb-4">Builds a grid per programme &amp; level from the courses you assigned to lecturers (Assign Courses). The system guarantees no lecturer is double-booked. Mon–Fri, recurring weekly.</p>
                 <form action="{{ route('timetable.generate') }}" method="POST" class="grid grid-cols-2 sm:grid-cols-5 gap-3 items-end">
                     @csrf
                     <div><label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Periods/day</label><input type="number" name="periods" value="{{ $params['periods'] }}" class="w-full border-gray-300 rounded-md text-sm"></div>

@@ -67,34 +67,39 @@ class TimetableService
     }
 
     /**
-     * Per-class courses derived from teacher assignments:
-     * [class_arm => [['subject_id','subject','teacher_id','teacher'], ...]]
+     * Courses grouped by programme + level, derived from the course assignments
+     * the Academic Secretary made (subject_teacher pivot). The group key is a
+     * human label ("ND Science Lab Tech · L100") which is stored on each entry's
+     * class_arm for display; program_id + level travel on each course so entries
+     * can be filtered structurally.
+     *
+     * [label => [['subject_id','subject','teacher_id','teacher','program_id','level'], ...]]
      */
     public function gatherCourses(): array
     {
         $courses = [];
-        $classes = SchoolClass::where('active', true)->orderBy('name')->with('teachers.subjects')->get();
 
-        foreach ($classes as $class) {
-            $list = [];
-            $seen = [];
-            foreach ($class->teachers as $teacher) {
-                foreach ($teacher->subjects as $subject) {
-                    if (isset($seen[$subject->id])) {
-                        continue; // one teacher per subject per class
-                    }
-                    $seen[$subject->id] = true;
-                    $list[] = [
-                        'subject_id' => $subject->id,
-                        'subject'    => $subject->name,
-                        'teacher_id' => $teacher->id,
-                        'teacher'    => $teacher->name,
-                    ];
-                }
+        $subjects = \App\Models\Subject::with(['teachers', 'program'])
+            ->whereNotNull('program_id')
+            ->orderBy('level')->orderBy('course_code')->get();
+
+        foreach ($subjects as $subject) {
+            $teacher = $subject->teachers->first();   // one lecturer per course
+            if (!$teacher || !$subject->program) {
+                continue;                              // unassigned course → skip
             }
-            if ($list) {
-                $courses[$class->name] = $list;
-            }
+
+            $level = $subject->level ?: '';
+            $label = trim($subject->program->name.($level ? " · L{$level}" : ''));
+
+            $courses[$label][] = [
+                'subject_id' => $subject->id,
+                'subject'    => $subject->course_code ? "{$subject->name} ({$subject->course_code})" : $subject->name,
+                'teacher_id' => $teacher->id,
+                'teacher'    => $teacher->name,
+                'program_id' => $subject->program_id,
+                'level'      => $level,
+            ];
         }
 
         return $courses;
@@ -130,7 +135,9 @@ class TimetableService
                     }
                     TimetableEntry::create([
                         'plan_id'    => $plan->id,
-                        'class_arm'  => $classArm,
+                        'class_arm'  => $classArm,                  // display label
+                        'program_id' => $course['program_id'] ?? null,
+                        'level'      => $course['level'] ?? null,
                         'day'        => $day,
                         'period_no'  => $row['no'],
                         'start_time' => $row['start'],
