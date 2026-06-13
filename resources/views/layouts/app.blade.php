@@ -28,6 +28,9 @@
                 </header>
             @endisset
 
+            <!-- Exam Mode countdown (shows on every dashboard when active) -->
+            @include('partials.exam-countdown')
+
             <!-- Page Content -->
             <main>
                 {{ $slot }}

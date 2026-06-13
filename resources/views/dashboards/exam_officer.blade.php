@@ -30,6 +30,49 @@
                 </div>
             </div>
 
+            @if(session('success'))<div class="p-4 bg-green-100 border border-green-300 text-green-800 rounded-lg text-sm">{{ session('success') }}</div>@endif
+            @if($errors->any())<div class="p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg text-sm"><ul class="list-disc ml-5">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
+
+            <!-- Exam Mode -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="font-bold text-gray-700 mb-1 flex items-center gap-2">⏳ Exam Mode</h3>
+                @if($examCycle)
+                    <p class="text-sm text-gray-500 mb-4">Exam Mode is <span class="font-bold text-emerald-600">ACTIVE</span> — a countdown is live on every dashboard, and lecturers have a question-submission deadline.</p>
+                    <div class="grid sm:grid-cols-3 gap-4 mb-4">
+                        <div class="p-4 bg-gray-50 rounded-lg border">
+                            <p class="text-xs font-bold text-gray-400 uppercase">Title</p>
+                            <p class="font-bold text-gray-800">{{ $examCycle->title }}</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg border">
+                            <p class="text-xs font-bold text-gray-400 uppercase">Exams start</p>
+                            <p class="font-bold text-gray-800">{{ $examCycle->exam_start_at->format('D, d M Y g:ia') }}</p>
+                        </div>
+                        <div class="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                            <p class="text-xs font-bold text-amber-500 uppercase">Questions due (−5 days)</p>
+                            <p class="font-bold text-amber-700">{{ $examCycle->submission_deadline_at->format('D, d M Y g:ia') }}</p>
+                        </div>
+                    </div>
+                    <form method="POST" action="{{ route('exam-mode.close', $examCycle) }}" onsubmit="return confirm('Close Exam Mode? The countdown will stop showing.')">
+                        @csrf
+                        <button class="bg-gray-200 text-gray-700 px-5 py-2 rounded-lg font-bold hover:bg-gray-300 text-sm">Close Exam Mode</button>
+                    </form>
+                @else
+                    <p class="text-sm text-gray-500 mb-4">Activate Exam Mode to notify all staff &amp; students and start a countdown on every dashboard. The lecturers' question-submission deadline is set automatically to <strong>5 days before</strong> the exam start.</p>
+                    <form method="POST" action="{{ route('exam-mode.activate') }}" class="grid sm:grid-cols-3 gap-4 items-end">
+                        @csrf
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label>
+                            <input name="title" placeholder="e.g. First Semester Exams" value="{{ old('title') }}" class="w-full border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Exam start date &amp; time *</label>
+                            <input name="exam_start_at" type="datetime-local" required value="{{ old('exam_start_at') }}" class="w-full border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <button class="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-bold hover:bg-indigo-700 text-sm h-10">⚡ Activate Exam Mode</button>
+                    </form>
+                @endif
+            </div>
+
             <!-- Exams -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="px-6 py-4 bg-gray-50 border-b flex justify-between items-center">

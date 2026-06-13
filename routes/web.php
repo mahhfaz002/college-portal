@@ -333,6 +333,10 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
     Route::middleware('role:'.Permissions::middleware('manage_exams'))->group(function () {
         Route::get('/exams/create', [ExamController::class, 'create'])->name('exams.create');
         Route::post('/exams', [ExamController::class, 'store'])->name('exams.store');
+
+        // Exam Mode (countdown timers + notification).
+        Route::post('/exam-mode', [\App\Http\Controllers\ExamModeController::class, 'activate'])->name('exam-mode.activate');
+        Route::post('/exam-mode/{examCycle}/close', [\App\Http\Controllers\ExamModeController::class, 'close'])->name('exam-mode.close');
     });
 
     // -- Teacher: author questions + grade --

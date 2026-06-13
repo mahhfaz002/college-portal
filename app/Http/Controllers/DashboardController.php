@@ -407,8 +407,10 @@ class DashboardController extends Controller
             ];
         });
 
+        $examCycle = \App\Models\ExamCycle::active();
+
         return view('dashboards.exam_officer', compact(
-            'totalStudents', 'subjectsCount', 'exams', 'openQueries', 'pendingGrading', 'roster'
+            'totalStudents', 'subjectsCount', 'exams', 'openQueries', 'pendingGrading', 'roster', 'examCycle'
         ));
     }
 
