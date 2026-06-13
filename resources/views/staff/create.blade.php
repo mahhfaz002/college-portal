@@ -70,7 +70,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Login Email <span class="text-gray-300">(auto if blank)</span></label>
-                            <input type="email" name="email" value="{{ old('email') }}" placeholder="auto: f.surname@{{ setting('staff_email_domain','school.test') }}" class="w-full border-gray-300 rounded-md shadow-sm">
+                            <input type="email" name="email" value="{{ old('email') }}" placeholder="auto: f.surname@{{ optional(current_college())->domain ?: setting('staff_email_domain','school.test') }}" class="w-full border-gray-300 rounded-md shadow-sm">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Password <span class="text-gray-300">(auto if blank)</span></label>

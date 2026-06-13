@@ -223,10 +223,19 @@ class UserController extends Controller
 
     /**
      * firstInitial + surname @ domain, with numeric suffix on collision.
+     * The domain is the REGISTERING college's own domain (e.g. albaz.edu.ng),
+     * not a global setting — so each tenant's staff emails carry that college's
+     * identity. Falls back to the global setting only if the college has none.
      */
     private function generateEmail(string $firstName, string $surname): string
     {
-        $domain = setting('staff_email_domain', 'school.test');
+        $college = current_college();
+        $domain = $college?->domain
+            ?: setting('staff_email_domain', 'school.test');
+        // Normalise in case a full URL/host-with-path was stored.
+        $domain = preg_replace('#^https?://#', '', (string) $domain);
+        $domain = trim(explode('/', $domain)[0]) ?: 'school.test';
+
         $base = Str::lower(Str::substr($firstName, 0, 1).preg_replace('/\s+/', '', $surname));
         $base = preg_replace('/[^a-z0-9]/', '', $base) ?: 'staff';
 
