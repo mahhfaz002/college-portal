@@ -115,6 +115,9 @@
                         @can('view_fees')
                             <x-nav-link :href="route('fees.orders.index')" :active="request()->routeIs('fees.orders.*')">{{ __('Payment Orders') }}</x-nav-link>
                         @endcan
+                        @can('manage_fees')
+                            <x-nav-link :href="route('printables.index')" :active="request()->routeIs('printables.*')">{{ __('Printables') }}</x-nav-link>
+                        @endcan
 
                         @can('manage_library')
                             <x-nav-link :href="route('library.index')" :active="request()->routeIs('library.*')">{{ __('Library') }}</x-nav-link>
@@ -259,6 +262,9 @@
             @endcan
             @can('view_fees')
                 <x-responsive-nav-link :href="route('fees.orders.index')" :active="request()->routeIs('fees.orders.*')">{{ __('Payment Orders') }}</x-responsive-nav-link>
+            @endcan
+            @can('manage_fees')
+                <x-responsive-nav-link :href="route('printables.index')" :active="request()->routeIs('printables.*')">{{ __('Printables') }}</x-responsive-nav-link>
             @endcan
             @can('approve_registration')
                 <x-responsive-nav-link :href="route('hod.students')">{{ __('Dept Students') }}</x-responsive-nav-link>

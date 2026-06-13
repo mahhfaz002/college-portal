@@ -13,14 +13,25 @@ class PayslipController extends Controller
     {
         $month = $request->query('month', now()->format('Y-m'));
 
-        $staff = User::where('role', '!=', 'student')->orderBy('name')->get();
+        $staff = User::where('role', '!=', 'student')
+            ->whereNotIn('role', ['applicant', 'superadmin'])
+            ->with('departmentModel')->orderBy('name')->get();
         $slips = Payslip::where('month', $month)->get()->keyBy('user_id');
 
-        $rows = $staff->map(fn ($s) => ['staff' => $s, 'slip' => $slips->get($s->id)]);
+        // Staff carry a section (from their department) for filtering; those with
+        // no department (cleaners, assistants, secretaries…) fall under "Others".
+        $rows = $staff->map(fn ($s) => [
+            'staff'   => $s,
+            'slip'    => $slips->get($s->id),
+            'dept'    => optional($s->departmentModel)->name,
+            'section' => optional($s->departmentModel)->section ?: 'Others',
+        ]);
 
         return view('hr.index', [
-            'rows'  => $rows,
-            'month' => $month,
+            'rows'     => $rows,
+            'month'    => $month,
+            'sections' => array_merge(\App\Support\Sections::ALL, ['Others']),
+            'departments' => \App\Models\Department::orderBy('name')->get(['id', 'name', 'section']),
             'counts' => [
                 'draft'     => $slips->where('status', 'draft')->count(),
                 'submitted' => $slips->where('status', 'submitted')->count(),

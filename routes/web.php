@@ -221,6 +221,12 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
 
         // Bursar creates a payment order and fans it out to invoices.
         Route::post('/fees/orders', [\App\Http\Controllers\FeeOrderController::class, 'store'])->name('fees.orders.store');
+
+        // Printables archive — student receipts + staff payslips.
+        $PR = \App\Http\Controllers\PrintablesController::class;
+        Route::get('/printables', [$PR, 'index'])->name('printables.index');
+        Route::get('/printables/student/{student}/receipts', [$PR, 'studentReceipts'])->name('printables.student');
+        Route::get('/printables/staff/{user}/payslips', [$PR, 'staffPayslips'])->name('printables.staff');
     });
 
     // Payment Orders list/detail viewable by finance + oversight roles

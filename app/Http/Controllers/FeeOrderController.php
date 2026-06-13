@@ -27,17 +27,34 @@ class FeeOrderController extends Controller
             ->latest()->get();
 
         $departments = Department::orderBy('name')->get();
-        $programs    = Program::with('department')->orderBy('name')->get();
         $levels      = Student::query()->select('level')->whereNotNull('level')->distinct()->pluck('level');
 
-        // Filtered student directory (bursar can browse by dept/program/level).
+        // Programmes shaped for the cascading scope selector (section → dept → programme → level).
+        $programs = Program::with('department')->orderBy('name')->get()->map(fn ($p) => [
+            'id'      => $p->id,
+            'name'    => $p->name,
+            'type'    => $p->program_type ?? 'UG',
+            'levels'  => (int) ($p->levels ?: 1),
+            'dept_id' => $p->department_id,
+            'section' => optional($p->department)->section,
+        ]);
+
+        // Filtered student directory (bursar can browse by section/dept/program/level).
         $students = Student::with(['department', 'program'])
+            ->when($request->filled('section'), fn ($q) => $q->whereIn('department_id', Department::where('section', $request->section)->pluck('id')))
             ->when($request->filled('department_id'), fn ($q) => $q->where('department_id', $request->department_id))
             ->when($request->filled('program_id'), fn ($q) => $q->where('program_id', $request->program_id))
             ->when($request->filled('level'), fn ($q) => $q->where('level', $request->level))
             ->orderBy('full_name')->get();
 
-        return view('fees.orders.index', compact('orders', 'departments', 'programs', 'levels', 'students'));
+        return view('fees.orders.index', [
+            'orders'      => $orders,
+            'departments' => $departments,
+            'programs'    => $programs,
+            'levels'      => $levels,
+            'students'    => $students,
+            'sections'    => \App\Support\Sections::ALL,
+        ]);
     }
 
     /** Create a payment order and fan it out to invoices. */
@@ -47,7 +64,9 @@ class FeeOrderController extends Controller
             'title'       => 'required|string|max:150',
             'description' => 'nullable|string|max:255',
             'amount'      => 'required|numeric|min:1',
-            'scope_type'  => 'required|in:all,department,program,level,students',
+            // mode 'filter' = optional cascade (any depth); 'students' = hand-picked.
+            'mode'          => 'required|in:filter,students',
+            'section'       => 'nullable|string',
             'department_id' => 'nullable|exists:departments,id',
             'program_id'    => 'nullable|exists:programs,id',
             'level'         => 'nullable|string',
@@ -68,7 +87,7 @@ class FeeOrderController extends Controller
                 'title'       => $data['title'],
                 'description' => $data['description'] ?? null,
                 'amount'      => $data['amount'],
-                'scope_type'  => $data['scope_type'],
+                'scope_type'  => $data['mode'],
                 'scope_label' => $label,
                 'students_count' => $targets->count(),
             ]);
@@ -109,32 +128,41 @@ class FeeOrderController extends Controller
         return view('fees.orders.show', ['order' => $feeOrder, 'invoices' => $invoices]);
     }
 
-    /** Resolve the target students + a human label from the scope. */
+    /**
+     * Resolve the target students + a human label.
+     *
+     * 'students' mode = a hand-picked list. 'filter' mode = an OPTIONAL cascade:
+     * the bursar may set any of section / department / programme / level and
+     * stop at any depth — every unset level is left unconstrained. Setting
+     * nothing targets the whole college.
+     */
     private function resolveTargets(array $data): array
     {
-        $q = Student::query();
-
-        switch ($data['scope_type']) {
-            case 'department':
-                $q->where('department_id', $data['department_id']);
-                $label = 'Department: '.optional(Department::find($data['department_id']))->name;
-                break;
-            case 'program':
-                $q->where('program_id', $data['program_id']);
-                $label = 'Program: '.optional(Program::find($data['program_id']))->name;
-                break;
-            case 'level':
-                $q->where('level', $data['level']);
-                $label = 'Level: '.$data['level'];
-                break;
-            case 'students':
-                $q->whereIn('id', $data['student_ids'] ?? []);
-                $label = 'Selected students';
-                break;
-            default:
-                $label = 'All students';
+        if (($data['mode'] ?? 'filter') === 'students') {
+            return [Student::whereIn('id', $data['student_ids'] ?? [])->get(), 'Selected students'];
         }
 
-        return [$q->get(), $label];
+        $q = Student::query();
+        $labels = [];
+
+        if (!empty($data['section'])) {
+            $deptIds = Department::where('section', $data['section'])->pluck('id');
+            $q->whereIn('department_id', $deptIds);
+            $labels[] = $data['section'];
+        }
+        if (!empty($data['department_id'])) {
+            $q->where('department_id', $data['department_id']);
+            $labels[] = optional(Department::find($data['department_id']))->name;
+        }
+        if (!empty($data['program_id'])) {
+            $q->where('program_id', $data['program_id']);
+            $labels[] = optional(Program::find($data['program_id']))->name;
+        }
+        if (!empty($data['level'])) {
+            $q->where('level', $data['level']);
+            $labels[] = 'L'.$data['level'];
+        }
+
+        return [$q->get(), $labels ? implode(' · ', array_filter($labels)) : 'All students'];
     }
 }

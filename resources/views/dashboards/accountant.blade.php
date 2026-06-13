@@ -8,6 +8,9 @@
                 <a href="{{ route('fees.orders.index') }}" class="btn-brand px-4 py-2 rounded-lg font-bold shadow-sm">
                     + New Payment Order
                 </a>
+                <a href="{{ route('printables.index') }}" class="bg-gray-800 text-white px-4 py-2 rounded-lg font-bold hover:bg-gray-900 transition shadow-sm">
+                    Printables
+                </a>
                 @if(\Illuminate\Support\Facades\Route::has('payroll.index'))
                     <a href="{{ route('payroll.index') }}" class="bg-gray-800 text-white px-4 py-2 rounded-lg font-bold hover:bg-gray-900 transition shadow-sm">
                         Payroll

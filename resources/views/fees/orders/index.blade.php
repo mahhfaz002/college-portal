@@ -10,7 +10,8 @@
 
             {{-- Create order (bursar only; oversight roles see this read-only) --}}
             @can('manage_fees')
-            <div class="bg-white rounded-2xl shadow-sm border p-6" x-data="{ scope: 'all' }">
+            <div class="bg-white rounded-2xl shadow-sm border p-6"
+                 x-data="feeScope(@js($sections), @js($programs))">
                 <h3 class="font-bold text-gray-800 mb-4">Create a Payment Order</h3>
                 <form method="POST" action="{{ route('fees.orders.store') }}" class="space-y-4">
                     @csrf
@@ -20,40 +21,51 @@
                     </div>
                     <input name="description" placeholder="Description (shown on the receipt)" class="border-gray-300 rounded-lg w-full" value="{{ old('description') }}">
 
-                    <div class="grid md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Assign to</label>
-                            <select name="scope_type" x-model="scope" class="w-full border-gray-300 rounded-lg">
-                                <option value="all">All students</option>
-                                <option value="department">A department</option>
-                                <option value="program">A program</option>
-                                <option value="level">A level</option>
-                                <option value="students">Selected students</option>
-                            </select>
-                        </div>
+                    {{-- Mode toggle --}}
+                    <input type="hidden" name="mode" :value="mode">
+                    <div class="flex gap-2">
+                        <button type="button" @click="mode='filter'" :class="mode==='filter' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600'" class="px-4 py-1.5 rounded-full text-sm font-bold">By filter</button>
+                        <button type="button" @click="mode='students'" :class="mode==='students' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600'" class="px-4 py-1.5 rounded-full text-sm font-bold">Selected students</button>
+                    </div>
 
-                        <div x-show="scope==='department'">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Department</label>
-                            <select name="department_id" class="w-full border-gray-300 rounded-lg">
-                                @foreach($departments as $d)<option value="{{ $d->id }}">{{ $d->name }}</option>@endforeach
-                            </select>
-                        </div>
-                        <div x-show="scope==='program'">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Program</label>
-                            <select name="program_id" class="w-full border-gray-300 rounded-lg">
-                                @foreach($programs as $p)<option value="{{ $p->id }}">{{ $p->name }} ({{ $p->department->acronym ?? '' }})</option>@endforeach
-                            </select>
-                        </div>
-                        <div x-show="scope==='level'">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Level</label>
-                            <select name="level" class="w-full border-gray-300 rounded-lg">
-                                @forelse($levels as $l)<option value="{{ $l }}">{{ $l }}</option>@empty<option value="100">100</option>@endforelse
-                            </select>
+                    {{-- Filter cascade — every level is optional; stop at any depth. --}}
+                    <div x-show="mode==='filter'">
+                        <p class="text-xs text-gray-500 mb-2">Pick as deep as you like and stop — e.g. choose only a department and <strong>every student across all its courses of study and levels</strong> is billed. Leave all blank to bill the whole college.</p>
+                        <div class="grid md:grid-cols-4 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Section</label>
+                                <select name="section" x-model="section" @change="deptId='';programId='';level=''" class="w-full border-gray-300 rounded-lg text-sm">
+                                    <option value="">All sections</option>
+                                    @foreach($sections as $s)<option value="{{ $s }}">{{ $s }}</option>@endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Department</label>
+                                <select name="department_id" x-model="deptId" @change="programId='';level=''" class="w-full border-gray-300 rounded-lg text-sm">
+                                    <option value="">All departments</option>
+                                    @foreach($departments as $d)<option value="{{ $d->id }}" x-show="!section || '{{ $d->section }}'===section">{{ $d->name }}</option>@endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Course of Study</label>
+                                <select name="program_id" x-model="programId" @change="level=''" class="w-full border-gray-300 rounded-lg text-sm">
+                                    <option value="">All courses of study</option>
+                                    <template x-for="p in coursesOfStudy()" :key="p.id"><option :value="p.id" x-text="p.name"></option></template>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Level</label>
+                                <select name="level" x-model="level" class="w-full border-gray-300 rounded-lg text-sm" :disabled="!programId">
+                                    <option value="">All levels</option>
+                                    <template x-for="l in levelOptions()" :key="l"><option :value="l" x-text="'L'+l"></option></template>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
-                    <div x-show="scope==='students'" class="border rounded-lg p-3 max-h-56 overflow-y-auto">
-                        <p class="text-xs text-gray-500 mb-2">Tick the students to bill (use the filter below to narrow the list).</p>
+                    {{-- Hand-picked students --}}
+                    <div x-show="mode==='students'" class="border rounded-lg p-3 max-h-56 overflow-y-auto">
+                        <p class="text-xs text-gray-500 mb-2">Tick the students to bill (use the directory filter below to narrow the list).</p>
                         @forelse($students as $s)
                             <label class="flex items-center gap-2 py-1 text-sm">
                                 <input type="checkbox" name="student_ids[]" value="{{ $s->id }}" class="rounded">
@@ -80,7 +92,7 @@
                         </select>
                         <select name="program_id" class="border-gray-300 rounded-lg text-sm py-1">
                             <option value="">All programs</option>
-                            @foreach($programs as $p)<option value="{{ $p->id }}" @selected(request('program_id')==$p->id)>{{ $p->name }}</option>@endforeach
+                            @foreach($programs as $p)<option value="{{ $p['id'] }}" @selected(request('program_id')==$p['id'])>{{ $p['name'] }}</option>@endforeach
                         </select>
                         <select name="level" class="border-gray-300 rounded-lg text-sm py-1">
                             <option value="">All levels</option>
@@ -129,4 +141,23 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function feeScope(sections, programs) {
+            return {
+                sections, programs,
+                mode: 'filter', section: '', deptId: '', programId: '', level: '',
+                coursesOfStudy() {
+                    return this.programs.filter(p =>
+                        (!this.section || p.section === this.section) &&
+                        (!this.deptId || String(p.dept_id) === String(this.deptId)));
+                },
+                levelOptions() {
+                    const p = this.programs.find(x => String(x.id) === String(this.programId));
+                    const out = []; for (let i = 1; i <= (p ? p.levels : 0); i++) out.push(String(i * 100));
+                    return out;
+                },
+            }
+        }
+    </script>
 </x-app-layout>
