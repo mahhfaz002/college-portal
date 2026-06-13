@@ -173,6 +173,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
     // --- Departments & Programs (Registrar owns the academic structure) ---
     Route::middleware('role:'.Permissions::middleware('view_departments'))->group(function () {
         Route::get('/departments', [\App\Http\Controllers\DepartmentController::class, 'index'])->name('departments.index');
+        Route::get('/departments/browse', [\App\Http\Controllers\DepartmentController::class, 'browse'])->name('departments.browse');
         Route::get('/programs', [\App\Http\Controllers\ProgramController::class, 'index'])->name('programs.index');
     });
     Route::middleware('role:'.Permissions::middleware('manage_departments'))->group(function () {
@@ -267,8 +268,10 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
     Route::middleware(['role:proprietor,mis'])->group(function () {
         Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
         Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy');
+    });
 
-        // --- School Settings / Branding ---
+    // --- College Settings / Branding --- MIS only (proprietor is view-only oversight).
+    Route::middleware(['role:mis'])->group(function () {
         Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
         Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
     });

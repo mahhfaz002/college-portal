@@ -46,54 +46,40 @@ class DashboardController extends Controller
      */
     private function proprietorDashboard(Request $request)
     {
-        $search = $request->query('search', '');
-        $selectedClass = $request->query('class');
-        $searchResults = collect();
+        // Headline oversight figures.
+        $studentCount = Student::count();
+        $staffCount   = \App\Models\User::whereNotIn('role', ['student', 'applicant', 'superadmin'])->count();
 
-        if ($search) {
-            $searchResults = Student::where('full_name', 'LIKE', "%{$search}%")
-                ->orWhere('admission_number', 'LIKE', "%{$search}%")
-                ->limit(5)->get();
-        }
+        // Finance on the Phase-4 Invoice engine (college-scoped) — real money.
+        $totalCollected   = \App\Models\Invoice::where('status', 'paid')->sum('amount');
+        $totalOutstanding = \App\Models\Invoice::where('status', 'pending')->sum('amount');
 
-        $studentQuery = Student::query();
-        $paymentQuery = Payment::with('student');
+        // Student headcount per department (college structure, not legacy classes).
+        $deptBreakdown = Student::select('department_id', DB::raw('COUNT(*) as total'))
+            ->groupBy('department_id')
+            ->with('department')
+            ->get()
+            ->sortByDesc('total')
+            ->values();
 
-        if ($selectedClass) {
-            $studentQuery->where('class_arm', $selectedClass);
-            $paymentQuery->whereHas('student', fn($q) => $q->where('class_arm', $selectedClass));
-        }
-
-        $totalRevenue = (clone $paymentQuery)->sum('amount');
-        $totalDebt = (clone $studentQuery)->sum('fees_balance');
-        $studentCount = (clone $studentQuery)->count();
-
+        // Top performers across the college (programme shown, not legacy class).
         $topStudents = Score::select('student_id', DB::raw('AVG(ca_score + exam_score) as average_score'))
-            ->groupBy('student_id')->orderByDesc('average_score')->with('student')->take(5)->get();
+            ->groupBy('student_id')->orderByDesc('average_score')
+            ->with('student.program')->take(5)->get();
 
-        $recentPayments = (clone $paymentQuery)->latest()->take(5)->get();
-        $classes = Student::select('class_arm')->whereNotNull('class_arm')->distinct()->pluck('class_arm');
-
-        // Oversight figures: total staff and per-class student headcounts.
-        $staffCount = \App\Models\User::where('role', '!=', 'student')->count();
-        $classBreakdown = Student::select('class_arm', DB::raw('COUNT(*) as total'))
-            ->whereNotNull('class_arm')
-            ->groupBy('class_arm')
-            ->orderBy('class_arm')
-            ->get();
+        // Most recent settled invoices.
+        $recentPayments = \App\Models\Invoice::where('status', 'paid')
+            ->whereNotNull('paid_at')->with('student')
+            ->latest('paid_at')->take(6)->get();
 
         return view('dashboards.proprietor', compact(
-            'totalRevenue',
-            'totalDebt',
             'studentCount',
             'staffCount',
-            'classBreakdown',
+            'totalCollected',
+            'totalOutstanding',
+            'deptBreakdown',
             'topStudents',
-            'recentPayments',
-            'classes',
-            'selectedClass',
-            'searchResults',
-            'search'
+            'recentPayments'
         ));
     }
 

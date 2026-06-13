@@ -29,17 +29,16 @@ class UserController extends Controller
      */
     public function index()
     {
-        $staff = User::where('role', '!=', 'student')
-            ->with(['classes', 'subjects'])
-            ->withCount(['classes', 'subjects'])
+        $staff = User::whereNotIn('role', ['student', 'applicant', 'superadmin'])
+            ->with(['departmentModel'])
             ->orderBy('role')
             ->orderBy('name')
             ->get();
 
         return view('staff.index', [
             'staff'       => $staff,
-            'allClasses'  => SchoolClass::orderBy('name')->get(),
-            'allSubjects' => Subject::orderBy('name')->get(),
+            'departments' => \App\Models\Department::orderBy('name')->get(['id', 'name', 'section']),
+            'sections'    => array_merge(\App\Support\Sections::ALL, ['Others']),
         ]);
     }
 

@@ -41,9 +41,9 @@ class Permissions
         'manage_payroll'       => ['bursar'],
         'review_payroll'       => ['mis'],
 
-        // Fees / payments — Bursar.
+        // Fees / payments — Bursar. (Proprietor no longer sees payment orders.)
         'manage_fees'          => ['bursar'],
-        'view_fees'            => ['proprietor', 'provost', 'bursar'],
+        'view_fees'            => ['provost', 'bursar'],
 
         // Admissions: applicants apply online; Registrar & Admission Officer
         // share the approval queue. Applications list is viewable by both.
@@ -55,17 +55,18 @@ class Permissions
 
         // Exam lifecycle — Exam Officer (+ MIS support during exams).
         'manage_exams'         => ['exam_officer', 'mis'],
-        'view_exams'           => ['exam_officer', 'mis', 'proprietor', 'provost', 'hod'],
+        'view_exams'           => ['exam_officer', 'mis', 'provost', 'hod'],
         'enter_scores'         => ['lecturer', 'exam_officer'],
         'author_questions'     => ['lecturer'],
         'take_exams'           => ['student'],
 
         // Attendance — Lecturers take it for their classes.
         'take_attendance'      => ['lecturer', 'exam_officer'],
-        'view_attendance'      => ['lecturer', 'exam_officer', 'proprietor', 'provost', 'hod'],
+        'view_attendance'      => ['lecturer', 'exam_officer', 'provost', 'hod'],
 
-        // Courses (formerly subjects) — academic staff view.
-        'view_subjects'        => ['lecturer', 'exam_officer', 'proprietor', 'provost', 'mis', 'academic_secretary', 'hod', 'assistant_hod'],
+        // Courses (formerly subjects) — academic staff view. (Proprietor sees
+        // courses inside the Departments browse instead of a separate menu.)
+        'view_subjects'        => ['lecturer', 'exam_officer', 'provost', 'mis', 'academic_secretary', 'hod', 'assistant_hod'],
 
         // Academic Secretary creates courses and assigns them to lecturers.
         'manage_subjects'      => ['academic_secretary'],
