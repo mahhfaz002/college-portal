@@ -102,7 +102,7 @@ class AdmissionWorkflowController extends Controller
         $invoice = $this->raiseInvoice($applicant, 'acceptance_fee',
             'Admission acceptance fee — '.$program->name, $program->acceptance_fee, $program);
 
-        return redirect()->route('payments.initialize', $invoice);
+        return redirect()->route('payments.checkout', $invoice);
     }
 
     /** Reject the offer → advised to reapply. */
@@ -143,7 +143,7 @@ class AdmissionWorkflowController extends Controller
         $invoice = $this->raiseInvoice($applicant, 'application_fee',
             'Application fee (reapplication) — '.$program->name, $program->application_fee, $program);
 
-        return redirect()->route('payments.initialize', $invoice);
+        return redirect()->route('payments.checkout', $invoice);
     }
 
     /* ---------------------------------------------------------------------

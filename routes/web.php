@@ -51,6 +51,7 @@ Route::post('/student/register', [\App\Http\Controllers\StudentSelfRegistrationC
 
 // Online payments (Paystack). Public: the application fee is paid before the
 // applicant account exists. Gateway init/callback look invoices up by id/ref.
+Route::get('/pay/{invoice}/checkout', [\App\Http\Controllers\GatewayPaymentController::class, 'checkout'])->name('payments.checkout');
 Route::get('/pay/{invoice}', [\App\Http\Controllers\GatewayPaymentController::class, 'initialize'])->name('payments.initialize');
 Route::get('/payments/callback', [\App\Http\Controllers\GatewayPaymentController::class, 'callback'])->name('payments.callback');
 // Server-to-server webhook (signature-verified; CSRF-exempt in bootstrap/app.php).

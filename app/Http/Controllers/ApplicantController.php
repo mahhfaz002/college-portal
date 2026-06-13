@@ -126,7 +126,7 @@ class ApplicantController extends Controller
             'reference'   => \App\Services\PaystackService::reference('APP'),
         ]);
 
-        return redirect()->route('payments.initialize', ['invoice' => $invoice->id]);
+        return redirect()->route('payments.checkout', ['invoice' => $invoice->id]);
     }
 
     /** Registrar review panel. */

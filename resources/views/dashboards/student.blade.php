@@ -212,7 +212,7 @@
                                     @if($inv->isPaid())
                                         <a href="{{ route('invoices.receipt', $inv) }}" target="_blank" class="text-indigo-600 font-semibold hover:underline">Print Receipt</a>
                                     @else
-                                        <a href="{{ route('payments.initialize', $inv) }}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-emerald-700">Pay Now</a>
+                                        <a href="{{ route('payments.checkout', $inv) }}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-emerald-700">Pay Now</a>
                                     @endif
                                 </td>
                             </tr>

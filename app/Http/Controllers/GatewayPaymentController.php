@@ -19,12 +19,54 @@ class GatewayPaymentController extends Controller
 {
     public function __construct(private PaystackService $paystack) {}
 
+    /**
+     * Checkout / invoice review page shown BEFORE the gateway. Itemises the fee,
+     * the flat portal convenience fee and the Paystack processing fee, then the
+     * grand total. "Proceed to Payment" continues to initialize(). Public,
+     * because the application fee is paid before the applicant has an account.
+     */
+    public function checkout(Invoice $invoice)
+    {
+        if ($invoice->isPaid()) {
+            return $this->afterPaid($invoice);
+        }
+
+        $breakdown = $this->applySurcharges($invoice);
+
+        $college = $invoice->college_id
+            ? \App\Models\College::withoutGlobalScopes()->find($invoice->college_id)
+            : current_college();
+
+        return view('payments.checkout', compact('invoice', 'breakdown', 'college'));
+    }
+
+    /**
+     * Compute and persist the surcharges for a pending invoice (idempotent), and
+     * return the breakdown. Called by the checkout page and, defensively, by
+     * initialize() so a direct gateway hit can never skip the surcharges.
+     */
+    private function applySurcharges(Invoice $invoice): array
+    {
+        $breakdown = PaystackService::surcharges((float) $invoice->amount);
+
+        if (! $invoice->isPaid()) {
+            $invoice->update([
+                'convenience_fee' => $breakdown['convenience'],
+                'service_fee'     => $breakdown['service'],
+            ]);
+        }
+
+        return $breakdown;
+    }
+
     /** Redirect the payer to the gateway for an invoice. */
     public function initialize(Invoice $invoice)
     {
         if ($invoice->isPaid()) {
             return $this->afterPaid($invoice);
         }
+
+        $this->applySurcharges($invoice);
 
         try {
             $url = $this->paystack->initialize($invoice, route('payments.callback'));
@@ -159,8 +201,14 @@ class GatewayPaymentController extends Controller
                 'Registration fee paid. Your student dashboard is unlocked — please upload your documents to complete registration.');
         }
 
-        return redirect()->to(Auth::check() ? route('dashboard') : route('home'))
-            ->with('success', 'Payment confirmed.');
+        // General student fees (bursar payment orders): straight to the printable
+        // receipt for what they just paid, per the portal payment flow.
+        if (Auth::check()) {
+            return redirect()->route('invoices.receipt', $invoice)
+                ->with('success', 'Payment confirmed.');
+        }
+
+        return redirect()->route('home')->with('success', 'Payment confirmed.');
     }
 
     /**

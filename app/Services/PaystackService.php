@@ -18,6 +18,9 @@ use Illuminate\Support\Str;
  */
 class PaystackService
 {
+    /** Flat portal convenience fee charged on every online transaction (Naira). */
+    public const CONVENIENCE_FEE = 1000;
+
     public function secretKey(?College $college = null): ?string
     {
         return ($college?->paystack_secret_key)
@@ -49,6 +52,30 @@ class PaystackService
             $gross = $amount + 2000;
         }
         return ceil($gross);
+    }
+
+    /**
+     * Itemised surcharges for an online payment of $base Naira.
+     *
+     * The portal convenience fee is added first, then Paystack's processing fee
+     * is grossed up over (base + convenience) so the PAYER bears the full gateway
+     * cost and the college/platform still nets the base + convenience amounts.
+     *
+     * @return array{base: float, convenience: float, service: float, total: float}
+     */
+    public static function surcharges(float $base): array
+    {
+        $convenience = (float) self::CONVENIENCE_FEE;
+        $subtotal    = $base + $convenience;
+        $total       = self::grossUpForFees($subtotal);   // adds the Paystack fee
+        $service     = $total - $subtotal;
+
+        return [
+            'base'        => round($base, 2),
+            'convenience' => round($convenience, 2),
+            'service'     => round($service, 2),
+            'total'       => round($total, 2),
+        ];
     }
 
     /**
@@ -96,7 +123,7 @@ class PaystackService
             ->acceptJson()
             ->post(rtrim(config('services.paystack.base_url'), '/') . '/transaction/initialize', [
                 'email'        => $invoice->payer_email,
-                'amount'       => (int) round(((float) $invoice->amount) * 100), // kobo
+                'amount'       => (int) round($invoice->chargeable() * 100), // kobo (fee + surcharges)
                 'reference'    => $invoice->reference,
                 'callback_url' => $callbackUrl,
                 'metadata'     => [

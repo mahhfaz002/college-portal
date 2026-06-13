@@ -16,20 +16,32 @@ class Invoice extends Model
     protected $fillable = [
         'college_id', 'applicant_id', 'student_id', 'user_id', 'program_id',
         'fee_order_id',
-        'purpose', 'description', 'amount', 'currency',
+        'purpose', 'description', 'amount', 'convenience_fee', 'service_fee', 'currency',
         'status', 'reference', 'gateway_reference', 'payment_method',
         'payer_email', 'paid_at', 'meta',
     ];
 
     protected $casts = [
-        'amount'  => 'decimal:2',
-        'paid_at' => 'datetime',
-        'meta'    => 'array',
+        'amount'          => 'decimal:2',
+        'convenience_fee' => 'decimal:2',
+        'service_fee'     => 'decimal:2',
+        'paid_at'         => 'datetime',
+        'meta'            => 'array',
     ];
 
     public function isPaid(): bool
     {
         return $this->status === 'paid';
+    }
+
+    /**
+     * The grand total actually charged at the gateway:
+     * the fee itself plus the portal convenience fee plus the Paystack
+     * processing fee. Both surcharges are 0 until the checkout sets them.
+     */
+    public function chargeable(): float
+    {
+        return (float) $this->amount + (float) $this->convenience_fee + (float) $this->service_fee;
     }
 
     public function applicant()

@@ -99,14 +99,14 @@ class StudentSelfRegistrationController extends Controller
             'user_id'     => $user->id,
             'purpose'     => 'platform_registration',
             'description' => 'Platform registration fee',
-            'amount'      => PaystackService::grossUpForFees($base), // payer bears the gateway fee
+            'amount'      => $base, // surcharges (convenience + gateway fee) added at checkout
             'payer_email' => $data['email'],
             'status'      => 'pending',
             'reference'   => PaystackService::reference('PLT'),
             'meta'        => ['base_fee' => $base],
         ]);
 
-        return redirect()->route('payments.initialize', $invoice);
+        return redirect()->route('payments.checkout', $invoice);
     }
 
     /** Re-initialise the pending platform invoice for a gated student. */
@@ -123,7 +123,7 @@ class StudentSelfRegistrationController extends Controller
             return redirect()->route('dashboard');
         }
 
-        return redirect()->route('payments.initialize', $invoice);
+        return redirect()->route('payments.checkout', $invoice);
     }
 
 }

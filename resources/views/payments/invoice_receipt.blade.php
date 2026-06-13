@@ -54,7 +54,14 @@
                 <tr><td class="k">Purpose</td><td class="v">{{ ucwords(str_replace('_',' ',$invoice->purpose)) }}</td></tr>
                 <tr><td class="k">Date Paid</td><td class="v">{{ optional($invoice->paid_at)->format('d M Y, g:ia') }}</td></tr>
                 <tr><td class="k">Method</td><td class="v">{{ ucfirst($invoice->payment_method ?? 'paystack') }} @if($invoice->gateway_reference) ({{ $invoice->gateway_reference }}) @endif</td></tr>
-                <tr><td class="k">Amount Paid</td><td class="v total">{{ money($invoice->amount) }}</td></tr>
+                <tr><td class="k">Fee</td><td class="v">{{ money($invoice->amount) }}</td></tr>
+                @if((float) $invoice->convenience_fee > 0)
+                    <tr><td class="k">Portal convenience fee</td><td class="v">{{ money($invoice->convenience_fee) }}</td></tr>
+                @endif
+                @if((float) $invoice->service_fee > 0)
+                    <tr><td class="k">Payment processing fee</td><td class="v">{{ money($invoice->service_fee) }}</td></tr>
+                @endif
+                <tr><td class="k">Total Paid</td><td class="v total">{{ money($invoice->chargeable()) }}</td></tr>
             </table>
         </div>
 
