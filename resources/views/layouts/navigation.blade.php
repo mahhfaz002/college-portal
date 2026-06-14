@@ -92,7 +92,7 @@
                             <x-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.*')">{{ __('Attendance') }}</x-nav-link>
                         @endcan
                         @can('author_questions')
-                            <x-nav-link :href="route('exams.my')" :active="request()->routeIs('exams.my')">{{ __('Set Exams') }}</x-nav-link>
+                            <x-nav-link :href="route('exams.my')" :active="request()->routeIs('exams.my')">{{ __('Set Exam Questions') }}</x-nav-link>
                         @endcan
 
                         @can('assign_courses')
@@ -260,7 +260,7 @@
                 <x-responsive-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.*')">{{ __('Attendance') }}</x-responsive-nav-link>
             @endcan
             @can('author_questions')
-                <x-responsive-nav-link :href="route('exams.my')" :active="request()->routeIs('exams.my')">{{ __('Set Exams') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('exams.my')" :active="request()->routeIs('exams.my')">{{ __('Set Exam Questions') }}</x-responsive-nav-link>
             @endcan
             @can('assign_courses')
                 <x-responsive-nav-link :href="route('academic.staff')" :active="request()->routeIs('academic.staff')">{{ __('Staff') }}</x-responsive-nav-link>

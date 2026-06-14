@@ -26,18 +26,61 @@ class ExamWorkController extends Controller
         abort_unless($teachesSubject || $teachesClass, 403, 'You do not teach this exam\'s subject or classes.');
     }
 
-    /** Lecturer exam menu: their assigned courses' exams + filled/empty status. */
+    /**
+     * Lecturer "Set Exam Questions": their assigned courses (with level &
+     * course of study) and, for the active exam cycle, each course's question
+     * set status. ?open={exam} opens that course's authoring popup.
+     */
     public function myExams()
     {
         $user = Auth::user();
-        $subjectIds = $user->subjects()->pluck('subjects.id');
+        $subjects = $user->subjects()->with('program', 'department')->orderBy('name')->get();
+        $cycle = \App\Models\ExamCycle::active();
 
-        $exams = Exam::whereIn('subject_id', $subjectIds)
-            ->with('subject.department', 'subject.program')
-            ->withCount('questions')
-            ->latest()->get();
+        $exams = $cycle
+            ? Exam::where('exam_cycle_id', $cycle->id)
+                ->whereIn('subject_id', $subjects->pluck('id'))
+                ->withCount([
+                    'questions',
+                    'questions as objective_count' => fn ($q) => $q->where('type', 'objective'),
+                    'questions as theory_count' => fn ($q) => $q->where('type', 'theory'),
+                ])->get()->keyBy('subject_id')
+            : collect();
 
-        return view('exams.my', compact('exams'));
+        // The course whose popup should be open (after an action redirect).
+        $openExam = null;
+        if (request('open')) {
+            $openExam = Exam::with(['questions' => fn ($q) => $q->orderBy('type')->orderBy('theory_number')->orderBy('id'), 'subject.program'])
+                ->find(request('open'));
+            if ($openExam && ! $user->subjects()->where('subjects.id', $openExam->subject_id)->exists()) {
+                $openExam = null; // not theirs
+            }
+        }
+
+        return view('exams.my', compact('subjects', 'cycle', 'exams', 'openExam'));
+    }
+
+    /** Find-or-create the question set for one assigned course in the active cycle. */
+    public function openCourse(\App\Models\Subject $subject)
+    {
+        abort_unless(Auth::user()->subjects()->where('subjects.id', $subject->id)->exists(), 403, 'This course is not assigned to you.');
+
+        $cycle = \App\Models\ExamCycle::active();
+        abort_unless($cycle, 403, 'Exam Mode is not active yet.');
+
+        $exam = Exam::firstOrCreate(
+            ['subject_id' => $subject->id, 'exam_cycle_id' => $cycle->id],
+            [
+                'title'      => $subject->name.' — '.$cycle->title,
+                'term'       => setting('current_term', ''),
+                'session'    => setting('current_session', ''),
+                'class_arms' => [],
+                'status'     => 'draft',
+                'created_by' => auth()->id(),
+            ]
+        );
+
+        return redirect()->route('exams.my', ['open' => $exam->id]);
     }
 
     public function questions(Exam $exam)
@@ -45,6 +88,29 @@ class ExamWorkController extends Controller
         $this->authorizeSubject($exam);
         $exam->load('subject', 'questions');
         return view('exams.questions', compact('exam'));
+    }
+
+    /** Add a theory question (numbered 1–10, text only). */
+    public function storeTheory(Request $request, Exam $exam)
+    {
+        $this->authorizeSubject($exam);
+        $this->assertEditable($exam);
+
+        $data = $request->validate([
+            'theory_number' => 'required|integer|min:1|max:10',
+            'question_text' => 'required|string',
+        ]);
+
+        $exam->questions()->updateOrCreate(
+            ['type' => 'theory', 'theory_number' => $data['theory_number']],
+            [
+                'question_text'  => $data['question_text'],
+                'option_a' => '', 'option_b' => '', 'correct_option' => 'a',
+                'marks' => 1, 'created_by' => auth()->id(),
+            ]
+        );
+
+        return redirect()->route('exams.my', ['open' => $exam->id])->with('success', 'Theory question saved.');
     }
 
     /** Download the blank CSV template for bulk question upload. */
@@ -93,13 +159,14 @@ class ExamWorkController extends Controller
                 'option_c'       => trim($r[3] ?? '') ?: null,
                 'option_d'       => trim($r[4] ?? '') ?: null,
                 'correct_option' => $map[$correct] ?? 'a',
+                'type'           => 'objective',
                 'marks'          => 1,
                 'created_by'     => auth()->id(),
             ]);
             $count++;
         }
 
-        return back()->with('success', "$count question(s) imported. Review and edit, then submit to the Exam Officer.");
+        return redirect()->route('exams.my', ['open' => $exam->id])->with('success', "$count question(s) imported. Review/edit, then submit.");
     }
 
     /** Forward the questions to the exam officer and lock further editing. */
@@ -111,13 +178,17 @@ class ExamWorkController extends Controller
         }
         $exam->update(['submitted_at' => now(), 'status' => 'submitted']);
 
-        return redirect()->route('exams.my')->with('success', 'Questions submitted to the Exam Officer. They are now locked.');
+        return redirect()->route('exams.my')->with('success', 'Questions submitted for HOD review. They are now locked.');
     }
 
-    /** Block edits once submitted to the officer. */
+    /** Editing is allowed only while unsubmitted, within an active cycle, before the deadline. */
     private function assertEditable(Exam $exam): void
     {
-        abort_if($exam->isLocked(), 403, 'Questions already submitted to the Exam Officer — editing is locked.');
+        abort_if($exam->isLocked(), 403, 'Questions already submitted — editing is locked.');
+
+        $cycle = $exam->exam_cycle_id ? \App\Models\ExamCycle::find($exam->exam_cycle_id) : null;
+        abort_unless($cycle && $cycle->isActive(), 403, 'Exam Mode is not active.');
+        abort_if(now()->greaterThan($cycle->submission_deadline_at), 403, 'The question-submission deadline has passed.');
     }
 
     public function storeQuestion(Request $request, Exam $exam)
@@ -133,19 +204,28 @@ class ExamWorkController extends Controller
             'option_d' => 'nullable|string|max:255',
             'correct_option' => ['required', Rule::in(['a', 'b', 'c', 'd'])],
             'marks' => 'required|integer|min:1',
+            'question_id' => 'nullable|integer',   // present when editing
         ]);
 
-        $exam->questions()->create($data + ['created_by' => auth()->id()]);
+        $payload = collect($data)->except('question_id')->all() + ['type' => 'objective'];
 
-        return back()->with('success', 'Question added.');
+        // Edit-in-place when a question_id is supplied, else create.
+        if (!empty($data['question_id']) && ($q = $exam->questions()->find($data['question_id']))) {
+            $q->update($payload);
+        } else {
+            $exam->questions()->create($payload + ['created_by' => auth()->id()]);
+        }
+
+        return redirect()->route('exams.my', ['open' => $exam->id])->with('success', 'Objective question saved.');
     }
 
     public function deleteQuestion(ExamQuestion $question)
     {
         $this->authorizeSubject($question->exam);
         $this->assertEditable($question->exam);
+        $examId = $question->exam_id;
         $question->delete();
-        return back()->with('success', 'Question removed.');
+        return redirect()->route('exams.my', ['open' => $examId])->with('success', 'Question removed.');
     }
 
     /**

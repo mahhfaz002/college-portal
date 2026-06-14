@@ -343,8 +343,10 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
     Route::middleware('role:'.Permissions::middleware('author_questions'))->group(function () {
         Route::get('/my-exam-courses', [ExamWorkController::class, 'myExams'])->name('exams.my');
         Route::get('/exam-questions-template', [ExamWorkController::class, 'template'])->name('exams.questions.template');
+        Route::get('/set-questions/{subject}', [ExamWorkController::class, 'openCourse'])->name('exams.open');
         Route::get('/exams/{exam}/questions', [ExamWorkController::class, 'questions'])->name('exams.questions');
         Route::post('/exams/{exam}/questions', [ExamWorkController::class, 'storeQuestion'])->name('exams.questions.store');
+        Route::post('/exams/{exam}/theory', [ExamWorkController::class, 'storeTheory'])->name('exams.theory.store');
         Route::post('/exams/{exam}/questions/import', [ExamWorkController::class, 'importCsv'])->name('exams.questions.import');
         Route::post('/exams/{exam}/submit', [ExamWorkController::class, 'submitToOfficer'])->name('exams.submit');
         Route::delete('/exam-questions/{question}', [ExamWorkController::class, 'deleteQuestion'])->name('exams.questions.delete');
