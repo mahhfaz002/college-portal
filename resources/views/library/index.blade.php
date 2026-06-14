@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">📚 Library Management</h2>
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">📚 Library</h2>
     </x-slot>
 
     <div class="py-10">
@@ -19,7 +19,8 @@
             </div>
 
             <div class="grid lg:grid-cols-3 gap-8">
-                {{-- Add book --}}
+                {{-- Add book — librarian only --}}
+                @can('manage_library')
                 <div class="bg-white rounded-2xl shadow-sm border p-6">
                     <h3 class="font-bold text-gray-800 mb-4">Add a Book</h3>
                     <form method="POST" action="{{ route('library.books.store') }}" class="space-y-3">
@@ -32,14 +33,15 @@
                         <button class="w-full bg-emerald-600 text-white py-2 rounded-lg font-bold hover:bg-emerald-700">Add Book</button>
                     </form>
                 </div>
+                @endcan
 
                 {{-- Catalogue --}}
-                <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border overflow-hidden">
+                <div class="@can('manage_library') lg:col-span-2 @else lg:col-span-3 @endcan bg-white rounded-2xl shadow-sm border overflow-hidden">
                     <div class="px-6 py-4 bg-gray-50 border-b font-bold text-gray-700">Catalogue</div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead class="bg-gray-50 text-xs uppercase text-gray-500">
-                                <tr><th class="px-4 py-2 text-left">Title</th><th class="px-4 py-2 text-left">Author</th><th class="px-4 py-2 text-left">Avail.</th><th class="px-4 py-2 text-right">Issue</th></tr>
+                                <tr><th class="px-4 py-2 text-left">Title</th><th class="px-4 py-2 text-left">Author</th><th class="px-4 py-2 text-left">Avail.</th>@can('manage_library')<th class="px-4 py-2 text-right">Issue</th>@endcan</tr>
                             </thead>
                             <tbody class="divide-y">
                                 @forelse($books as $book)
@@ -47,6 +49,7 @@
                                         <td class="px-4 py-2 font-semibold text-gray-800">{{ $book->title }}<br><span class="text-xs text-gray-400">{{ $book->category }}</span></td>
                                         <td class="px-4 py-2 text-gray-500">{{ $book->author }}</td>
                                         <td class="px-4 py-2">{{ $book->available_copies }}/{{ $book->total_copies }}</td>
+                                        @can('manage_library')
                                         <td class="px-4 py-2 text-right">
                                             <form method="POST" action="{{ route('library.issue') }}" class="flex gap-1 justify-end items-center">
                                                 @csrf
@@ -58,6 +61,7 @@
                                                 <button @disabled($book->available_copies < 1) class="bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold disabled:opacity-40">Issue</button>
                                             </form>
                                         </td>
+                                        @endcan
                                     </tr>
                                 @empty
                                     <tr><td colspan="4" class="px-4 py-6 text-center text-gray-400">No books in the catalogue.</td></tr>
@@ -82,9 +86,13 @@
                                 <td class="px-4 py-2">{{ $r->student->full_name ?? '—' }}</td>
                                 <td class="px-4 py-2 {{ $r->due_at && $r->due_at->isPast() ? 'text-red-600 font-bold':'text-gray-500' }}">{{ optional($r->due_at)->format('d M Y') }}</td>
                                 <td class="px-4 py-2 text-right">
+                                    @can('manage_library')
                                     <form method="POST" action="{{ route('library.return', $r) }}">@csrf
                                         <button class="bg-gray-800 text-white px-3 py-1 rounded text-xs font-bold">Return</button>
                                     </form>
+                                    @else
+                                    <span class="text-gray-300">—</span>
+                                    @endcan
                                 </td>
                             </tr>
                         @empty

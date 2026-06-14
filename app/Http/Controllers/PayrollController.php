@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
-use App\Models\Attendance;
 use App\Models\Salary;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -24,12 +23,8 @@ class PayrollController extends Controller
         $employees = Employee::all();
 
         foreach ($employees as $employee) {
-            // Logic to calculate deductions based on attendance
-            $absentDays = Attendance::where('employee_id', $employee->id)
-                ->where('status', 'Absent')
-                ->whereMonth('date', Carbon::parse($month)->month)
-                ->count();
-
+            // Attendance-based deductions removed with the attendance system.
+            $absentDays = 0;
             $deduction = $absentDays * ($employee->base_salary / 30);
             $netSalary = $employee->base_salary - $deduction;
 

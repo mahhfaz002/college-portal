@@ -46,10 +46,6 @@ public function scores()
 {
     return $this->hasMany(Score::class);
 }
-public function attendances()
-{
-    return $this->hasMany(Attendance::class);
-}
 
 public function bills()
 {

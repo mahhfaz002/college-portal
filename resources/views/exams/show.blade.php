@@ -49,14 +49,13 @@
                 <div class="p-4 overflow-x-auto">
                     <table class="w-full text-left text-sm">
                         <thead><tr class="text-xs uppercase text-gray-500 border-b">
-                            <th class="p-2">Student</th><th class="p-2">Programme</th><th class="p-2">Attendance</th><th class="p-2">Fees</th><th class="p-2 text-right">Action</th>
+                            <th class="p-2">Student</th><th class="p-2">Programme</th><th class="p-2">Fees</th><th class="p-2 text-right">Action</th>
                         </tr></thead>
                         <tbody>
                             @forelse($eligible as $r)
                             <tr class="border-b">
                                 <td class="p-2 font-bold">{{ $r['student']->full_name }}</td>
                                 <td class="p-2">{{ $r['student']->class_arm }}</td>
-                                <td class="p-2">{{ $r['attendance_pct'] }}%</td>
                                 <td class="p-2">{{ $r['fees_ok'] ? '✅ Cleared' : '⚠️ '.money($r['student']->fees_balance) }}</td>
                                 <td class="p-2 text-right">
                                     @can('manage_exams')

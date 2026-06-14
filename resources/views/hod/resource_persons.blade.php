@@ -41,9 +41,36 @@
                     <div class="px-6 py-4 bg-gray-50 border-b font-bold text-gray-700">Department Lecturers ({{ $lecturers->count() }})</div>
                     <div class="divide-y">
                         @forelse($lecturers as $l)
-                            <div class="px-6 py-4">
-                                <p class="font-bold text-gray-800">{{ $l->name }}</p>
-                                <p class="text-xs text-gray-500">{{ $l->username }} · {{ $l->email }} · {{ $l->qualification }} ({{ $l->university }})</p>
+                            <div class="px-6 py-4" x-data="{ edit: false }">
+                                <div class="flex justify-between items-start gap-3">
+                                    <div class="min-w-0">
+                                        <p class="font-bold text-gray-800">{{ $l->name }}</p>
+                                        <p class="text-xs text-gray-500 break-words">{{ $l->username }} · {{ $l->email }} · {{ $l->qualification }} ({{ $l->university }})</p>
+                                    </div>
+                                    <div class="flex gap-1 shrink-0">
+                                        <button type="button" @click="edit = !edit" class="text-xs font-bold text-indigo-600 hover:underline px-2 py-1">Edit</button>
+                                        <form method="POST" action="{{ route('hod.resource-persons.destroy', $l) }}"
+                                              onsubmit="return confirm('Remove {{ $l->name }}? This permanently deletes their account.')">
+                                            @csrf @method('DELETE')
+                                            <button class="text-xs font-bold text-red-600 hover:underline px-2 py-1">Delete</button>
+                                        </form>
+                                    </div>
+                                </div>
+                                <form x-show="edit" x-cloak method="POST" action="{{ route('hod.resource-persons.update', $l) }}"
+                                      class="mt-3 grid sm:grid-cols-2 gap-2 bg-gray-50 p-3 rounded-lg">
+                                    @csrf @method('PUT')
+                                    <input name="first_name" value="{{ $l->first_name }}" required placeholder="First name" class="border-gray-300 rounded text-sm">
+                                    <input name="surname" value="{{ $l->surname }}" required placeholder="Surname" class="border-gray-300 rounded text-sm">
+                                    <input name="phone" value="{{ $l->phone }}" required placeholder="Phone" class="border-gray-300 rounded text-sm">
+                                    <input name="email" type="email" value="{{ $l->email }}" required placeholder="Email" class="border-gray-300 rounded text-sm">
+                                    <input name="qualification" value="{{ $l->qualification }}" required placeholder="Qualification" class="border-gray-300 rounded text-sm">
+                                    <input name="university" value="{{ $l->university }}" required placeholder="University" class="border-gray-300 rounded text-sm">
+                                    <input name="class_of_degree" value="{{ $l->class_of_degree }}" placeholder="Class of degree" class="border-gray-300 rounded text-sm sm:col-span-2">
+                                    <div class="sm:col-span-2 flex gap-2 pt-1">
+                                        <button class="bg-indigo-600 text-white px-4 py-1.5 rounded font-bold text-sm hover:bg-indigo-700">Save changes</button>
+                                        <button type="button" @click="edit = false" class="text-gray-500 text-sm font-semibold">Cancel</button>
+                                    </div>
+                                </form>
                             </div>
                         @empty
                             <p class="px-6 py-6 text-center text-gray-400">No resource persons yet.</p>

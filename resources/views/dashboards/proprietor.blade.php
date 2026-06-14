@@ -22,7 +22,7 @@
             @endif
 
             {{-- ===== KEY STATS (up top, stylish) ===== --}}
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-blue-500">
                     <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Students</p>
                     <h3 class="text-4xl font-black text-gray-900">{{ number_format($studentCount) }}</h3>
@@ -35,10 +35,6 @@
                     <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Fees Collected</p>
                     <h3 class="text-3xl font-black text-emerald-600">{{ money($totalCollected) }}</h3>
                 </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-amber-400">
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Outstanding</p>
-                    <h3 class="text-3xl font-black text-amber-600">{{ money($totalOutstanding) }}</h3>
-                </div>
             </div>
 
             {{-- ===== FINANCE BANNER ===== --}}
@@ -47,18 +43,10 @@
                     <span class="text-2xl">💰</span>
                     <h3 class="text-lg font-black uppercase tracking-wide text-white">Finance Overview</h3>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 gap-6">
                     <div class="bg-white/10 backdrop-blur p-6 rounded-xl border-l-8 border-emerald-400">
-                        <p class="text-sm font-black uppercase text-emerald-200">Collected</p>
+                        <p class="text-sm font-black uppercase text-emerald-200">Total Collected</p>
                         <h3 class="text-3xl font-black text-white">{{ money($totalCollected) }}</h3>
-                    </div>
-                    <div class="bg-white/10 backdrop-blur p-6 rounded-xl border-l-8 border-amber-400">
-                        <p class="text-sm font-black uppercase text-amber-200">Outstanding</p>
-                        <h3 class="text-3xl font-black text-white">{{ money($totalOutstanding) }}</h3>
-                    </div>
-                    <div class="bg-white/10 backdrop-blur p-6 rounded-xl border-l-8 border-blue-400">
-                        <p class="text-sm font-black uppercase text-blue-200">Total Billed</p>
-                        <h3 class="text-3xl font-black text-white">{{ money($totalCollected + $totalOutstanding) }}</h3>
                     </div>
                 </div>
             </div>

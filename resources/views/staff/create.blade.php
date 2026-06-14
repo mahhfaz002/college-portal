@@ -38,29 +38,37 @@
                     </div>
                 </div>
 
-                <div>
+                <div x-data="{ role: '{{ old('role', $roles[0] ?? '') }}', dept: '{{ old('department_id', '') }}' }">
                     <h3 class="font-bold text-gray-700 border-b pb-2 mb-4">Employment</h3>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Role *</label>
-                            <select name="role" class="w-full border-gray-300 rounded-md shadow-sm" required>
+                            <select name="role" x-model="role" class="w-full border-gray-300 rounded-md shadow-sm" required>
                                 @foreach($roles as $r)
-                                    <option value="{{ $r }}" {{ old('role')===$r ? 'selected' : '' }}>{{ ucwords(str_replace('_',' ',$r)) }}</option>
+                                    <option value="{{ $r }}">{{ ucwords(str_replace('_',' ',$r)) }}</option>
                                 @endforeach
+                                <option value="other">Other (type below)</option>
                             </select>
+                            <input type="text" name="role_other" x-show="role === 'other'" x-cloak value="{{ old('role_other') }}"
+                                   placeholder="Type the staff role (e.g. Security Officer)"
+                                   class="mt-2 w-full border-gray-300 rounded-md shadow-sm text-sm">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Year of Employment</label>
                             <input type="text" name="employed_year" value="{{ old('employed_year', date('Y')) }}" class="w-full border-gray-300 rounded-md shadow-sm">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Department <span class="text-gray-300">(for HOD / lecturers)</span></label>
-                            <select name="department_id" class="w-full border-gray-300 rounded-md shadow-sm">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Department</label>
+                            <select name="department_id" x-model="dept" class="w-full border-gray-300 rounded-md shadow-sm">
                                 <option value="">— None —</option>
                                 @foreach($departments as $d)
-                                    <option value="{{ $d->id }}" {{ old('department_id')==$d->id ? 'selected' : '' }}>{{ $d->name }}</option>
+                                    <option value="{{ $d->id }}">{{ $d->name }}</option>
                                 @endforeach
+                                <option value="other">Other (type below)</option>
                             </select>
+                            <input type="text" name="department_other" x-show="dept === 'other'" x-cloak value="{{ old('department_other') }}"
+                                   placeholder="Type the department name"
+                                   class="mt-2 w-full border-gray-300 rounded-md shadow-sm text-sm">
                         </div>
                     </div>
                 </div>

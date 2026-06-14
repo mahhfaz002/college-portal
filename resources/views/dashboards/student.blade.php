@@ -81,14 +81,10 @@
             </div>
             @endif
 
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="bg-white p-6 rounded-xl shadow-sm border-b-4 border-blue-500">
                     <p class="text-xs font-bold text-gray-400 uppercase">Programme</p>
                     <h3 class="text-2xl font-black">{{ $student->class_arm }}</h3>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border-b-4 border-green-500">
-                    <p class="text-xs font-bold text-gray-400 uppercase">Attendance Rate</p>
-                    <h3 class="text-2xl font-black text-green-600">{{ $attendanceRate }}%</h3>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border-b-4 border-yellow-500">
                     <p class="text-xs font-bold text-gray-400 uppercase">Average Score</p>

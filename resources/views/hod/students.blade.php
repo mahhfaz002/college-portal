@@ -5,6 +5,32 @@
 
     <div class="py-10">
         <div class="max-w-6xl mx-auto sm:px-6 lg:px-8 space-y-4">
+
+            {{-- Filter by course of study + level (department-scoped) --}}
+            <form method="GET" class="bg-white rounded-2xl shadow-sm border p-4 flex flex-wrap items-end gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Course of Study</label>
+                    <select name="program_id" onchange="this.form.submit()" class="rounded-lg border-gray-300 text-sm">
+                        <option value="">All courses of study</option>
+                        @foreach($programs as $p)
+                            <option value="{{ $p->id }}" {{ (string) request('program_id') === (string) $p->id ? 'selected' : '' }}>{{ $p->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Level</label>
+                    <select name="level" onchange="this.form.submit()" class="rounded-lg border-gray-300 text-sm">
+                        <option value="">All levels</option>
+                        @foreach($levels as $lv)
+                            <option value="{{ $lv }}" {{ (string) request('level') === (string) $lv ? 'selected' : '' }}>L{{ $lv }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @if(request('program_id') || request('level'))
+                    <a href="{{ route('hod.students') }}" class="text-sm text-gray-500 font-semibold pb-2">Clear filters</a>
+                @endif
+            </form>
+
             <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
                 <div class="px-6 py-4 bg-gray-50 border-b font-bold text-gray-700">Students ({{ $students->total() }})</div>
                 <table class="w-full text-sm">

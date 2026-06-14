@@ -4,8 +4,6 @@ use App\Http\Controllers\Auth\PasswordChangeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\AttendanceController;
-use App\Http\Controllers\StaffAttendanceController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ScoreController;
 use App\Http\Controllers\SubjectController;
@@ -214,6 +212,11 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::post('/scores/store', [ScoreController::class, 'store'])->name('scores.store');
     });
 
+    // Lecturer: the students registered for one of their assigned courses.
+    Route::middleware('role:lecturer')->group(function () {
+        Route::get('/my-courses/{subject}/students', [DashboardController::class, 'courseStudents'])->name('lecturer.course-students');
+    });
+
     // --- Fees & Finance --- Payment Orders (Paystack) is the single billing tool.
     Route::middleware('role:'.Permissions::middleware('manage_fees'))->group(function () {
         Route::get('/students/{student}/pay', [PaymentController::class, 'create'])->name('payments.create');
@@ -239,25 +242,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
     Route::get('/payments/{payment}/receipt', [PaymentController::class, 'show'])->name('payments.receipt');
     Route::get('/payments/{payment}/receipt/pdf', [PaymentController::class, 'downloadReceipt'])->name('payments.receipt.pdf');
 
-    // --- Attendance --- (bursar & ICT excluded)
-    Route::middleware('role:'.Permissions::middleware('view_attendance'))->group(function () {
-        Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
-        Route::get('/attendance/report', [AttendanceController::class, 'report'])->name('attendance.report');
-    });
-    Route::middleware('role:'.Permissions::middleware('take_attendance'))->group(function () {
-        Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
-    });
-
-    // --- Staff clock in / out ---
-    Route::middleware('role:'.Permissions::middleware('clock_attendance'))->group(function () {
-        Route::post('/clock/in', [StaffAttendanceController::class, 'clockIn'])->name('clock.in');
-        Route::post('/clock/out', [StaffAttendanceController::class, 'clockOut'])->name('clock.out');
-    });
-
-    // --- Teacher attendance oversight (Principal/Proprietor) ---
-    Route::middleware('role:'.Permissions::middleware('view_staff_attendance'))->group(function () {
-        Route::get('/staff-attendance', [StaffAttendanceController::class, 'report'])->name('staff.attendance');
-    });
+    // --- Attendance system removed (class attendance + staff clock in/out). ---
 
     // --- Reports ---
     Route::get('/reports/download/{studentId}', [ReportController::class, 'downloadPdf'])->name('reports.download');
@@ -314,9 +299,12 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::delete('/office/correspondence/{correspondence}', [\App\Http\Controllers\OfficeSecretaryController::class, 'destroy'])->name('office.correspondence.destroy');
     });
 
-    // --- Library --- (librarian + academic oversight)
-    Route::middleware('role:librarian,proprietor,mis')->group(function () {
+    // --- Library --- catalogue is READ-ONLY for everyone (incl. students);
+    // only the librarian can add / issue / return / remove books.
+    Route::middleware('role:'.Permissions::middleware('view_library'))->group(function () {
         Route::get('/library', [LibraryController::class, 'index'])->name('library.index');
+    });
+    Route::middleware('role:'.Permissions::middleware('manage_library'))->group(function () {
         Route::post('/library/issue', [LibraryController::class, 'issueBook'])->name('library.issue');
         Route::post('/library/return/{record}', [LibraryController::class, 'returnBook'])->name('library.return');
         Route::post('/library/books', [LibraryController::class, 'storeBook'])->name('library.books.store');
@@ -492,6 +480,8 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::get('/hod/students/{student}', [$HOD, 'showStudent'])->name('hod.students.show');
         Route::get('/hod/resource-persons', [$HOD, 'resourcePersons'])->name('hod.resource-persons');
         Route::post('/hod/resource-persons', [$HOD, 'storeResourcePerson'])->name('hod.resource-persons.store');
+        Route::put('/hod/resource-persons/{user}', [$HOD, 'updateResourcePerson'])->name('hod.resource-persons.update');
+        Route::delete('/hod/resource-persons/{user}', [$HOD, 'destroyResourcePerson'])->name('hod.resource-persons.destroy');
         Route::get('/hod/grading', [$HOD, 'grading'])->name('hod.grading');
         Route::post('/hod/grading', [$HOD, 'saveGrading'])->name('hod.grading.save');
     });

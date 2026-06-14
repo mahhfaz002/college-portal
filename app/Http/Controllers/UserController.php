@@ -65,14 +65,45 @@ class UserController extends Controller
         $validated = $request->validate([
             'first_name'        => 'required|string|max:255',
             'surname'           => 'required|string|max:255',
-            'role'              => ['required', Rule::in(self::STAFF_ROLES)],
+            // Role may be a known staff role OR 'other' with a typed-in title.
+            'role'              => 'required|string|max:60',
+            'role_other'        => 'nullable|string|max:60',
             'phone'             => 'nullable|string|max:30',
             'email'             => 'nullable|email|max:255|unique:users,email',
-            'department_id'     => 'nullable|exists:departments,id',
+            // Department may be an existing id, blank, or 'other' with a typed name.
+            'department_id'     => 'nullable|string|max:60',
+            'department_other'  => 'nullable|string|max:150',
             'employed_year'     => 'nullable|string|max:9',
             'password'          => 'nullable|string|min:6',
             'passport'          => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
+
+        // Resolve the role — a known staff role, or a free-text "Other" role
+        // (slugged to a role key; it simply has no special capabilities).
+        $role = $validated['role'];
+        if ($role === 'other') {
+            $custom = trim($validated['role_other'] ?? '');
+            if ($custom === '') {
+                return back()->withInput()->withErrors(['role_other' => 'Please type the role for this staff member.']);
+            }
+            $role = \Illuminate\Support\Str::slug($custom, '_');
+        } elseif (!in_array($role, self::STAFF_ROLES, true)) {
+            return back()->withInput()->withErrors(['role' => 'Invalid role selected.']);
+        }
+
+        // Resolve the department — an existing department, or a free-text name
+        // (not limited to the academic departments created by MIS).
+        $departmentId = null;
+        $departmentName = null;
+        $deptInput = $validated['department_id'] ?? '';
+        if ($deptInput === 'other') {
+            $departmentName = trim($validated['department_other'] ?? '') ?: null;
+        } elseif ($deptInput !== '') {
+            if ($dept = \App\Models\Department::find($deptInput)) {
+                $departmentId   = $dept->id;
+                $departmentName = $dept->name;
+            }
+        }
 
         $email = $validated['email'] ?? $this->generateEmail($validated['first_name'], $validated['surname']);
         $plainPassword = $validated['password'] ?? Str::random(8);
@@ -83,13 +114,13 @@ class UserController extends Controller
             'name'              => trim($validated['first_name'].' '.$validated['surname']),
             'email'             => $email,
             'password'          => Hash::make($plainPassword),
-            'role'              => $validated['role'],
+            'role'              => $role,
             'phone'             => $validated['phone'] ?? null,
-            'department_id'     => $validated['department_id'] ?? null,
-            'department'        => optional(\App\Models\Department::find($validated['department_id'] ?? null))->name,
+            'department_id'     => $departmentId,
+            'department'        => $departmentName,
             'employed_year'     => $validated['employed_year'] ?? date('Y'),
             'passport'          => $this->encodePassport($request),
-            'staff_id'          => $this->generateStaffId($validated['role'], $validated['employed_year'] ?? date('Y'), optional(\App\Models\Department::find($validated['department_id'] ?? null))->acronym),
+            'staff_id'          => $this->generateStaffId($role, $validated['employed_year'] ?? date('Y'), optional(\App\Models\Department::find($departmentId))->acronym),
             'status'            => 'active',
             'must_change_password' => true,
         ]);

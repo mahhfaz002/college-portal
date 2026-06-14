@@ -102,16 +102,13 @@
                 <div class="p-4 overflow-x-auto">
                     <table class="w-full text-left text-sm">
                         <thead><tr class="text-xs uppercase text-gray-500 border-b">
-                            <th class="p-2">Student</th><th class="p-2">Programme</th><th class="p-2">Attendance</th><th class="p-2">Fees</th>
+                            <th class="p-2">Student</th><th class="p-2">Programme</th><th class="p-2">Fees</th>
                         </tr></thead>
                         <tbody>
                             @foreach($roster as $r)
                             <tr class="border-b">
                                 <td class="p-2 font-bold">{{ $r['student']->full_name }}</td>
                                 <td class="p-2">{{ $r['student']->class_arm }}</td>
-                                <td class="p-2">
-                                    <span class="{{ $r['attendance_pct'] >= (int) setting('min_attendance_percent',75) ? 'text-green-600' : 'text-red-600' }} font-bold">{{ $r['attendance_pct'] }}%</span>
-                                </td>
                                 <td class="p-2">{{ $r['fees_cleared'] ? '✅ Cleared' : '⚠️ Owing' }}</td>
                             </tr>
                             @endforeach

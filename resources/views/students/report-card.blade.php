@@ -30,11 +30,6 @@
                     </p>
                 </div>
 
-                <div class="bg-green-50 p-3 rounded border border-green-200 text-center">
-                    <p class="text-[10px] text-green-600 uppercase font-bold">Attendance</p>
-                    <p class="text-lg font-black text-green-800">{{ $daysPresent }} / {{ $totalDays }}</p>
-                </div>
-
                 <div class="bg-gray-50 p-3 rounded border border-gray-200 text-center">
                     <p class="text-[10px] text-gray-600 uppercase font-bold">Total Marks</p>
                     <p class="text-lg font-black text-gray-800">{{ $scores->sum(fn($s) => $s->ca_score + $s->exam_score) }}</p>

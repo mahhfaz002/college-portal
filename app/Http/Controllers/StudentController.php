@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Student;
 use App\Models\Score;
 use App\Models\Remark;
-use App\Models\Attendance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -170,18 +169,8 @@ class StudentController extends Controller
         $position = $rankings->search(fn($item) => $item->student_id == $student->id);
         $position = ($position !== false) ? $position + 1 : null;
 
-        $daysPresent = Attendance::where('student_id', $student->id)
-            ->whereIn('status', ['present', 'late'])
-            ->count();
-
-        $totalDays = Attendance::whereHas('student', function($q) use ($student) {
-                $q->where('class_arm', $student->class_arm);
-            })
-            ->distinct('attendance_date')
-            ->count();
-
         return view('students.report-card', compact(
-            'student', 'scores', 'term', 'session', 'position', 'remark', 'daysPresent', 'totalDays', 'totalInClass'
+            'student', 'scores', 'term', 'session', 'position', 'remark', 'totalInClass'
         ));
     }
 

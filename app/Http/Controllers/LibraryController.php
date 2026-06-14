@@ -12,8 +12,12 @@ class LibraryController extends Controller
 {
     public function index()
     {
+        // Only the librarian manages loans, so the student picker (for issuing)
+        // is loaded for them alone — not exposed to read-only browsers.
+        $canManage = auth()->user()->canManage('manage_library');
+
         $books = Book::orderBy('title')->get();
-        $students = Student::orderBy('full_name')->get();
+        $students = $canManage ? Student::orderBy('full_name')->get() : collect();
         $records = BorrowRecord::with(['book', 'student'])->whereNull('returned_at')->latest()->get();
 
         $stats = [

@@ -52,6 +52,7 @@
                             <x-nav-link :href="route('registration.documents')" :active="request()->routeIs('registration.*')">{{ __('Registration') }}</x-nav-link>
                         @endif
                         <x-nav-link :href="route('timetable.index')" :active="request()->routeIs('timetable.*')">{{ __('Timetable') }}</x-nav-link>
+                        <x-nav-link :href="route('library.index')" :active="request()->routeIs('library.*')">{{ __('Library') }}</x-nav-link>
                         <x-nav-link :href="route('dashboard').'#results'">{{ __('Results') }}</x-nav-link>
                         <x-nav-link :href="route('dashboard').'#fees'">{{ __('Fees') }}</x-nav-link>
                         <x-nav-link :href="route('notifications.index')" :active="request()->routeIs('notifications.*')">{{ __('Notifications') }}</x-nav-link>
@@ -88,9 +89,6 @@
                             <x-nav-link :href="route('timetable.index')" :active="request()->routeIs('timetable.*')">{{ __('Timetable') }}</x-nav-link>
                         @endcan
 
-                        @can('view_attendance')
-                            <x-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.*')">{{ __('Attendance') }}</x-nav-link>
-                        @endcan
                         @can('author_questions')
                             <x-nav-link :href="route('exams.my')" :active="request()->routeIs('exams.my')">{{ __('Set Exam Questions') }}</x-nav-link>
                         @endcan
@@ -111,7 +109,7 @@
                         @can('approve_registration')
                             <x-nav-link :href="route('hod.courses')" :active="request()->routeIs('hod.courses')">{{ __('Courses') }}</x-nav-link>
                             <x-nav-link :href="route('hod.exam-reviews')" :active="request()->routeIs('hod.exam-reviews')">{{ __('Exam Reviews') }}</x-nav-link>
-                            <x-nav-link :href="route('hod.students')" :active="request()->routeIs('hod.students')">{{ __('Dept Students') }}</x-nav-link>
+                            <x-nav-link :href="route('hod.students')" :active="request()->routeIs('hod.students*')">{{ __('Students') }}</x-nav-link>
                             <x-nav-link :href="route('hod.resource-persons')" :active="request()->routeIs('hod.resource-persons')">{{ __('Resource Persons') }}</x-nav-link>
                             <x-nav-link :href="route('hod.grading')" :active="request()->routeIs('hod.grading')">{{ __('Grading') }}</x-nav-link>
                             <x-nav-link :href="route('hod.registrations')" :active="request()->routeIs('hod.registrations')">{{ __('Registrations') }}</x-nav-link>
@@ -124,12 +122,8 @@
                             <x-nav-link :href="route('printables.index')" :active="request()->routeIs('printables.*')">{{ __('Printables') }}</x-nav-link>
                         @endcan
 
-                        @can('manage_library')
+                        @can('view_library')
                             <x-nav-link :href="route('library.index')" :active="request()->routeIs('library.*')">{{ __('Library') }}</x-nav-link>
-                        @endcan
-
-                        @can('view_staff_attendance')
-                            <x-nav-link :href="route('staff.attendance')" :active="request()->routeIs('staff.attendance')">{{ __('Staff Activity') }}</x-nav-link>
                         @endcan
 
                         @can('manage_announcements')
@@ -164,7 +158,6 @@
                         @unless(in_array($role, ['proprietor', 'provost']))
                             <x-dropdown-link :href="route('timetable.index')">{{ __('Timetable') }}</x-dropdown-link>
                         @endunless
-                        <x-dropdown-link :href="route('library.index')">{{ __('Library') }}</x-dropdown-link>
                         @if(in_array($role, ['exam_officer','mis']))
                             <x-dropdown-link :href="route('exams.index')">{{ __('Exams') }}</x-dropdown-link>
                             <x-dropdown-link :href="route('exams.queries')">{{ __('Result Queries') }}</x-dropdown-link>
@@ -257,9 +250,6 @@
             @can('manage_timetable')
                 <x-responsive-nav-link :href="route('timetable.index')" :active="request()->routeIs('timetable.*')">{{ __('Timetable') }}</x-responsive-nav-link>
             @endcan
-            @can('view_attendance')
-                <x-responsive-nav-link :href="route('attendance.index')" :active="request()->routeIs('attendance.*')">{{ __('Attendance') }}</x-responsive-nav-link>
-            @endcan
             @can('author_questions')
                 <x-responsive-nav-link :href="route('exams.my')" :active="request()->routeIs('exams.my')">{{ __('Set Exam Questions') }}</x-responsive-nav-link>
             @endcan
@@ -286,12 +276,12 @@
             @can('approve_registration')
                 <x-responsive-nav-link :href="route('hod.courses')" :active="request()->routeIs('hod.courses')">{{ __('Courses') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('hod.exam-reviews')" :active="request()->routeIs('hod.exam-reviews')">{{ __('Exam Reviews') }}</x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('hod.students')">{{ __('Dept Students') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('hod.students')">{{ __('Students') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('hod.resource-persons')">{{ __('Resource Persons') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('hod.grading')">{{ __('Grading') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('hod.registrations')">{{ __('Registrations') }}</x-responsive-nav-link>
             @endcan
-            @can('manage_library')
+            @can('view_library')
                 <x-responsive-nav-link :href="route('library.index')">{{ __('Library') }}</x-responsive-nav-link>
             @endcan
             @can('manage_announcements')

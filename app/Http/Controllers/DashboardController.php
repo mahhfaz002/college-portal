@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Student;
 use App\Models\Payment;
 use App\Models\Score;
-use App\Models\Attendance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -37,8 +36,23 @@ class DashboardController extends Controller
             'student_affairs'    => app(\App\Http\Controllers\StudentAffairsController::class)->dashboard($request),
             'librarian'          => app(\App\Http\Controllers\LibraryController::class)->index(),
             'office_secretary'   => app(\App\Http\Controllers\OfficeSecretaryController::class)->dashboard($request),
-            default              => $this->proprietorDashboard($request),
+            // Custom ("Other") staff roles carry no special capabilities — a
+            // neutral landing, NOT the proprietor's oversight dashboard.
+            default              => $this->genericDashboard(),
         };
+    }
+
+    /**
+     * Fallback dashboard for staff registered with a free-text ("Other") role.
+     * Shows a welcome + announcements only; no finance/student data.
+     */
+    private function genericDashboard()
+    {
+        $announcements = \Illuminate\Support\Facades\Schema::hasTable('announcements')
+            ? \App\Models\Announcement::latest()->take(6)->get()
+            : collect();
+
+        return view('dashboards.generic', compact('announcements'));
     }
 
     /**
@@ -52,8 +66,6 @@ class DashboardController extends Controller
 
         // Finance on the Phase-4 Invoice engine (college-scoped) — real money.
         $totalCollected   = \App\Models\Invoice::where('status', 'paid')->sum('amount');
-        $totalOutstanding = \App\Models\Invoice::where('status', 'pending')->sum('amount');
-
         // Student headcount per department (college structure, not legacy classes).
         $deptBreakdown = Student::select('department_id', DB::raw('COUNT(*) as total'))
             ->groupBy('department_id')
@@ -76,7 +88,6 @@ class DashboardController extends Controller
             'studentCount',
             'staffCount',
             'totalCollected',
-            'totalOutstanding',
             'deptBreakdown',
             'topStudents',
             'recentPayments'
@@ -94,8 +105,6 @@ class DashboardController extends Controller
         $staffCount   = \App\Models\User::whereNotIn('role', ['student', 'applicant', 'superadmin'])->count();
 
         $totalCollected   = \App\Models\Invoice::where('status', 'paid')->sum('amount');
-        $totalOutstanding = \App\Models\Invoice::where('status', 'pending')->sum('amount');
-
         // 20 most recently registered students.
         $recentStudents = Student::with('program')->latest()->take(20)->get();
 
@@ -108,7 +117,7 @@ class DashboardController extends Controller
             ->latest('paid_at')->take(6)->get();
 
         return view('dashboards.provost', compact(
-            'studentCount', 'staffCount', 'totalCollected', 'totalOutstanding',
+            'studentCount', 'staffCount', 'totalCollected',
             'recentStudents', 'topStudents', 'recentPayments'
         ));
     }
@@ -116,44 +125,13 @@ class DashboardController extends Controller
     private function teacherDashboard(Request $request)
     {
         $user = auth()->user();
-        $user->load('classes', 'subjects');
 
-        // Classes from the pivot, falling back to the legacy single column.
-        $classNames = $user->classes->pluck('name');
-        if ($classNames->isEmpty() && $user->class_assigned) {
-            $classNames = collect([$user->class_assigned]);
-        }
+        // The courses (Subjects) assigned to this lecturer — each carries its own
+        // programme + level, so its registered students are that exact cohort.
+        $courses = $user->subjects()->with('program')->orderBy('name')->get();
 
-        $today = date('Y-m-d');
-
-        // Per-class "attendance taken today?" status.
-        $classStatus = $classNames->map(function ($name) use ($today, $user) {
-            $studentIds = Student::where('class_arm', $name)->pluck('id');
-            $taken = \App\Models\ClassAttendanceLog::where('user_id', $user->id)
-                ->where('class_arm', $name)
-                ->whereDate('log_date', $today)
-                ->exists();
-            return [
-                'name' => $name,
-                'student_count' => $studentIds->count(),
-                'attendance_taken' => $taken,
-            ];
-        });
-
-        $selectedClass = $classNames->first() ?? 'Not Assigned';
-        $students = $selectedClass !== 'Not Assigned'
-            ? Student::where('class_arm', $selectedClass)->get()
-            : collect();
-        $studentCount = $students->count();
-        $attendanceTaken = $classStatus->firstWhere('name', $selectedClass)['attendance_taken'] ?? false;
-
-        // Today's clock record.
-        $clock = \App\Models\StaffAttendance::where('user_id', $user->id)
-            ->whereDate('work_date', $today)
-            ->first();
-
-        // Exam tasks for the subjects this teacher teaches.
-        $subjectIds = $user->subjects->pluck('id');
+        // Exam tasks for the lecturer's assigned courses (author / grade).
+        $subjectIds = $courses->pluck('id');
         $authorExams = collect();
         $gradeExams = collect();
         if ($subjectIds->isNotEmpty()) {
@@ -165,20 +143,29 @@ class DashboardController extends Controller
                 ->filter(fn ($e) => $e->submissions_count > 0)->values();
         }
 
-        // Today's lessons from the approved timetable.
-        $todayLessons = collect();
-        $plan = \App\Models\TimetablePlan::where('status', 'approved')->latest()->first();
-        if ($plan) {
-            $todayLessons = \App\Models\TimetableEntry::where('plan_id', $plan->id)
-                ->where('teacher_id', $user->id)
-                ->where('day', now()->format('l'))
-                ->with('subject')->orderBy('period_no')->get();
-        }
+        return view('dashboards.teacher', compact('courses', 'authorExams', 'gradeExams'));
+    }
 
-        return view('dashboards.teacher', compact(
-            'students', 'studentCount', 'selectedClass', 'attendanceTaken',
-            'classStatus', 'clock', 'authorExams', 'gradeExams', 'todayLessons'
-        ));
+    /**
+     * Students registered for ONE of the lecturer's assigned courses — the
+     * programme + level cohort of that course. A lecturer may only open a
+     * course assigned to them.
+     */
+    public function courseStudents(\App\Models\Subject $subject)
+    {
+        $user = auth()->user();
+        abort_unless($user->subjects()->whereKey($subject->id)->exists(), 403,
+            'This course is not assigned to you.');
+
+        $students = ($subject->program_id && $subject->level !== null)
+            ? Student::where('program_id', $subject->program_id)
+                ->where('level', $subject->level)
+                ->orderBy('full_name')->get()
+            : collect();
+
+        $subject->load('program');
+
+        return view('lecturer.course_students', compact('subject', 'students'));
     }
 
     public function storeTeacher(Request $request)
@@ -219,27 +206,19 @@ class DashboardController extends Controller
      */
     private function accountantDashboard(Request $request)
     {
-        $totalBilled      = \App\Models\Invoice::sum('amount');
-        $totalCollected   = \App\Models\Invoice::where('status', 'paid')->sum('amount');
-        $totalOutstanding = \App\Models\Invoice::where('status', 'pending')->sum('amount');
-        $collectionRate   = $totalBilled > 0 ? (int) round($totalCollected / $totalBilled * 100) : 0;
+        // Only SETTLED money is reported. Pending/unpaid invoices (including
+        // abandoned or cancelled checkouts) are deliberately excluded so they
+        // can never inflate the figures or be mistaken for genuinely owed fees.
+        $totalCollected = \App\Models\Invoice::where('status', 'paid')->sum('amount');
+        $paymentsCount  = \App\Models\Invoice::where('status', 'paid')->count();
 
         // Most recent settled invoices.
         $recentPayments = \App\Models\Invoice::where('status', 'paid')
             ->whereNotNull('paid_at')
             ->with('student')
-            ->latest('paid_at')->take(6)->get();
+            ->latest('paid_at')->take(8)->get();
 
-        // Students carrying the largest unpaid balance across all their invoices.
-        $topDebtors = \App\Models\Invoice::where('status', 'pending')
-            ->whereNotNull('student_id')
-            ->select('student_id', DB::raw('SUM(amount) as outstanding'), DB::raw('COUNT(*) as bills'))
-            ->groupBy('student_id')
-            ->orderByDesc('outstanding')
-            ->with('student')
-            ->take(10)->get();
-
-        // Per-order collection progress (latest orders).
+        // Per-order collection progress (paid counts/sums only — never pending).
         $orders = \App\Models\FeeOrder::withCount([
                 'invoices',
                 'invoices as paid_count' => fn ($q) => $q->where('status', 'paid'),
@@ -248,8 +227,7 @@ class DashboardController extends Controller
             ->latest()->take(6)->get();
 
         return view('dashboards.accountant', compact(
-            'totalBilled', 'totalCollected', 'totalOutstanding', 'collectionRate',
-            'recentPayments', 'topDebtors', 'orders'
+            'totalCollected', 'paymentsCount', 'recentPayments', 'orders'
         ));
     }
 
@@ -267,7 +245,9 @@ class DashboardController extends Controller
                 'student' => null,
                 'scores' => collect(),
                 'payments' => collect(),
-                'attendanceRate' => 0,
+                'announcements' => collect(),
+                'todayLessons' => collect(),
+                'invoices' => collect(),
             ]);
         }
 
@@ -289,14 +269,10 @@ class DashboardController extends Controller
                 ->where('day', now()->format('l'))
                 ->with('subject', 'teacher')->orderBy('period_no')->get();
         }
-        $totalDays = Attendance::where('student_id', $student->id)->count();
-        $daysPresent = Attendance::where('student_id', $student->id)->where('status', 'present')->count();
-        $attendanceRate = $totalDays > 0 ? round(($daysPresent / $totalDays) * 100) : 100;
-
         // Online payment orders / invoices assigned to this student (Phase 4).
         $invoices = \App\Models\Invoice::where('student_id', $student->id)->latest()->get();
 
-        return view('dashboards.student', compact('student', 'scores', 'payments', 'attendanceRate', 'announcements', 'todayLessons', 'invoices'));
+        return view('dashboards.student', compact('student', 'scores', 'payments', 'announcements', 'todayLessons', 'invoices'));
     }
 
     /**
@@ -337,57 +313,6 @@ class DashboardController extends Controller
         return view('dashboards.switchboard');
     }
 
-    private function principalDashboard(Request $request)
-    {
-        $staffCount = \App\Models\User::where('role', '!=', 'student')->count();
-        $unassignedTeachers = \App\Models\User::where('role', 'lecturer')
-            ->whereNull('class_assigned')
-            ->count();
-        $totalStudents = Student::count();
-        $attendanceToday = Attendance::where('attendance_date', date('Y-m-d'))->count();
-        $staffList = \App\Models\User::where('role', '!=', 'student')
-            ->latest()
-            ->take(5)
-            ->get();
-
-        // How many teachers are active today (clocked in or took a class).
-        $today = date('Y-m-d');
-        $activeTeacherIds = \App\Models\StaffAttendance::whereDate('work_date', $today)
-            ->whereNotNull('clock_in')
-            ->pluck('user_id')
-            ->merge(\App\Models\ClassAttendanceLog::whereDate('log_date', $today)->pluck('user_id'))
-            ->unique();
-        $teacherTotal = \App\Models\User::where('role', 'lecturer')->count();
-        $activeTeachers = \App\Models\User::where('role', 'lecturer')
-            ->whereIn('id', $activeTeacherIds)->count();
-
-        // Today's clock in/out for every teacher, shown inline on the dashboard.
-        $clockToday = \App\Models\StaffAttendance::whereDate('work_date', $today)
-            ->get()->keyBy('user_id');
-        $teacherClock = \App\Models\User::where('role', 'lecturer')->orderBy('name')->get()
-            ->map(fn ($t) => [
-                'teacher'   => $t,
-                'clock_in'  => optional($clockToday->get($t->id))->clock_in,
-                'clock_out' => optional($clockToday->get($t->id))->clock_out,
-            ]);
-
-        // Pending payroll approvals (badge).
-        $pendingPayroll = \Illuminate\Support\Facades\Schema::hasTable('payslips')
-            ? \App\Models\Payslip::where('status', 'submitted')->count() : 0;
-
-        return view('dashboards.principal', compact(
-            'staffCount',
-            'unassignedTeachers',
-            'totalStudents',
-            'attendanceToday',
-            'staffList',
-            'activeTeachers',
-            'teacherTotal',
-            'teacherClock',
-            'pendingPayroll'
-        ));
-    }
-
     private function examOfficerDashboard()
     {
         $totalStudents = Student::count();
@@ -398,11 +323,8 @@ class DashboardController extends Controller
 
         // Roster: each student with attendance % and fee-cleared status.
         $roster = Student::orderBy('class_arm')->orderBy('full_name')->get()->map(function ($s) {
-            $present = $s->attendances()->whereIn('status', ['present', 'late'])->count();
-            $total = $s->attendances()->count();
             return [
                 'student' => $s,
-                'attendance_pct' => $total > 0 ? (int) round($present / $total * 100) : 100,
                 'fees_cleared' => $s->feesCleared(),
             ];
         });
@@ -412,16 +334,6 @@ class DashboardController extends Controller
         return view('dashboards.exam_officer', compact(
             'totalStudents', 'subjectsCount', 'exams', 'openQueries', 'pendingGrading', 'roster', 'examCycle'
         ));
-    }
-
-    private function adminDashboard(Request $request)
-    {
-        $pending = \App\Models\Applicant::where('status', 'pending')->count();
-        $admitted = \App\Models\Applicant::where('status', 'admitted')->count();
-        $totalStudents = Student::count();
-        $recentApplicants = \App\Models\Applicant::latest()->take(6)->get();
-
-        return view('dashboards.admin', compact('pending', 'admitted', 'totalStudents', 'recentApplicants'));
     }
 
     private function ictDashboard(Request $request)

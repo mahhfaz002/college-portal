@@ -23,26 +23,16 @@
     <div class="py-10">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
 
-            {{-- Headline collection figures (real, from the Invoice engine) --}}
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {{-- Headline collection figures — SETTLED money only (pending/unpaid
+                 invoices are excluded so cancelled checkouts can't inflate totals). --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-brand">
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Collected</p>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Collected</p>
                     <h3 class="text-3xl font-black text-gray-900">{{ money($totalCollected) }}</h3>
                 </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-amber-400">
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Outstanding</p>
-                    <h3 class="text-3xl font-black text-amber-600">{{ money($totalOutstanding) }}</h3>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-gray-300">
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Billed</p>
-                    <h3 class="text-3xl font-black text-gray-700">{{ money($totalBilled) }}</h3>
-                </div>
                 <div class="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-emerald-500">
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Collection Rate</p>
-                    <h3 class="text-3xl font-black text-emerald-600">{{ $collectionRate }}%</h3>
-                    <div class="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div class="h-full bg-emerald-500" style="width: {{ $collectionRate }}%"></div>
-                    </div>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Payments Received</p>
+                    <h3 class="text-3xl font-black text-emerald-600">{{ number_format($paymentsCount) }}</h3>
                 </div>
             </div>
 
@@ -86,58 +76,27 @@
                 </table>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-                {{-- Top debtors (real outstanding invoices) --}}
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="px-6 py-4 bg-gray-50 border-b">
-                        <h3 class="font-bold text-gray-700">Top Outstanding Balances</h3>
-                    </div>
-                    <table class="w-full text-left">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Student</th>
-                                <th class="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Bills</th>
-                                <th class="px-6 py-3 text-xs font-bold text-gray-500 uppercase">Outstanding</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y">
-                            @forelse($topDebtors as $row)
-                                <tr class="hover:bg-amber-50 transition">
-                                    <td class="px-6 py-4 text-sm font-bold text-gray-800">{{ optional($row->student)->full_name ?? '—' }}</td>
-                                    <td class="px-6 py-4 text-sm text-gray-500">{{ $row->bills }}</td>
-                                    <td class="px-6 py-4 text-sm font-black text-amber-600">{{ money($row->outstanding) }}</td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="3" class="px-6 py-8 text-center text-gray-400">No outstanding balances. 🎉</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+            {{-- Recent settled payments (full width; no pending/outstanding panel) --}}
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 bg-gray-50 border-b">
+                    <h3 class="font-bold text-gray-700">Recent Payments</h3>
                 </div>
-
-                {{-- Recent settled payments --}}
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="px-6 py-4 bg-gray-50 border-b">
-                        <h3 class="font-bold text-gray-700">Recent Payments</h3>
-                    </div>
-                    <div class="p-6 space-y-4">
-                        @forelse($recentPayments as $payment)
-                            <div class="flex justify-between items-center border-b pb-3 last:border-0">
-                                <div>
-                                    <p class="text-sm font-bold text-gray-800">{{ optional($payment->student)->full_name ?? $payment->payer_email ?? 'Payment' }}</p>
-                                    <p class="text-xs text-gray-500">{{ $payment->description }} · {{ optional($payment->paid_at)->format('d M, Y - h:i A') }}</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="text-sm font-black text-emerald-600">+ {{ money($payment->amount) }}</p>
-                                    <span class="text-[10px] bg-gray-100 px-2 py-0.5 rounded uppercase font-bold">{{ $payment->payment_method ?? 'paystack' }}</span>
-                                </div>
+                <div class="p-6 space-y-4">
+                    @forelse($recentPayments as $payment)
+                        <div class="flex justify-between items-center border-b pb-3 last:border-0">
+                            <div>
+                                <p class="text-sm font-bold text-gray-800">{{ optional($payment->student)->full_name ?? $payment->payer_email ?? 'Payment' }}</p>
+                                <p class="text-xs text-gray-500">{{ $payment->description }} · {{ optional($payment->paid_at)->format('d M, Y - h:i A') }}</p>
                             </div>
-                        @empty
-                            <p class="text-sm text-gray-400 text-center py-6">No payments recorded yet.</p>
-                        @endforelse
-                    </div>
+                            <div class="text-right">
+                                <p class="text-sm font-black text-emerald-600">+ {{ money($payment->amount) }}</p>
+                                <span class="text-[10px] bg-gray-100 px-2 py-0.5 rounded uppercase font-bold">{{ $payment->payment_method ?? 'paystack' }}</span>
+                            </div>
+                        </div>
+                    @empty
+                        <p class="text-sm text-gray-400 text-center py-6">No payments recorded yet.</p>
+                    @endforelse
                 </div>
-
             </div>
         </div>
     </div>

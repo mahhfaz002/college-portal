@@ -23,7 +23,9 @@ class Permissions
         // Student records (create/edit/delete) — MIS. Registrar is READ-ONLY now.
         'manage_students'      => ['mis'],
         'edit_students'        => ['mis'],
-        'view_students'        => ['proprietor', 'provost', 'registrar', 'mis', 'exam_officer', 'lecturer', 'hod', 'assistant_hod', 'student_affairs', 'office_secretary', 'admission_officer'],
+        // HOD + lecturer are intentionally EXCLUDED here — they see only their
+        // own scoped student lists (HOD: department; lecturer: per assigned course).
+        'view_students'        => ['proprietor', 'provost', 'registrar', 'mis', 'exam_officer', 'student_affairs', 'office_secretary', 'admission_officer'],
 
         // Managed class/level registry — MIS.
         'manage_classes'       => ['mis'],
@@ -61,13 +63,14 @@ class Permissions
         // Online exam-taking removed from the platform (offline portal handles it).
         'take_exams'           => [],
 
-        // Attendance — Lecturers take it for their classes.
-        'take_attendance'      => ['lecturer', 'exam_officer'],
-        'view_attendance'      => ['lecturer', 'exam_officer', 'hod'],
+        // Attendance system removed — no role can take or view class attendance.
+        'take_attendance'      => [],
+        'view_attendance'      => [],
 
         // Courses (formerly subjects) — academic staff view. (Proprietor & Provost
         // see courses inside the Departments browse instead of a separate menu.)
-        'view_subjects'        => ['lecturer', 'exam_officer', 'mis', 'academic_secretary'],
+        // Lecturer removed — they use "My Courses" on their dashboard instead.
+        'view_subjects'        => ['exam_officer', 'mis', 'academic_secretary'],
 
         // Academic Secretary creates courses and assigns them to lecturers.
         'manage_subjects'      => ['academic_secretary'],
@@ -79,17 +82,19 @@ class Permissions
         // Student affairs cases.
         'manage_affairs'       => ['student_affairs'],
 
-        // Library — Librarian runs it; MIS supports.
-        'manage_library'       => ['librarian', 'mis'],
+        // Library — ONLY the librarian manages the catalogue (add/issue/return).
+        'manage_library'       => ['librarian'],
+        // Everyone (staff + students) may browse the catalogue read-only.
+        'view_library'         => ['librarian', 'mis', 'proprietor', 'provost', 'registrar', 'bursar', 'exam_officer', 'lecturer', 'hod', 'assistant_hod', 'academic_secretary', 'student_affairs', 'office_secretary', 'admission_officer', 'student'],
 
         // Office correspondence register.
         'manage_correspondence'=> ['office_secretary'],
 
-        // Staff clock in/out — all staff except the view-only proprietor.
-        'clock_attendance'     => ['lecturer', 'bursar', 'exam_officer', 'mis', 'registrar', 'admission_officer', 'hod', 'assistant_hod', 'academic_secretary', 'student_affairs', 'librarian', 'office_secretary'],
+        // Staff clock in/out removed with the attendance system.
+        'clock_attendance'     => [],
 
-        // Staff-attendance oversight report.
-        'view_staff_attendance'=> ['registrar', 'proprietor', 'provost', 'mis'],
+        // Staff-attendance oversight report removed with the attendance system.
+        'view_staff_attendance'=> [],
 
         // Technical support — MIS handles tickets; anyone can raise one.
         'handle_tickets'       => ['mis'],

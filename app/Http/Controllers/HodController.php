@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Support\Usernames;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 /**
  * Head of Department workspace: view the department's students (read-only) and
@@ -143,20 +144,30 @@ class HodController extends Controller
         return redirect()->route('hod.exam-reviews')->with('success', 'Questions returned to the lecturer with your query.');
     }
 
-    /** Students in the HOD's department, with registration status. */
-    public function students()
+    /**
+     * Students in the HOD's OWN department only, filterable by course of study
+     * (programme) and level. The HOD can never see other departments' students.
+     */
+    public function students(Request $request)
     {
-        $deptId = $this->deptId();
-        $programIds = Program::where('department_id', $deptId)->pluck('id');
+        $deptId   = $this->deptId();
+        $programs = Program::where('department_id', $deptId)->orderBy('name')->get(['id', 'name']);
+        $programIds = $programs->pluck('id');
 
         $students = Student::whereIn('program_id', $programIds)
+            ->when($request->filled('program_id'), fn ($q) => $q->where('program_id', $request->program_id))
+            ->when($request->filled('level'), fn ($q) => $q->where('level', $request->level))
             ->with('program')
             ->orderBy('full_name')
             ->paginate(50)->withQueryString();
 
+        // Levels actually present in the department (for the filter dropdown).
+        $levels = Student::whereIn('program_id', $programIds)
+            ->whereNotNull('level')->distinct()->orderBy('level')->pluck('level');
+
         $department = Department::find($deptId);
 
-        return view('hod.students', compact('students', 'department'));
+        return view('hod.students', compact('students', 'department', 'programs', 'levels'));
     }
 
     /** Full student detail incl. uploaded documents (dept-scoped). */
@@ -234,6 +245,49 @@ class HodController extends Controller
 
         return redirect()->route('hod.resource-persons')->with('success',
             "Resource person created. Username: {$username} · Email: {$data['email']} · Temp password: {$data['temp_password']} (they will be prompted to change it).");
+    }
+
+    /** A resource person must be a lecturer in the HOD's own department. */
+    private function authorizeLecturerDept(User $lecturer): void
+    {
+        abort_unless($lecturer->role === 'lecturer' && (int) $lecturer->department_id === (int) $this->deptId(),
+            403, 'This resource person is not in your department.');
+    }
+
+    /** Edit a resource person's details (dept-scoped). */
+    public function updateResourcePerson(Request $request, User $user)
+    {
+        $this->authorizeLecturerDept($user);
+
+        $data = $request->validate([
+            'first_name'      => 'required|string|max:100',
+            'surname'         => 'required|string|max:100',
+            'phone'           => 'required|string|max:50',
+            'email'           => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'qualification'   => 'required|string|max:150',
+            'university'      => 'required|string|max:200',
+            'class_of_degree' => 'nullable|string|max:100',
+        ]);
+
+        $data['name'] = trim($data['first_name'].' '.$data['surname']);
+        $user->update($data);
+
+        ActivityLog::record("Updated resource person {$user->name}", 'hod.resource_person');
+
+        return redirect()->route('hod.resource-persons')->with('success', "Resource person {$user->name} updated.");
+    }
+
+    /** Remove a resource person account (dept-scoped). */
+    public function destroyResourcePerson(User $user)
+    {
+        $this->authorizeLecturerDept($user);
+
+        $name = $user->name;
+        $user->delete();
+
+        ActivityLog::record("Removed resource person {$name}", 'hod.resource_person');
+
+        return redirect()->route('hod.resource-persons')->with('success', "Resource person {$name} removed.");
     }
 
     private function authorizeDept(?int $deptId): void
