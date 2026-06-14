@@ -9,11 +9,13 @@ class Exam extends Model
     protected $fillable = [
         'subject_id', 'exam_cycle_id', 'title', 'term', 'session', 'class_arms',
         'duration_minutes', 'access_password', 'status', 'created_by', 'submitted_at',
+        'hod_feedback', 'reviewed_by', 'reviewed_at',
     ];
 
     protected $casts = [
         'class_arms'   => 'array',
         'submitted_at' => 'datetime',
+        'reviewed_at'  => 'datetime',
     ];
 
     /** Locked once the lecturer forwards questions to the exam officer. */

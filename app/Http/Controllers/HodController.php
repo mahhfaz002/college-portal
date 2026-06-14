@@ -60,6 +60,89 @@ class HodController extends Controller
         ]);
     }
 
+    /** Exam's course must belong to the HOD's department. */
+    private function authorizeExamDept(\App\Models\Exam $exam): void
+    {
+        $subject = \App\Models\Subject::find($exam->subject_id);
+        abort_unless($subject && (int) $subject->department_id === (int) $this->deptId(), 403,
+            'This exam is not in your department.');
+    }
+
+    /**
+     * REVIEW queue: question sets submitted by lecturers for courses in this
+     * department. Review-only (no editing); ?open={exam} opens the read-only popup.
+     */
+    public function examReviews()
+    {
+        $deptId     = $this->deptId();
+        $programIds = Program::where('department_id', $deptId)->pluck('id');
+        $subjectIds = \App\Models\Subject::whereIn('program_id', $programIds)->pluck('id');
+        $cycle      = \App\Models\ExamCycle::active();
+
+        $exams = \App\Models\Exam::whereIn('subject_id', $subjectIds)
+            ->where('status', 'submitted')
+            ->when($cycle, fn ($q) => $q->where('exam_cycle_id', $cycle->id))
+            ->with('subject.program')
+            ->withCount([
+                'questions as objective_count' => fn ($q) => $q->where('type', 'objective'),
+                'questions as theory_count' => fn ($q) => $q->where('type', 'theory'),
+            ])->get();
+
+        $openExam = null;
+        if (request('open')) {
+            $openExam = \App\Models\Exam::with(['questions' => fn ($q) => $q->orderBy('type')->orderBy('theory_number')->orderBy('id'), 'subject.program'])
+                ->find(request('open'));
+            // Only reviewable while still submitted and in this department.
+            if ($openExam) {
+                $this->authorizeExamDept($openExam);
+                if ($openExam->status !== 'submitted') {
+                    $openExam = null;
+                }
+            }
+        }
+
+        $department = Department::find($deptId);
+
+        return view('hod.exam_reviews', compact('exams', 'openExam', 'department', 'cycle'));
+    }
+
+    /** Approve a submitted question set → forwards to the Exam Officer; HOD loses access. */
+    public function approveExam(\App\Models\Exam $exam)
+    {
+        $this->authorizeExamDept($exam);
+        abort_unless($exam->status === 'submitted', 403, 'Only submitted question sets can be approved.');
+
+        $exam->update([
+            'status'      => 'approved',
+            'reviewed_by' => auth()->id(),
+            'reviewed_at' => now(),
+            'hod_feedback'=> null,
+        ]);
+
+        return redirect()->route('hod.exam-reviews')->with('success', 'Questions approved and forwarded to the Exam Officer.');
+    }
+
+    /** Query/reject a submitted set back to the lecturer with reasons. */
+    public function queryExam(Request $request, \App\Models\Exam $exam)
+    {
+        $this->authorizeExamDept($exam);
+        abort_unless($exam->status === 'submitted', 403, 'Only submitted question sets can be queried.');
+
+        $data = $request->validate([
+            'hod_feedback' => 'required|string|max:2000',
+        ]);
+
+        $exam->update([
+            'status'       => 'hod_returned',
+            'submitted_at' => null,          // unlock for lecturer editing
+            'hod_feedback' => $data['hod_feedback'],
+            'reviewed_by'  => auth()->id(),
+            'reviewed_at'  => now(),
+        ]);
+
+        return redirect()->route('hod.exam-reviews')->with('success', 'Questions returned to the lecturer with your query.');
+    }
+
     /** Students in the HOD's department, with registration status. */
     public function students()
     {

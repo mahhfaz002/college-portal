@@ -46,6 +46,9 @@
                                 <td class="px-6 py-3">
                                     @php $badge = ['not_started'=>'bg-gray-100 text-gray-500','draft'=>'bg-amber-100 text-amber-700','submitted'=>'bg-blue-100 text-blue-700','hod_returned'=>'bg-red-100 text-red-700','approved'=>'bg-green-100 text-green-700'][$status] ?? 'bg-gray-100 text-gray-500'; @endphp
                                     <span class="text-[10px] uppercase font-bold px-2 py-1 rounded {{ $badge }}">{{ str_replace('_',' ',$status) }}</span>
+                                    @if($status === 'hod_returned' && $ex->hod_feedback)
+                                        <p class="text-xs text-red-600 mt-1 max-w-xs"><span class="font-bold">HOD query:</span> {{ $ex->hod_feedback }}</p>
+                                    @endif
                                 </td>
                                 <td class="px-6 py-3 text-right">
                                     @if($submitted)
@@ -84,6 +87,13 @@
                 </div>
 
                 <div class="p-6 space-y-6">
+                    @if($openExam->status === 'hod_returned' && $openExam->hod_feedback)
+                        <div class="p-4 bg-red-50 border border-red-200 rounded-lg text-sm">
+                            <p class="font-bold text-red-700 mb-1">⚠️ Returned by HOD — please correct and resubmit:</p>
+                            <p class="text-red-700 whitespace-pre-line">{{ $openExam->hod_feedback }}</p>
+                        </div>
+                    @endif
+
                     {{-- CSV upload --}}
                     <div class="bg-gray-50 border rounded-xl p-4">
                         <div class="flex items-center justify-between mb-2">
