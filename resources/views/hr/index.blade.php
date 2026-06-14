@@ -17,7 +17,7 @@
 
             @if($counts['flagged'] > 0)
             <div class="p-4 bg-red-50 border border-red-300 text-red-800 rounded-lg text-sm font-bold">
-                ⚠️ {{ $counts['flagged'] }} payslip(s) were flagged by the Principal — edit and resubmit them below.
+                ⚠️ {{ $counts['flagged'] }} payslip(s) were flagged by Management — edit and resubmit them below.
             </div>
             @endif
 
@@ -27,9 +27,9 @@
                     draft {{ $counts['draft'] }} · submitted {{ $counts['submitted'] }} · flagged {{ $counts['flagged'] }} · approved {{ $counts['approved'] }} · paid {{ $counts['paid'] }}
                 </div>
                 @if($counts['draft'] + $counts['flagged'] > 0)
-                <form method="POST" action="{{ route('payroll.submit') }}" onsubmit="return confirm('Submit all draft/flagged payslips for this month to the Principal?')">
+                <form method="POST" action="{{ route('payroll.submit') }}" onsubmit="return confirm('Submit all draft/flagged payslips for this month to Management for approval?')">
                     @csrf <input type="hidden" name="month" value="{{ $month }}">
-                    <button class="bg-indigo-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-indigo-700 text-sm">Submit to Principal</button>
+                    <button class="bg-indigo-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-indigo-700 text-sm">Submit to Management</button>
                 </form>
                 @endif
             </div>
@@ -58,7 +58,7 @@
                     <thead>
                         <tr class="bg-gray-50 border-b text-xs uppercase text-gray-500">
                             <th class="p-3">Staff</th><th class="p-3">Role</th><th class="p-3">Department</th><th class="p-3 text-right">Net Salary</th>
-                            <th class="p-3">Status</th><th class="p-3">Principal's Note</th><th class="p-3 text-right">Action</th>
+                            <th class="p-3">Status</th><th class="p-3">Management Note</th><th class="p-3 text-right">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -85,7 +85,7 @@
                                 @elseif($status === 'paid')
                                     <a href="{{ route('payroll.slip', $slip) }}" class="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded font-bold hover:bg-emerald-700">✓ Paid · Payslip</a>
                                 @else
-                                    <span class="text-xs text-gray-400 italic">awaiting principal</span>
+                                    <span class="text-xs text-gray-400 italic">awaiting approval</span>
                                 @endif
                             </td>
                         </tr>

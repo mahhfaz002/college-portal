@@ -54,6 +54,10 @@ return [
         // One-off student platform-onboarding fee — settled to the PLATFORM
         // owner's Paystack account (the env keys above), not the college's.
         'platform_registration_fee' => env('PLATFORM_REGISTRATION_FEE', 5000),
+        // Last-resort gateway email when an invoice's payer (and their college)
+        // has no deliverable address. The portal still shows its own receipt;
+        // this only keeps Paystack from rejecting the transaction outright.
+        'fallback_email' => env('PAYSTACK_FALLBACK_EMAIL'),
     ],
 
 ];

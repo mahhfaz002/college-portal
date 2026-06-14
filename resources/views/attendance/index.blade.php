@@ -11,9 +11,9 @@
             <div class="bg-white p-6 rounded-lg shadow mb-6">
                 <form action="{{ route('attendance.index') }}" method="GET" class="flex flex-col md:flex-row gap-4 items-end">
                     <div>
-                        <label class="block text-sm font-bold text-gray-700">Select Class</label>
+                        <label class="block text-sm font-bold text-gray-700">Select Programme</label>
                         <select name="class" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500" required>
-                            <option value="">-- Choose Class --</option>
+                            <option value="">-- Choose Programme --</option>
                             @foreach($classes as $class)
                                 <option value="{{ $class }}" {{ $selectedClass == $class ? 'selected' : '' }}>{{ $class }}</option>
                             @endforeach

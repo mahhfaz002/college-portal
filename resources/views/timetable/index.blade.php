@@ -32,7 +32,7 @@
                         </h3>
                         @if($canManage)
                         <div class="flex gap-2">
-                            <form action="{{ route('timetable.approve', $draft) }}" method="POST" onsubmit="return confirm('Approve and publish this timetable to all teachers and students?')">@csrf
+                            <form action="{{ route('timetable.approve', $draft) }}" method="POST" onsubmit="return confirm('Approve and publish this timetable to all lecturers and students?')">@csrf
                                 <button class="bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700 text-sm">✓ Approve &amp; Publish</button>
                             </form>
                             <form action="{{ route('timetable.destroy', $draft) }}" method="POST" onsubmit="return confirm('Discard this draft?')">@csrf @method('DELETE')
@@ -69,7 +69,7 @@
                             </div>
                         </div>
                     @empty
-                        <p class="text-gray-400 italic">No entries — assign teachers to classes &amp; subjects first, then regenerate.</p>
+                        <p class="text-gray-400 italic">No entries — assign lecturers to courses first, then regenerate.</p>
                     @endforelse
                 </div>
             @endif

@@ -25,13 +25,13 @@
                                     <option value="staff">Staff only</option>
                                     <option value="students">Students only</option>
                                     <option value="both">Staff &amp; Students</option>
-                                    <option value="class">A specific class</option>
+                                    <option value="class">A specific programme</option>
                                 </select>
                             </div>
                             <div id="classWrap" style="display:none">
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Class</label>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Programme</label>
                                 <select name="target_class" class="w-full rounded-lg border-gray-300">
-                                    <option value="">Select class…</option>
+                                    <option value="">Select programme…</option>
                                     @foreach($classes as $class)
                                         <option value="{{ $class }}">{{ $class }}</option>
                                     @endforeach

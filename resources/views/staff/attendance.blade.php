@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">🕒 Teacher Attendance — Classroom Activity</h2>
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">🕒 Staff Attendance — Activity</h2>
     </x-slot>
 
     <div class="py-12">
@@ -19,11 +19,11 @@
                     <table class="w-full text-left">
                         <thead>
                             <tr class="bg-gray-50 border-b text-xs uppercase text-gray-500">
-                                <th class="p-3 font-bold">Teacher</th>
+                                <th class="p-3 font-bold">Staff</th>
                                 <th class="p-3 font-bold">Status</th>
                                 <th class="p-3 font-bold">Clock In</th>
-                                <th class="p-3 font-bold">Classes Attended</th>
-                                <th class="p-3 font-bold">Classes Missed</th>
+                                <th class="p-3 font-bold">Lectures Attended</th>
+                                <th class="p-3 font-bold">Lectures Missed</th>
                             </tr>
                         </thead>
                         <tbody>

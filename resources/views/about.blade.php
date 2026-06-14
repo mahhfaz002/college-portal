@@ -25,7 +25,7 @@
         </div>
         <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100 text-center">
             <div class="text-3xl font-bold text-indigo-600">40+</div>
-            <div class="text-sm text-gray-500 uppercase tracking-wider font-semibold">Expert Teachers</div>
+            <div class="text-sm text-gray-500 uppercase tracking-wider font-semibold">Expert Lecturers</div>
         </div>
         <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100 text-center">
             <div class="text-3xl font-bold text-indigo-600">100%</div>

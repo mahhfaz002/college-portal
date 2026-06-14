@@ -5,7 +5,7 @@
                 👩‍🏫 Lecturer Portal: <span class="text-indigo-600">{{ $selectedClass }}</span>
             </h2>
             <div class="text-sm font-medium text-gray-500">
-                Session: 2025/2026 | Term: 1st Term
+                Session: 2025/2026 | Semester: First Semester
             </div>
         </div>
     </x-slot>
@@ -46,7 +46,7 @@
             @if(isset($todayLessons) && $todayLessons->count())
             <div class="mb-8 bg-white rounded-xl shadow-sm border border-blue-200 overflow-hidden">
                 <div class="px-6 py-4 bg-blue-50 border-b flex justify-between items-center">
-                    <h3 class="font-bold text-blue-800">🗓️ Today's Lessons ({{ now()->format('l') }})</h3>
+                    <h3 class="font-bold text-blue-800">🗓️ Today's Lectures ({{ now()->format('l') }})</h3>
                     <a href="{{ route('timetable.index') }}" class="text-xs font-bold text-blue-700">Full week →</a>
                 </div>
                 <table class="w-full text-left text-sm">
@@ -66,7 +66,7 @@
             <!-- My classes + attendance status -->
             @if(isset($classStatus) && $classStatus->count())
             <div class="mb-8 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="px-6 py-4 bg-gray-50 border-b"><h3 class="font-bold text-gray-700">My Classes</h3></div>
+                <div class="px-6 py-4 bg-gray-50 border-b"><h3 class="font-bold text-gray-700">My Courses</h3></div>
                 <div class="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     @foreach($classStatus as $cls)
                         <div class="p-4 border rounded-lg">
@@ -144,7 +144,7 @@
 
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                     <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Results Status</p>
-                    <span class="inline-block mt-1 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold">Mid-Term Processing</span>
+                    <span class="inline-block mt-1 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold">Mid-Semester Processing</span>
                 </div>
             </div>
 
@@ -161,14 +161,14 @@
                     <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-2xl mr-4 group-hover:bg-green-600 group-hover:text-white transition">📊</div>
                     <div>
                         <h4 class="font-bold text-gray-800">Score Entry</h4>
-                        <p class="text-sm text-gray-500">Enter CA and Examination marks for your class.</p>
+                        <p class="text-sm text-gray-500">Enter CA and Examination marks for your course.</p>
                     </div>
                 </a>
             </div>
 
             <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
                 <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                    <h3 class="font-bold text-gray-700">Class List - {{ $selectedClass }}</h3>
+                    <h3 class="font-bold text-gray-700">Student List - {{ $selectedClass }}</h3>
                 </div>
                 <table class="w-full text-left">
                     <thead class="bg-gray-50">

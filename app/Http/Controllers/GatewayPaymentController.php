@@ -71,7 +71,10 @@ class GatewayPaymentController extends Controller
         try {
             $url = $this->paystack->initialize($invoice, route('payments.callback'));
         } catch (\Throwable $e) {
-            return redirect()->route('home')->with('error', $e->getMessage());
+            // Keep the payer in the payment flow with a clear reason rather than
+            // silently dumping them on the landing page.
+            return redirect()->route('payments.checkout', $invoice)
+                ->with('error', $e->getMessage());
         }
 
         return redirect()->away($url);

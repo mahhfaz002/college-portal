@@ -49,7 +49,7 @@
             <table class="w-full border-collapse border border-gray-400 text-sm">
                 <thead>
                     <tr class="bg-gray-100">
-                        <th class="border border-gray-400 p-2 text-left">Subject</th>
+                        <th class="border border-gray-400 p-2 text-left">Course</th>
                         <th class="border border-gray-400 p-2 text-center">CA (40)</th>
                         <th class="border border-gray-400 p-2 text-center">Exam (60)</th>
                         <th class="border border-gray-400 p-2 text-center">Total (100)</th>
@@ -92,17 +92,17 @@
 
             <div class="mt-8 grid grid-cols-2 gap-10">
                 <div class="border p-4 rounded bg-gray-50">
-                    <p class="text-sm">Total Subjects: <strong>{{ $scores->count() }}</strong></p>
+                    <p class="text-sm">Total Courses: <strong>{{ $scores->count() }}</strong></p>
                     <p class="text-sm">Average Score: <strong>{{ $scores->count() > 0 ? round($grandTotal / $scores->count(), 2) : 0 }}%</strong></p>
                 </div>
                 <div class="text-center">
                     <div class="border-b border-black w-48 mx-auto mt-8"></div>
-                    <p class="text-xs mt-1">Principal's Signature & Date</p>
+                    <p class="text-xs mt-1">Provost's Signature & Date</p>
                 </div>
             </div>
 
             <div class="hidden print:block mt-6">
-                <p class="text-sm"><strong>Teacher's Comment:</strong> <span class="italic border-b border-gray-400 pb-1">{{ is_object($remark) ? ($remark->teacher_comment ?? 'No comment provided.') : 'No comment provided.' }}</span></p>
+                <p class="text-sm"><strong>Lecturer's Comment:</strong> <span class="italic border-b border-gray-400 pb-1">{{ is_object($remark) ? ($remark->teacher_comment ?? 'No comment provided.') : 'No comment provided.' }}</span></p>
             </div>
 
             <div class="mt-8 border border-gray-300 rounded shadow-sm">
@@ -130,7 +130,7 @@
             </div>
 
             <div class="mt-10 flex gap-4 justify-center no-print">
-                <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-2 rounded font-bold">🖨️ Print Report Card</button>
+                <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-2 rounded font-bold">🖨️ Print Statement of Result</button>
                 <a href="{{ route('students.show', $student->id) }}" class="bg-gray-200 px-6 py-2 rounded font-bold">Back</a>
             </div>
         </div>
@@ -142,7 +142,7 @@
                     <input type="hidden" name="term" value="{{ $term }}">
                     <input type="hidden" name="session" value="{{ $session }}">
 
-                    <label class="block font-bold mb-2 text-gray-700">Class Teacher's Remark:</label>
+                    <label class="block font-bold mb-2 text-gray-700">Course Lecturer's Remark:</label>
                     <textarea name="teacher_comment" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500" rows="2">{{ is_object($remark) ? ($remark->teacher_comment ?? '') : '' }}</textarea>
 
                     <button type="submit" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded font-bold text-sm hover:bg-blue-700">

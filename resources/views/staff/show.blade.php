@@ -66,7 +66,7 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Classes</label>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Programmes</label>
                             <div class="grid grid-cols-2 gap-1 max-h-44 overflow-y-auto border rounded-md p-2">
                                 @foreach($allClasses as $c)
                                     <label class="assign-item flex items-center gap-2 text-sm py-1" data-section="{{ $c->section }}">
@@ -76,7 +76,7 @@
                             </div>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Subjects</label>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Courses</label>
                             <div class="grid grid-cols-2 gap-1 max-h-44 overflow-y-auto border rounded-md p-2">
                                 @foreach($allSubjects as $s)
                                     <label class="assign-item flex items-center gap-2 text-sm py-1" data-section="{{ $s->section }}">
@@ -101,11 +101,11 @@
                 @else
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                         <div>
-                            <p class="text-xs font-bold text-gray-500 uppercase mb-2">Classes</p>
+                            <p class="text-xs font-bold text-gray-500 uppercase mb-2">Programmes</p>
                             {{ $staff->classes->pluck('name')->implode(', ') ?: '—' }}
                         </div>
                         <div>
-                            <p class="text-xs font-bold text-gray-500 uppercase mb-2">Subjects</p>
+                            <p class="text-xs font-bold text-gray-500 uppercase mb-2">Courses</p>
                             {{ $staff->subjects->pluck('name')->implode(', ') ?: '—' }}
                         </div>
                     </div>

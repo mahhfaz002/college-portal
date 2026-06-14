@@ -31,7 +31,7 @@ class TermController extends Controller
 
         ActivityLog::record("Set {$data['current_term']} ({$data['current_session']})", 'term.update');
 
-        return back()->with('success', "Active term set to {$data['current_term']}, {$data['current_session']}. All dashboards updated.");
+        return back()->with('success', "Active semester set to {$data['current_term']}, {$data['current_session']}. All dashboards updated.");
     }
 
     /**
@@ -43,8 +43,8 @@ class TermController extends Controller
         DB::table('class_teacher')->delete();
         DB::table('subject_teacher')->delete();
 
-        ActivityLog::record('Cleared all teacher assignments for new term', 'term.clear');
+        ActivityLog::record('Cleared all lecturer assignments for new semester', 'term.clear');
 
-        return back()->with('success', 'All teacher class & subject assignments cleared. You can now reassign for the new term.');
+        return back()->with('success', 'All lecturer course assignments cleared. You can now reassign for the new semester.');
     }
 }

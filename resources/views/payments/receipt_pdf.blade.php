@@ -32,7 +32,7 @@
             <td>
                 <strong>STUDENT:</strong> {{ $payment->student->full_name }}<br>
                 <strong>ADMISSION NO:</strong> {{ $payment->student->admission_number }}<br>
-                <strong>CLASS:</strong> {{ $payment->student->class_arm }}
+                <strong>PROGRAMME:</strong> {{ $payment->student->class_arm }}
             </td>
             <td class="right">
                 <strong>RECEIPT NO:</strong> #{{ str_pad($payment->id, 6, '0', STR_PAD_LEFT) }}<br>
@@ -45,7 +45,7 @@
     <table>
         <thead><tr><th>Description</th><th class="right">Amount ({{ setting('currency_symbol','N') }})</th></tr></thead>
         <tbody>
-            <tr><td style="height:60px; vertical-align:top;">{{ $payment->description ?? 'School Fees Payment' }}</td><td class="right">{{ number_format($payment->amount, 2) }}</td></tr>
+            <tr><td style="height:60px; vertical-align:top;">{{ $payment->description ?? 'College Fees Payment' }}</td><td class="right">{{ number_format($payment->amount, 2) }}</td></tr>
             <tr><td class="right"><strong>TOTAL PAID</strong></td><td class="right total">{{ number_format($payment->amount, 2) }}</td></tr>
         </tbody>
     </table>

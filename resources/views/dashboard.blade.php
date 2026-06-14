@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('School Management Dashboard') }}
+            {{ __('College Management Dashboard') }}
         </h2>
     </x-slot>
 
@@ -58,10 +58,10 @@
 
             <div class="bg-white p-4 rounded-lg shadow mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="flex items-center gap-2">
-                    <span class="text-gray-600 font-bold">Filter by Class:</span>
+                    <span class="text-gray-600 font-bold">Filter by Programme:</span>
                     <form action="{{ route('dashboard') }}" method="GET" class="flex gap-2">
                         <select name="class" class="border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">All Classes</option>
+                            <option value="">All Programmes</option>
                             @foreach($classes as $class)
                                 <option value="{{ $class }}" {{ $selectedClass == $class ? 'selected' : '' }}>
                                     {{ $class }}

@@ -22,7 +22,7 @@
                 <div>
                     <p class="text-sm"><strong>STUDENT NAME:</strong> {{ $payment->student->full_name }}</p>
                     <p class="text-sm"><strong>ADMISSION NO:</strong> {{ $payment->student->admission_number }}</p>
-                    <p class="text-sm"><strong>CLASS:</strong> {{ $payment->student->class_arm }}</p>
+                    <p class="text-sm"><strong>PROGRAMME:</strong> {{ $payment->student->class_arm }}</p>
                 </div>
                 <div class="text-right">
                     <p class="text-sm"><strong>RECEIPT NO:</strong> #{{ str_pad($payment->id, 6, '0', STR_PAD_LEFT) }}</p>
@@ -41,7 +41,7 @@
                 <tbody>
                     <tr>
                         <td class="border border-black p-4 h-32 align-top">
-                            {{ $payment->description ?? 'School Fees Payment' }}
+                            {{ $payment->description ?? 'College Fees Payment' }}
                             <p class="text-xs mt-2 italic text-gray-600">Method: {{ $payment->payment_method }}</p>
                         </td>
                         <td class="border border-black p-4 text-right font-bold text-xl">

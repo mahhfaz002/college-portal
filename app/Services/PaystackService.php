@@ -21,6 +21,66 @@ class PaystackService
     /** Flat portal convenience fee charged on every online transaction (Naira). */
     public const CONVENIENCE_FEE = 1000;
 
+    /**
+     * Reserved / non-routable top-level domains Paystack rejects outright with
+     * "Invalid Email Address Passed" (e.g. the seeded *@*.test accounts). An
+     * invoice carrying one of these can never reach the gateway, so we treat it
+     * as undeliverable and fall back to a real address.
+     */
+    private const RESERVED_EMAIL_TLDS = ['test', 'local', 'localhost', 'example', 'invalid', 'internal'];
+
+    /**
+     * Whether an address is well-formed AND something the gateway will accept
+     * (real, routable TLD — not one of the reserved test domains above).
+     */
+    public function isDeliverableEmail(?string $email): bool
+    {
+        if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return false;
+        }
+        $domain = strtolower(substr(strrchr($email, '@'), 1));
+        $tld    = strrchr($domain, '.');
+        $tld    = $tld ? ltrim($tld, '.') : $domain;
+
+        return !in_array($tld, self::RESERVED_EMAIL_TLDS, true);
+    }
+
+    /**
+     * Resolve a gateway-acceptable payer email for an invoice. Prefers the
+     * invoice's own payer email, then the linked user, then the college's
+     * contact address, then a configured platform fallback. Throws a clear,
+     * user-facing message only when nothing deliverable can be found — so a
+     * bad email surfaces a fixable error instead of a silent gateway failure.
+     */
+    public function payerEmail(Invoice $invoice, ?College $college = null): string
+    {
+        $college ??= $invoice->college_id
+            ? College::withoutGlobalScopes()->find($invoice->college_id)
+            : null;
+
+        $user = $invoice->user_id
+            ? \App\Models\User::withoutGlobalScopes()->find($invoice->user_id)
+            : null;
+
+        $candidates = [
+            $invoice->payer_email,
+            $user?->email,
+            $college?->email,
+            config('services.paystack.fallback_email'),
+        ];
+
+        foreach ($candidates as $email) {
+            if ($this->isDeliverableEmail($email)) {
+                return $email;
+            }
+        }
+
+        throw new \RuntimeException(
+            'Your email address on file is not valid for online payment. '
+            . 'Please update your profile email to a real address (e.g. a Gmail) and try again.'
+        );
+    }
+
     public function secretKey(?College $college = null): ?string
     {
         return ($college?->paystack_secret_key)
@@ -122,7 +182,7 @@ class PaystackService
         $response = Http::withToken($secret)
             ->acceptJson()
             ->post(rtrim(config('services.paystack.base_url'), '/') . '/transaction/initialize', [
-                'email'        => $invoice->payer_email,
+                'email'        => $this->payerEmail($invoice, $college),
                 'amount'       => (int) round($invoice->chargeable() * 100), // kobo (fee + surcharges)
                 'reference'    => $invoice->reference,
                 'callback_url' => $callbackUrl,

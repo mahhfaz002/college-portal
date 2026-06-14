@@ -21,22 +21,22 @@
 
                     <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 hover:border-green-500 transition group">
                         <div class="text-3xl mb-3">👩‍🏫</div>
-                        <h3 class="text-white font-bold text-lg">Teacher</h3>
-                        <p class="text-gray-400 text-xs mb-4">Class register, Attendance, Results.</p>
-                        <a href="/dashboard?role_preview=teacher" class="text-green-400 font-bold text-sm group-hover:underline italic">Launch Dashboard →</a>
+                        <h3 class="text-white font-bold text-lg">Lecturer</h3>
+                        <p class="text-gray-400 text-xs mb-4">Course register, Attendance, Results.</p>
+                        <a href="/dashboard?role_preview=lecturer" class="text-green-400 font-bold text-sm group-hover:underline italic">Launch Dashboard →</a>
                     </div>
 
                     <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 hover:border-yellow-500 transition group">
                         <div class="text-3xl mb-3">📑</div>
-                        <h3 class="text-white font-bold text-lg">Accountant</h3>
+                        <h3 class="text-white font-bold text-lg">Bursar</h3>
                         <p class="text-gray-400 text-xs mb-4">Fees, Payments, Debt recovery.</p>
-                        <a href="/dashboard?role_preview=accountant" class="text-yellow-400 font-bold text-sm group-hover:underline italic">Launch Dashboard →</a>
+                        <a href="/dashboard?role_preview=bursar" class="text-yellow-400 font-bold text-sm group-hover:underline italic">Launch Dashboard →</a>
                     </div>
 
                     <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 hover:border-blue-500 transition group">
                         <div class="text-3xl mb-3">⚙️</div>
                         <h3 class="text-white font-bold text-lg">Staff Admin</h3>
-                        <p class="text-gray-400 text-xs mb-4">Manage users and class assignments.</p>
+                        <p class="text-gray-400 text-xs mb-4">Manage users and course assignments.</p>
                         <a href="{{ route('staff.index') }}" class="text-blue-400 font-bold text-sm group-hover:underline italic">Launch Portal →</a>
                     </div>
 

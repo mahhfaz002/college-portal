@@ -8,7 +8,7 @@
             <div class="bg-white p-6 rounded-lg shadow mb-6">
                 <form method="GET" class="flex flex-wrap gap-4 items-end">
                     <div>
-                        <label class="block text-xs font-bold text-gray-600 uppercase">Class</label>
+                        <label class="block text-xs font-bold text-gray-600 uppercase">Programme</label>
                         <select name="class" class="mt-1 border-gray-300 rounded-md shadow-sm">
                             @foreach($classes as $class)
                                 <option value="{{ $class }}" {{ $selectedClass == $class ? 'selected' : '' }}>{{ $class }}</option>

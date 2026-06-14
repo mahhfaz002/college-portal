@@ -19,8 +19,8 @@
                             <tr class="text-xs uppercase text-gray-500">
                                 <th class="px-4 py-3">Applicant</th>
                                 <th class="px-4 py-3">Credentials</th>
-                                <th class="px-4 py-3">Parent</th>
-                                <th class="px-4 py-3">Class</th>
+                                <th class="px-4 py-3">Guardian</th>
+                                <th class="px-4 py-3">Programme</th>
                                 <th class="px-4 py-3">Status</th>
                                 <th class="px-4 py-3 text-center">Actions</th>
                             </tr>

@@ -15,8 +15,8 @@
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                 <div class="flex flex-wrap justify-between items-center gap-4">
                     <div class="text-sm space-y-1">
-                        <p><span class="text-gray-400">Subject:</span> <strong>{{ $exam->subject->name ?? '—' }}</strong></p>
-                        <p><span class="text-gray-400">Classes:</span> {{ implode(', ', $exam->class_arms) }}</p>
+                        <p><span class="text-gray-400">Course:</span> <strong>{{ $exam->subject->name ?? '—' }}</strong></p>
+                        <p><span class="text-gray-400">Programmes:</span> {{ implode(', ', $exam->class_arms) }}</p>
                         <p><span class="text-gray-400">Questions:</span> {{ $exam->questions->count() }} · <span class="text-gray-400">Total marks:</span> {{ $exam->totalMarks() }}</p>
                         <p><span class="text-gray-400">Status:</span> <span class="uppercase font-bold">{{ $exam->status }}</span></p>
                     </div>
@@ -49,7 +49,7 @@
                 <div class="p-4 overflow-x-auto">
                     <table class="w-full text-left text-sm">
                         <thead><tr class="text-xs uppercase text-gray-500 border-b">
-                            <th class="p-2">Student</th><th class="p-2">Class</th><th class="p-2">Attendance</th><th class="p-2">Fees</th><th class="p-2 text-right">Action</th>
+                            <th class="p-2">Student</th><th class="p-2">Programme</th><th class="p-2">Attendance</th><th class="p-2">Fees</th><th class="p-2 text-right">Action</th>
                         </tr></thead>
                         <tbody>
                             @forelse($eligible as $r)
@@ -81,7 +81,7 @@
                 <div class="p-4 overflow-x-auto">
                     <table class="w-full text-left text-sm">
                         <thead><tr class="text-xs uppercase text-gray-500 border-b">
-                            <th class="p-2">Student</th><th class="p-2">Class</th><th class="p-2">Reason</th><th class="p-2 text-right">Action</th>
+                            <th class="p-2">Student</th><th class="p-2">Programme</th><th class="p-2">Reason</th><th class="p-2 text-right">Action</th>
                         </tr></thead>
                         <tbody>
                             @forelse($ineligible as $r)

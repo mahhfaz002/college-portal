@@ -18,8 +18,8 @@
                     <thead>
                         <tr class="bg-gray-50 border-b text-xs uppercase text-gray-500">
                             <th class="p-3 font-bold">Exam</th>
-                            <th class="p-3 font-bold">Subject</th>
-                            <th class="p-3 font-bold">Classes</th>
+                            <th class="p-3 font-bold">Course</th>
+                            <th class="p-3 font-bold">Programmes</th>
                             <th class="p-3 font-bold">Questions</th>
                             <th class="p-3 font-bold">Submissions</th>
                             <th class="p-3 font-bold">Status</th>

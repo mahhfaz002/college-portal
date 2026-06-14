@@ -14,9 +14,9 @@
             <form action="{{ route('exams.store') }}" method="POST" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-5">
                 @csrf
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Subject</label>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Course</label>
                     <select name="subject_id" class="w-full border-gray-300 rounded-md shadow-sm" required>
-                        <option value="">Select subject…</option>
+                        <option value="">Select course…</option>
                         @foreach($subjects as $s)
                             <option value="{{ $s->id }}">{{ $s->name }}</option>
                         @endforeach

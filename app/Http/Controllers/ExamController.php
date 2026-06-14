@@ -122,7 +122,7 @@ class ExamController extends Controller
     public function close(Exam $exam)
     {
         $exam->update(['status' => 'grading']);
-        return back()->with('success', 'Exam closed. Subject teacher can now grade submissions.');
+        return back()->with('success', 'Exam closed. Course lecturer can now grade submissions.');
     }
 
     /**

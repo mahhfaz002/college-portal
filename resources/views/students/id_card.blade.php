@@ -36,7 +36,7 @@
                     <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Admission No</p>
                     <p class="text-sm font-bold text-gray-800 -mt-1">{{ $student->admission_number }}</p>
 
-                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Class</p>
+                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Programme</p>
                     <p class="text-sm font-bold text-gray-800 -mt-1">{{ $student->class_arm }}</p>
 
                     <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Blood Group</p>

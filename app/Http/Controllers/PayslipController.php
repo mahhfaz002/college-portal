@@ -101,7 +101,7 @@ class PayslipController extends Controller
             ->whereIn('status', ['draft', 'flagged'])
             ->update(['status' => 'submitted', 'submitted_at' => now(), 'flag_comment' => null]);
 
-        return back()->with('success', "{$count} payslip(s) submitted to the Principal for approval.");
+        return back()->with('success', "{$count} payslip(s) submitted to the Provost for approval.");
     }
 
     /** Bursar initiates payment on an approved payslip. */

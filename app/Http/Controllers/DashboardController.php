@@ -209,7 +209,7 @@ class DashboardController extends Controller
             'must_change_password' => true,
         ]);
 
-        return back()->with('success', "Teacher Account Created! Email: $email | Temp Password: $randomPassword");
+        return back()->with('success', "Lecturer Account Created! Email: $email | Temp Password: $randomPassword");
     }
 
     /**

@@ -8,7 +8,7 @@
             @if($errors->any())<div class="mb-4 p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg text-sm"><ul class="list-disc ml-5">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
             @if($slip->status === 'flagged')
             <div class="mb-4 p-4 bg-red-50 border border-red-300 text-red-800 rounded-lg text-sm">
-                <strong>Flagged by Principal:</strong> {{ $slip->flag_comment }}
+                <strong>Flagged by Management:</strong> {{ $slip->flag_comment }}
             </div>
             @endif
 

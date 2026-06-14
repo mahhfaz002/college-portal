@@ -63,7 +63,7 @@ class StaffAttendanceController extends Controller
     {
         $date = $request->query('date', now()->toDateString());
 
-        $teachers = User::where('role', 'teacher')
+        $teachers = User::where('role', 'lecturer')
             ->with('classes')
             ->orderBy('name')
             ->get();

@@ -53,7 +53,7 @@
                             @endcan
                         </tr>
                         @empty
-                        <tr><td colspan="7" class="p-8 text-center text-gray-400 italic">No graded results forwarded yet. Subject teacher must submit grades first.</td></tr>
+                        <tr><td colspan="7" class="p-8 text-center text-gray-400 italic">No graded results forwarded yet. Course lecturer must submit grades first.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

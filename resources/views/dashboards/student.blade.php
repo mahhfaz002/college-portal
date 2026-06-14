@@ -74,7 +74,7 @@
                             @if($a->audience === 'class')<span class="ml-1 text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">{{ $a->target_class }}</span>@endif
                         </p>
                         <p class="text-sm text-gray-600 whitespace-pre-line">{{ \Illuminate\Support\Str::limit($a->body, 160) }}</p>
-                        <p class="text-[10px] text-gray-400 mt-1">{{ $a->author->name ?? 'School' }} · {{ $a->created_at->diffForHumans() }}</p>
+                        <p class="text-[10px] text-gray-400 mt-1">{{ $a->author->name ?? 'College' }} · {{ $a->created_at->diffForHumans() }}</p>
                     </div>
                     @endforeach
                 </div>
@@ -83,7 +83,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white p-6 rounded-xl shadow-sm border-b-4 border-blue-500">
-                    <p class="text-xs font-bold text-gray-400 uppercase">Class</p>
+                    <p class="text-xs font-bold text-gray-400 uppercase">Programme</p>
                     <h3 class="text-2xl font-black">{{ $student->class_arm }}</h3>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border-b-4 border-green-500">
@@ -108,13 +108,13 @@
                         <h3 class="font-bold text-gray-700">Semester Results — {{ setting('current_term','First Semester') }} {{ setting('current_session','2025/2026') }}</h3>
                         <a href="{{ route('reports.download', $student->id) }}" class="flex items-center text-xs text-blue-600 font-bold hover:text-blue-900 transition">
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                            Download Report Card
+                            Download Statement of Result
                         </a>
                     </div>
                     <table class="w-full text-left">
                         <thead class="bg-gray-100">
                             <tr class="text-xs uppercase text-gray-500">
-                                <th class="px-6 py-3">Subject</th>
+                                <th class="px-6 py-3">Course</th>
                                 <th class="px-6 py-3 text-center">CA (40)</th>
                                 <th class="px-6 py-3 text-center">Exam (60)</th>
                                 <th class="px-6 py-3 text-center">Total</th>

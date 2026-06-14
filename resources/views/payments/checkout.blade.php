@@ -52,6 +52,12 @@
             <p class="title">{{ $invoice->description }}</p>
             <p class="muted">{{ ucwords(str_replace('_',' ', $invoice->purpose)) }} · Ref {{ $invoice->reference }}</p>
 
+            @if(session('error'))
+                <div style="margin-top:16px;padding:12px 14px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:13px;line-height:1.5;">
+                    {{ session('error') }}
+                </div>
+            @endif
+
             <table>
                 {{-- Fee item(s). Currently one line per invoice; the layout itemises
                      each component should an invoice ever carry several. --}}

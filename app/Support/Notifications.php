@@ -29,7 +29,7 @@ class Notifications
                 Schema::hasTable('payslips') ? Payslip::where('status', 'submitted')->count() : 0,
                 route('payroll.review'), 'payslips awaiting approval'
             ),
-            'accountant' => self::wrap(
+            'bursar' => self::wrap(
                 Schema::hasTable('payslips') ? Payslip::where('status', 'flagged')->count() : 0,
                 route('payroll.index'), 'payslips flagged for correction'
             ),
@@ -41,11 +41,11 @@ class Notifications
                 SupportTicket::where('status', '!=', 'resolved')->count(),
                 route('support.index'), 'open support tickets'
             ),
-            'admin' => self::wrap(
+            'admission_officer' => self::wrap(
                 Applicant::where('status', 'pending')->count(),
                 route('admission.admin'), 'pending applications'
             ),
-            'teacher' => self::teacherActions($user),
+            'lecturer' => self::teacherActions($user),
             'student' => self::studentActions($user),
             default => ['count' => 0, 'url' => '#', 'label' => ''],
         };
@@ -117,7 +117,7 @@ class Notifications
                     }
                 }
                 break;
-            case 'accountant':
+            case 'bursar':
                 if (Schema::hasTable('payslips')) {
                     foreach (Payslip::with('staff')->where('status', 'flagged')->latest()->get() as $p) {
                         $items[] = ['icon' => '⚠️', 'title' => 'Payslip flagged for correction',
@@ -137,13 +137,13 @@ class Notifications
                         'detail' => \Illuminate\Support\Str::limit($t->subject ?? $t->message ?? '', 120), 'url' => route('support.index'), 'time' => $t->created_at];
                 }
                 break;
-            case 'admin':
+            case 'admission_officer':
                 foreach (Applicant::where('status', 'pending')->latest()->get() as $ap) {
                     $items[] = ['icon' => '🧾', 'title' => 'Pending admission application',
                         'detail' => $ap->full_name ?? '', 'url' => route('admission.admin'), 'time' => $ap->created_at];
                 }
                 break;
-            case 'teacher':
+            case 'lecturer':
                 $subjectIds = $user->subjects()->pluck('subjects.id');
                 if ($subjectIds->isNotEmpty()) {
                     foreach (Exam::whereIn('subject_id', $subjectIds)->where('status', 'draft')->get() as $e) {

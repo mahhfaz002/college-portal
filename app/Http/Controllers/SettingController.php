@@ -62,8 +62,8 @@ class SettingController extends Controller
             Setting::set('grading_scheme', json_encode($scheme), 'academic');
         }
 
-        ActivityLog::record('Updated school settings', 'settings.update');
+        ActivityLog::record('Updated college settings', 'settings.update');
 
-        return back()->with('success', 'School settings updated successfully.');
+        return back()->with('success', 'College settings updated successfully.');
     }
 }

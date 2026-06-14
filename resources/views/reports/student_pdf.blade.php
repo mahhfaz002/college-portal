@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Report Card</title>
+    <title>Statement of Result</title>
     <style>
         body { font-family: sans-serif; font-size: 12px; }
         .header { text-align: center; margin-bottom: 20px; }
@@ -15,20 +15,20 @@
 </head>
 <body>
     <div class="header">
-        <h1>School Management System</h1>
-        <h3>1st Term Report Card - 2025/2026</h3>
+        <h1>{{ current_college()->name ?? config('app.name') }}</h1>
+        <h3>First Semester Statement of Result - 2025/2026</h3>
     </div>
 
     <div class="student-info">
         <p><strong>Name:</strong> {{ $student->full_name }}</p>
         <p><strong>Admission No:</strong> {{ $student->admission_number }}</p>
-        <p><strong>Class:</strong> {{ $student->class_arm }}</p>
+        <p><strong>Programme:</strong> {{ $student->class_arm }}</p>
     </div>
 
     <table>
         <thead>
             <tr>
-                <th>Subject</th>
+                <th>Course</th>
                 <th class="text-center">CA (40)</th>
                 <th class="text-center">Exam (60)</th>
                 <th class="text-center">Total (100)</th>

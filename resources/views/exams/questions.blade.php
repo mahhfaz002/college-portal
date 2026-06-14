@@ -9,7 +9,7 @@
             @if($errors->any())<div class="p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg text-sm"><ul class="list-disc ml-5">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
 
             <div class="bg-white p-4 rounded-xl border text-sm text-gray-600 flex items-center justify-between flex-wrap gap-2">
-                <span>Subject: <strong>{{ $exam->subject->name ?? '—' }}</strong> · Questions: {{ $exam->questions->count() }} · Total marks: {{ $exam->totalMarks() }}
+                <span>Course: <strong>{{ $exam->subject->name ?? '—' }}</strong> · Questions: {{ $exam->questions->count() }} · Total marks: {{ $exam->totalMarks() }}
                 @if($exam->isLocked())<span class="ml-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">Submitted to Exam Officer — editing locked</span>@endif</span>
                 @unless($exam->isLocked())
                     @if($exam->questions->count() > 0)

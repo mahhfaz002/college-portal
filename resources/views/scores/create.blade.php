@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            📊 Score Entry: {{ $class }}
+            📊 Score Entry — {{ optional($selectedSubject)->name ?? 'Select a course' }}
         </h2>
     </x-slot>
 
@@ -17,30 +17,33 @@
                 </div>
             @endif
 
-            {{-- Class picker (admins / exam officers). Teachers are locked to their class. --}}
+            {{-- Course picker. Lecturers see only their assigned courses; oversight roles see all. --}}
             <form method="GET" action="{{ route('scores.create') }}" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3">
-                <label class="text-xs font-bold text-gray-500 uppercase">Class</label>
-                <select name="class" onchange="this.form.submit()" class="rounded-lg border-gray-300">
-                    <option value="">— Select class —</option>
-                    @foreach($classes as $c)
-                        <option value="{{ $c }}" {{ $class == $c ? 'selected' : '' }}>{{ $c }}</option>
+                <label class="text-xs font-bold text-gray-500 uppercase">Course</label>
+                <select name="subject_id" onchange="this.form.submit()" class="rounded-lg border-gray-300 w-full max-w-xl">
+                    <option value="">— Select course —</option>
+                    @foreach($subjects as $s)
+                        <option value="{{ $s->id }}" {{ optional($selectedSubject)->id == $s->id ? 'selected' : '' }}>
+                            {{ $s->name }}{{ $s->course_code ? ' ('.$s->course_code.')' : '' }}@if($s->program_id || $s->level) — {{ optional($s->program)->name }}{{ $s->level ? ' · L'.$s->level : '' }}@endif
+                        </option>
                     @endforeach
                 </select>
             </form>
+            @if($subjects->isEmpty())
+                <div class="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg text-sm">No courses are assigned to you yet. Ask the Academic Secretary or your HOD to assign your courses.</div>
+            @endif
 
             <form action="{{ route('scores.store') }}" method="POST" class="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-200">
                 @csrf
 
+                <input type="hidden" name="subject_id" value="{{ optional($selectedSubject)->id }}">
                 <div class="p-6 bg-indigo-900 text-white flex flex-wrap justify-between items-center gap-4">
                     <div>
-                        <label class="block text-xs font-bold uppercase text-indigo-300">Select Subject</label>
-                        <select name="subject_id" class="mt-1 bg-indigo-800 border-indigo-700 text-white rounded-lg focus:ring-white w-64" required>
-                            @forelse($subjects as $subject)
-                                <option value="{{ $subject->id }}">{{ $subject->name }}</option>
-                            @empty
-                                <option value="">No subjects — add some first</option>
-                            @endforelse
-                        </select>
+                        <p class="block text-xs font-bold uppercase text-indigo-300">Course</p>
+                        <p class="mt-1 text-lg font-black">{{ optional($selectedSubject)->name ?? '— Select a course above —' }}</p>
+                        @if($selectedSubject)
+                            <p class="text-xs text-indigo-300">{{ $selectedSubject->course_code ?? '' }} {{ optional($selectedSubject->program)->name }}{{ $selectedSubject->level ? ' · L'.$selectedSubject->level : '' }}</p>
+                        @endif
                     </div>
                     <div class="text-right">
                         <p class="text-sm font-bold">Max CA: {{ setting('ca_max_score', 40) }} | Max Exam: {{ setting('exam_max_score', 60) }}</p>
@@ -73,14 +76,14 @@
                                 </td>
                             </tr>
                             @empty
-                            <tr><td colspan="3" class="py-8 text-center text-gray-400 italic">Select a class above to load its students.</td></tr>
+                            <tr><td colspan="3" class="py-8 text-center text-gray-400 italic">{{ $selectedSubject ? 'No students enrolled in this programme & level yet.' : 'Select a course above to load its students.' }}</td></tr>
                             @endforelse
                         </tbody>
                     </table>
 
                     <div class="mt-8">
-                        <button type="submit" @disabled($students->isEmpty()) class="w-full bg-indigo-600 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-indigo-700 shadow-lg transition disabled:opacity-40">
-                            💾 Upload Subject Scores
+                        <button type="submit" @disabled($students->isEmpty() || !$selectedSubject) class="w-full bg-indigo-600 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-indigo-700 shadow-lg transition disabled:opacity-40">
+                            💾 Upload Course Scores
                         </button>
                     </div>
                 </div>

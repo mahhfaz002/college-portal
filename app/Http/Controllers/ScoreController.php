@@ -13,39 +13,42 @@ use Illuminate\Http\Request;
 class ScoreController extends Controller
 {
     /**
-     * Class + subject score-entry sheet.
-     * Teachers default to their assigned class; admins may pick one via ?class=.
+     * Course score-entry sheet (tertiary model).
+     *
+     * A course (Subject) belongs to a programme + level, so the students to be
+     * scored are exactly that programme+level cohort. Lecturers may only score
+     * courses assigned to them (subject_teacher pivot); oversight roles
+     * (exam_officer / registrar / proprietor) may pick any course.
      */
     public function create(Request $request)
     {
         $user = auth()->user();
-        $isTeacher = $user->role === 'teacher';
+        $isLecturer = $user->role === 'lecturer';
 
-        if ($isTeacher) {
-            // Teachers only see classes & subjects assigned to them this term.
-            $classes = $user->classes()->pluck('classes.name')->sort()->values();
-            $subjects = $user->subjects()->orderBy('name')->get();
-        } else {
-            $classes = Student::select('class_arm')->whereNotNull('class_arm')->distinct()->orderBy('class_arm')->pluck('class_arm');
-            $subjects = Subject::orderBy('name')->get();
+        $subjects = $isLecturer
+            ? $user->subjects()->with('program')->orderBy('name')->get()
+            : Subject::with('program')->orderBy('name')->get();
+
+        $selectedId = $request->query('subject_id') ?: $subjects->first()?->id;
+        $subject = $selectedId ? $subjects->firstWhere('id', (int) $selectedId) : null;
+
+        // A lecturer may only open a course assigned to them (the list above is
+        // already scoped, so a missing match means an unauthorised id).
+        if ($isLecturer && $selectedId && !$subject) {
+            abort(403, 'You are not assigned to this course.');
         }
 
-        $class = $request->query('class') ?? $classes->first();
-
-        // A teacher may only open a class they are assigned to.
-        if ($isTeacher && $class && !$classes->contains($class)) {
-            abort(403, 'You are not assigned to this class.');
-        }
-
-        $students = $class
-            ? Student::where('class_arm', $class)->orderBy('full_name')->get()
+        // Students for the course = its programme + level cohort.
+        $students = ($subject && $subject->program_id && $subject->level !== null)
+            ? Student::where('program_id', $subject->program_id)
+                ->where('level', $subject->level)
+                ->orderBy('full_name')->get()
             : collect();
 
         return view('scores.create', [
-            'class' => $class ?: 'Select a class',
-            'classes' => $classes,
-            'subjects' => $subjects,
-            'students' => $students,
+            'subjects'        => $subjects,
+            'selectedSubject' => $subject,
+            'students'        => $students,
         ]);
     }
 
@@ -61,13 +64,13 @@ class ScoreController extends Controller
             'scores.*.exam' => "nullable|numeric|min:0|max:$examMax",
         ]);
 
-        // Teachers may only enter scores for subjects assigned to them this term.
+        // Lecturers may only enter scores for courses assigned to them.
         $user = auth()->user();
-        if ($user->role === 'teacher' && !$user->subjects()->whereKey($validated['subject_id'])->exists()) {
-            abort(403, 'You are not assigned to this subject.');
+        if ($user->role === 'lecturer' && !$user->subjects()->whereKey($validated['subject_id'])->exists()) {
+            abort(403, 'You are not assigned to this course.');
         }
 
-        $term = setting('current_term', '1st Term');
+        $term = setting('current_term', 'First Semester');
         $session = setting('current_session', '2025/2026');
 
         $updatedStudentIds = [];

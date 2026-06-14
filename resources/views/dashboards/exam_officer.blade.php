@@ -18,7 +18,7 @@
                     <h3 class="text-3xl font-black text-gray-800">{{ $totalStudents }}</h3>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-indigo-500">
-                    <p class="text-xs font-bold text-gray-400 uppercase">Subjects</p>
+                    <p class="text-xs font-bold text-gray-400 uppercase">Courses</p>
                     <h3 class="text-3xl font-black text-gray-800">{{ $subjectsCount }}</h3>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-yellow-500">
@@ -102,7 +102,7 @@
                 <div class="p-4 overflow-x-auto">
                     <table class="w-full text-left text-sm">
                         <thead><tr class="text-xs uppercase text-gray-500 border-b">
-                            <th class="p-2">Student</th><th class="p-2">Class</th><th class="p-2">Attendance</th><th class="p-2">Fees</th>
+                            <th class="p-2">Student</th><th class="p-2">Programme</th><th class="p-2">Attendance</th><th class="p-2">Fees</th>
                         </tr></thead>
                         <tbody>
                             @foreach($roster as $r)

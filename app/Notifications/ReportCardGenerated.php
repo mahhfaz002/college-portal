@@ -35,12 +35,12 @@ class ReportCardGenerated extends Notification
 public function toMail($notifiable)
 {
     return (new MailMessage)
-        ->subject('Your Child\'s Report Card is Ready!')
+        ->subject('Your Statement of Result is Ready!')
         ->greeting('Hello!')
-        ->line('The report card for the 1st Term 2025/2026 has been generated.')
-        ->line('You can log in to the student portal to view and download your child\'s results.')
-        ->action('View Report Card', route('dashboard')) // Links to student dashboard
-        ->line('Thank you for choosing our school!');
+        ->line('Your statement of result for the First Semester 2025/2026 has been generated.')
+        ->line('You can log in to the student portal to view and download your results.')
+        ->action('View Statement of Result', route('dashboard')) // Links to student dashboard
+        ->line('Thank you for choosing our college!');
 }
 
     /**

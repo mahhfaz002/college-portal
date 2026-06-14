@@ -8,7 +8,7 @@
             @if(session('error'))<div class="mb-4 p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg text-sm">{{ session('error') }}</div>@endif
 
             <div class="bg-white p-4 rounded-xl border text-sm text-gray-600 mb-4">
-                Subject: <strong>{{ $exam->subject->name ?? '—' }}</strong>. Objective (exam) marks are auto-scored. Enter each student's CA / test mark; totals & grades compute automatically on save and are forwarded to the Exam Officer.
+                Course: <strong>{{ $exam->subject->name ?? '—' }}</strong>. Objective (exam) marks are auto-scored. Enter each student's CA / test mark; totals & grades compute automatically on save and are forwarded to the Exam Officer.
             </div>
 
             <form action="{{ route('exams.grade.save', $exam) }}" method="POST" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
