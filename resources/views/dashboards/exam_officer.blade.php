@@ -3,6 +3,7 @@
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">📝 Exam Officer Dashboard</h2>
             <div class="flex gap-2">
+                <a href="{{ route('exams.papers') }}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700 text-sm">📄 Question Papers</a>
                 <a href="{{ route('exams.create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 text-sm">+ Create Exam</a>
                 <a href="{{ route('exams.queries') }}" class="bg-gray-700 text-white px-4 py-2 rounded-lg font-bold hover:bg-gray-800 text-sm">Queries ({{ $openQueries }})</a>
             </div>

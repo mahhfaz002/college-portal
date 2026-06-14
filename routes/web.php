@@ -337,6 +337,11 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         // Exam Mode (countdown timers + notification).
         Route::post('/exam-mode', [\App\Http\Controllers\ExamModeController::class, 'activate'])->name('exam-mode.activate');
         Route::post('/exam-mode/{examCycle}/close', [\App\Http\Controllers\ExamModeController::class, 'close'])->name('exam-mode.close');
+
+        // Approved question papers — print / CSV export (objectives) for the offline portal.
+        Route::get('/exam-papers', [\App\Http\Controllers\ExamPaperController::class, 'index'])->name('exams.papers');
+        Route::get('/exam-papers/{exam}/print', [\App\Http\Controllers\ExamPaperController::class, 'print'])->name('exams.papers.print');
+        Route::get('/exam-papers/{exam}/csv', [\App\Http\Controllers\ExamPaperController::class, 'csv'])->name('exams.papers.csv');
     });
 
     // -- Teacher: author questions + grade --
