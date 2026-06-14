@@ -50,10 +50,24 @@ class GatewayPaymentController extends Controller
         $breakdown = PaystackService::surcharges((float) $invoice->amount);
 
         if (! $invoice->isPaid()) {
-            $invoice->update([
-                'convenience_fee' => $breakdown['convenience'],
-                'service_fee'     => $breakdown['service'],
-            ]);
+            // Keep the figures on the model so chargeable() is correct for THIS
+            // request even when they can't be persisted.
+            $invoice->convenience_fee = $breakdown['convenience'];
+            $invoice->service_fee     = $breakdown['service'];
+
+            // Persist only when the columns exist. Guards against a database that
+            // hasn't run the surcharge migration yet (e.g. a production deploy
+            // whose deploy command skipped `php artisan migrate --force`), so the
+            // checkout / invoice page can never hard-500 over a missing column.
+            try {
+                if (\Illuminate\Support\Facades\Schema::hasColumn('invoices', 'convenience_fee')
+                    && \Illuminate\Support\Facades\Schema::hasColumn('invoices', 'service_fee')) {
+                    $invoice->save();
+                }
+            } catch (\Throwable $e) {
+                // Non-fatal: the breakdown is computed in-memory and payment can
+                // still proceed; the columns simply aren't stored until migrated.
+            }
         }
 
         return $breakdown;
