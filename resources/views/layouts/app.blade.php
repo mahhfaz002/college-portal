@@ -6,7 +6,7 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <title>{{ $school['name'] ?? config('app.name', 'School Portal') }}</title>
-        <style>:root { --brand: {{ $school['color'] ?? '#2563eb' }}; }</style>
+        <style>:root { --brand: {{ $school['color'] ?? '#2563eb' }}; } [x-cloak]{display:none!important;}</style>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
