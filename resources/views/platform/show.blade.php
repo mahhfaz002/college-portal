@@ -55,6 +55,69 @@
                 </form>
             </div>
 
+            {{-- Paystack subaccount & settlement (marketplace split) --}}
+            <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
+                <div class="px-6 py-4 bg-gray-50 border-b flex items-center justify-between">
+                    <h3 class="font-bold text-gray-700">💳 Payments &amp; Settlement</h3>
+                    <a href="{{ route('platform.colleges.transactions', $college) }}" class="text-sm font-bold text-indigo-600 hover:underline">View transactions →</a>
+                </div>
+                <div class="p-6 space-y-5">
+                    <div class="grid sm:grid-cols-3 gap-4 text-sm">
+                        <div><p class="text-[10px] uppercase font-bold text-gray-400">Subaccount Code</p>
+                            <p class="font-mono text-gray-800 break-all">{{ $college->paystack_subaccount_code ?? '— not set up —' }}</p></div>
+                        <div><p class="text-[10px] uppercase font-bold text-gray-400">Status</p>
+                            @php $st = $college->paystack_subaccount_status; @endphp
+                            <span class="text-xs font-bold px-2 py-0.5 rounded-full {{ $st==='active' ? 'bg-green-100 text-green-700' : ($st==='inactive' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600') }}">{{ ucfirst($st ?? 'pending') }}</span></div>
+                        <div><p class="text-[10px] uppercase font-bold text-gray-400">Commission</p>
+                            <p class="font-bold text-gray-800">{{ (float) ($college->commission_percentage ?? 0) }}%</p></div>
+                        <div><p class="text-[10px] uppercase font-bold text-gray-400">Settlement Account</p>
+                            <p class="text-gray-800">{{ $college->settlement_account_name ?? '—' }}<br><span class="text-xs text-gray-500">{{ $college->settlement_account_number }} {{ $college->settlement_bank ? '· bank '.$college->settlement_bank : '' }}</span></p></div>
+                        <div><p class="text-[10px] uppercase font-bold text-gray-400">Commission Earned</p>
+                            <p class="font-bold text-emerald-600">{{ money($commissionEarned) }}</p></div>
+                        <div><p class="text-[10px] uppercase font-bold text-gray-400">Last Settlement</p>
+                            <p class="text-gray-800">{{ $lastSettlement ? \Illuminate\Support\Carbon::parse($lastSettlement)->format('d M Y') : '—' }}</p></div>
+                    </div>
+
+                    <form method="POST" action="{{ route('platform.colleges.settlement', $college) }}" class="border-t pt-4 grid sm:grid-cols-2 gap-3">
+                        @csrf
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Settlement Bank</label>
+                            @if(!empty($banks))
+                                <select name="settlement_bank" required class="w-full border-gray-300 rounded-lg text-sm">
+                                    <option value="">— Select bank —</option>
+                                    @foreach($banks as $b)
+                                        <option value="{{ $b['code'] }}" {{ $college->settlement_bank == $b['code'] ? 'selected' : '' }}>{{ $b['name'] }}</option>
+                                    @endforeach
+                                </select>
+                            @else
+                                <input name="settlement_bank" value="{{ $college->settlement_bank }}" required placeholder="Paystack bank code (e.g. 058)" class="w-full border-gray-300 rounded-lg text-sm">
+                            @endif
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Account Number</label>
+                            <input name="settlement_account_number" value="{{ $college->settlement_account_number }}" required placeholder="0123456789" class="w-full border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Account Name <span class="text-gray-300">(auto-verified if blank)</span></label>
+                            <input name="settlement_account_name" value="{{ $college->settlement_account_name }}" placeholder="Resolved from Paystack" class="w-full border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Platform Commission (%)</label>
+                            <input name="commission_percentage" type="number" step="0.01" min="0" max="100" value="{{ $college->commission_percentage ?? config('services.paystack.default_commission_percentage', 2) }}" required class="w-full border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div class="sm:col-span-2 flex flex-wrap gap-2">
+                            <button class="bg-emerald-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-emerald-700 text-sm">
+                                {{ $college->paystack_subaccount_code ? 'Update Subaccount' : 'Create Subaccount' }}
+                            </button>
+                            @if($college->paystack_subaccount_code)
+                                <button formaction="{{ route('platform.colleges.subaccount.sync', $college) }}" formmethod="POST" class="bg-gray-100 text-gray-700 px-5 py-2 rounded-lg font-bold hover:bg-gray-200 text-sm">Sync from Paystack</button>
+                            @endif
+                        </div>
+                    </form>
+                    <p class="text-[11px] text-gray-400">The platform's master Paystack account collects every payment; each payment made on this college's domain is split natively by Paystack so the institution's share settles to the account above and the platform keeps its commission.</p>
+                </div>
+            </div>
+
             {{-- Edit college branding / domain --}}
             <div class="bg-white rounded-2xl shadow-sm border p-6">
                 <div class="flex items-center justify-between mb-4">

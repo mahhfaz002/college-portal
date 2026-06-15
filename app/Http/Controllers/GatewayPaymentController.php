@@ -138,25 +138,92 @@ class GatewayPaymentController extends Controller
         $payload   = $request->getContent();
         $signature = $request->header('x-paystack-signature');
         $event     = json_decode($payload, true) ?: [];
+        $type      = $event['event'] ?? 'unknown';
+        $data      = $event['data'] ?? [];
+        $reference = $data['reference'] ?? null;
 
-        $reference = $event['data']['reference'] ?? null;
         $invoice = $reference
             ? Invoice::withoutGlobalScopes()->where('reference', $reference)
                 ->orWhere('gateway_reference', $reference)->first()
             : null;
 
-        // Verify HMAC-SHA512 of the raw body using the key that owns the txn.
+        // Verify HMAC-SHA512 of the RAW body against the owning account's secret
+        // (the per-invoice secret, or the platform master — marketplace webhooks
+        // arrive on the master account).
         $secret = $this->paystack->secretForInvoice($invoice);
-        if (!$secret || !$signature || !hash_equals(hash_hmac('sha512', $payload, $secret), $signature)) {
+        $master = $this->paystack->masterSecret();
+        $valid  = $signature && (
+            ($secret && hash_equals(hash_hmac('sha512', $payload, $secret), $signature)) ||
+            ($master && hash_equals(hash_hmac('sha512', $payload, $master), $signature))
+        );
+
+        // Idempotency + replay protection: one row per (event + Paystack id/ref).
+        $dedupe = $type . ':' . ($data['id'] ?? $reference ?? md5($payload));
+        $log = \App\Models\PaystackWebhookEvent::firstOrNew(['dedupe_key' => $dedupe]);
+        if ($log->exists && $log->status === 'processed') {
+            return response()->json(['status' => true, 'note' => 'duplicate ignored']);
+        }
+        $log->fill([
+            'event'           => $type,
+            'reference'       => $reference,
+            'college_id'      => $invoice?->college_id,
+            'signature_valid' => (bool) $valid,
+            'payload'         => $event,
+            'attempts'        => (int) ($log->attempts ?? 0) + 1,
+            'status'          => $valid ? 'received' : 'failed',
+            'error'           => $valid ? null : 'invalid signature',
+        ])->save();
+
+        if (!$valid) {
+            \Log::warning('Paystack webhook: invalid signature', ['event' => $type, 'reference' => $reference]);
             return response()->json(['status' => false], 401);
         }
 
-        if (($event['event'] ?? null) === 'charge.success' && $invoice && !$invoice->isPaid()) {
-            $this->paystack->markPaid($invoice, $event['data']['reference'] ?? null, 'paystack');
-            $this->fulfill($invoice);
+        try {
+            $this->processWebhookEvent($type, $data, $invoice);
+            $log->markProcessed();
+        } catch (\Throwable $e) {
+            // Acknowledge 200 (so Paystack doesn't hammer-retry) but keep the
+            // event flagged 'failed' in the log for our own retry.
+            \Log::error('Paystack webhook processing failed', ['event' => $type, 'reference' => $reference, 'error' => $e->getMessage()]);
+            $log->markFailed($e->getMessage());
         }
 
         return response()->json(['status' => true]);
+    }
+
+    /**
+     * Idempotent handling of a verified webhook event. Pure (no signature/HTTP
+     * concerns) so it can be re-run from the event log or moved to a queued job.
+     */
+    public function processWebhookEvent(string $type, array $data, ?Invoice $invoice): void
+    {
+        switch ($type) {
+            case 'charge.success':
+                if ($invoice && !$invoice->isPaid()) {
+                    $this->paystack->markPaid($invoice, $data['reference'] ?? null, 'paystack', $data);
+                    $this->fulfill($invoice);
+                }
+                break;
+
+            case 'transfer.success':   // settlement payout to a subaccount succeeded
+                if ($invoice) {
+                    $invoice->update([
+                        'settlement_status'    => 'settled',
+                        'settlement_reference' => $data['reference'] ?? $data['transfer_code'] ?? $invoice->settlement_reference,
+                        'settlement_at'        => now(),
+                    ]);
+                }
+                break;
+
+            case 'transfer.failed':
+                if ($invoice) {
+                    $invoice->update(['settlement_status' => 'failed']);
+                }
+                break;
+
+            // Any other event type is logged and acknowledged only.
+        }
     }
 
     /**

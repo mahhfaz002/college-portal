@@ -19,14 +19,21 @@ class Invoice extends Model
         'purpose', 'description', 'amount', 'convenience_fee', 'service_fee', 'currency',
         'status', 'reference', 'gateway_reference', 'payment_method',
         'payer_email', 'paid_at', 'meta',
+        // Paystack settlement split (recorded at verification time).
+        'platform_commission', 'institution_share', 'settlement_status',
+        'settlement_reference', 'settlement_at', 'gateway_response',
     ];
 
     protected $casts = [
-        'amount'          => 'decimal:2',
-        'convenience_fee' => 'decimal:2',
-        'service_fee'     => 'decimal:2',
-        'paid_at'         => 'datetime',
-        'meta'            => 'array',
+        'amount'               => 'decimal:2',
+        'convenience_fee'      => 'decimal:2',
+        'service_fee'          => 'decimal:2',
+        'platform_commission'  => 'decimal:2',
+        'institution_share'    => 'decimal:2',
+        'paid_at'              => 'datetime',
+        'settlement_at'        => 'datetime',
+        'meta'                 => 'array',
+        'gateway_response'     => 'array',
     ];
 
     public function isPaid(): bool

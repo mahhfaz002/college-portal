@@ -58,6 +58,17 @@ return [
         // has no deliverable address. The portal still shows its own receipt;
         // this only keeps Paystack from rejecting the transaction outright.
         'fallback_email' => env('PAYSTACK_FALLBACK_EMAIL'),
+
+        // Marketplace / split payments. The platform runs ONE master Paystack
+        // account (the secret/public keys above) and one SUBACCOUNT per college;
+        // each payment is split via the `subaccount` param. Commission is the
+        // platform's cut, set per-college as the subaccount's percentage_charge.
+        'use_subaccounts'              => (bool) env('PAYSTACK_USE_SUBACCOUNTS', true),
+        'default_commission_percentage'=> (float) env('PAYSTACK_DEFAULT_COMMISSION', 2),
+        // Who bears the Paystack transaction fee on a split: 'account' (master)
+        // or 'subaccount' (institution). The payer already bears it via grossUp,
+        // so this only affects how Paystack books the fee internally.
+        'subaccount_bearer'            => env('PAYSTACK_SUBACCOUNT_BEARER', 'account'),
     ],
 
 ];

@@ -92,6 +92,11 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::delete('/platform/colleges/{college}/admins/{user}', [$PF, 'removeAdmin'])->name('platform.colleges.admins.remove');
         Route::post('/platform/colleges/{college}/admins/{user}/reset', [$PF, 'resetAdmin'])->name('platform.colleges.admins.reset');
         Route::post('/platform/colleges/{college}/toggle', [$PF, 'toggle'])->name('platform.colleges.toggle');
+
+        // Paystack marketplace: subaccount + settlement management & transactions.
+        Route::post('/platform/colleges/{college}/settlement', [$PF, 'updateSettlement'])->name('platform.colleges.settlement');
+        Route::post('/platform/colleges/{college}/subaccount/sync', [$PF, 'syncSubaccount'])->name('platform.colleges.subaccount.sync');
+        Route::get('/platform/colleges/{college}/transactions', [$PF, 'transactions'])->name('platform.colleges.transactions');
         Route::delete('/platform/colleges/{college}', [$PF, 'destroy'])->name('platform.colleges.destroy');
     });
 

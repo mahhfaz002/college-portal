@@ -115,14 +115,99 @@ class PlatformController extends Controller
         $students   = Student::where('college_id', $college->id)->count();
         $staff      = User::where('college_id', $college->id)->whereNotIn('role', ['student', 'applicant'])->count();
         $applicants = Applicant::where('college_id', $college->id)->count();
-        $revenue    = Invoice::where('college_id', $college->id)->where('status', 'paid')->sum('amount');
+        $paid       = Invoice::where('college_id', $college->id)->where('status', 'paid');
+        $revenue    = (clone $paid)->sum('amount');
         $admins     = User::where('college_id', $college->id)->whereIn('role', self::ADMIN_ROLES)->orderBy('role')->get();
 
         return view('platform.show', [
             'college' => $college, 'students' => $students, 'staff' => $staff,
             'applicants' => $applicants, 'revenue' => $revenue, 'admins' => $admins,
             'adminRoles' => self::ADMIN_ROLES,
+            // Payments & settlement
+            'banks'            => app(\App\Services\PaystackService::class)->banks(),
+            'commissionEarned' => (float) (clone $paid)->sum('platform_commission'),
+            'institutionShare' => (float) (clone $paid)->sum('institution_share'),
+            'lastSettlement'   => (clone $paid)->whereNotNull('settlement_at')->max('settlement_at'),
+            'recentTx'         => (clone $paid)->latest('paid_at')->take(8)->get(),
         ]);
+    }
+
+    /**
+     * Onboard / update a college's Paystack subaccount + settlement details.
+     * Idempotent: rerunning updates the existing subaccount in place.
+     */
+    public function updateSettlement(Request $request, College $college)
+    {
+        $data = $request->validate([
+            'settlement_bank'           => 'required|string|max:20',   // Paystack bank code
+            'settlement_account_number' => 'required|string|max:20',
+            'commission_percentage'     => 'required|numeric|min:0|max:100',
+            'settlement_account_name'   => 'nullable|string|max:255',
+        ]);
+
+        $paystack = app(\App\Services\PaystackService::class);
+
+        // Best-effort account validation (resolves the real account name).
+        $resolved = null;
+        try {
+            $resolved = $paystack->resolveBankAccount($data['settlement_bank'], $data['settlement_account_number']);
+        } catch (\Throwable $e) {
+            \Log::warning('Paystack resolve account failed', ['college' => $college->id, 'error' => $e->getMessage()]);
+        }
+        if (!$resolved && empty($data['settlement_account_name'])) {
+            return back()->withInput()->with('error', 'Could not verify that settlement account. Check the bank and account number, or enter the account name manually.');
+        }
+
+        $college->fill([
+            'settlement_bank'           => $data['settlement_bank'],
+            'settlement_account_number' => $data['settlement_account_number'],
+            'settlement_account_name'   => $resolved ?? $data['settlement_account_name'],
+            'commission_percentage'     => $data['commission_percentage'],
+        ])->save();
+
+        try {
+            $paystack->createOrUpdateSubaccount($college, [
+                'settlement_bank'   => $data['settlement_bank'],
+                'account_number'    => $data['settlement_account_number'],
+                'percentage_charge' => $data['commission_percentage'],
+                'business_name'     => $college->name,
+            ]);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Settlement details saved, but the Paystack subaccount could not be created/updated: '.$e->getMessage());
+        }
+
+        return back()->with('success', "Subaccount configured for {$college->name} (code {$college->paystack_subaccount_code}, commission {$college->commission_percentage}%).");
+    }
+
+    /** Pull the latest subaccount status/details from Paystack. */
+    public function syncSubaccount(College $college)
+    {
+        try {
+            $data = app(\App\Services\PaystackService::class)->fetchSubaccount($college);
+            return back()->with($data ? 'success' : 'error',
+                $data ? 'Subaccount synced from Paystack.' : 'No subaccount to sync yet — create one first.');
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Subaccount sync failed: '.$e->getMessage());
+        }
+    }
+
+    /** Per-college transactions + commission earnings (reconciliation view). */
+    public function transactions(College $college)
+    {
+        $base = Invoice::where('college_id', $college->id);
+        $invoices = (clone $base)->whereIn('status', ['paid', 'pending'])
+            ->with('student')->latest('created_at')->paginate(50);
+
+        $paid = (clone $base)->where('status', 'paid');
+        $summary = [
+            'count'      => (clone $paid)->count(),
+            'gross'      => (float) (clone $paid)->sum('amount'),
+            'commission' => (float) (clone $paid)->sum('platform_commission'),
+            'share'      => (float) (clone $paid)->sum('institution_share'),
+            'settled'    => (clone $paid)->where('settlement_status', 'settled')->count(),
+        ];
+
+        return view('platform.transactions', compact('college', 'invoices', 'summary'));
     }
 
     /** Edit a college's branding / domain. */
