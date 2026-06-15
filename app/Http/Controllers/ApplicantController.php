@@ -16,15 +16,18 @@ class ApplicantController extends Controller
     /** Public application form (Sections A–D, program choices per college). */
     public function showForm()
     {
-        $colleges = \App\Models\College::where('is_active', true)->orderBy('name')->get();
-        $college  = $colleges->first();
+        // STRICT host-based tenancy: the apply form belongs to the college that
+        // owns THIS domain (bound by SetCollegeContext) — never "the first college".
+        $college = current_college();
+        if (!$college && app()->isLocal()) {
+            $college = \App\Models\College::where('is_active', true)->orderBy('id')->first();
+        }
+        abort_unless($college, 404);
 
-        $programs = $college
-            ? \App\Models\Program::withoutGlobalScopes()
-                ->where('college_id', $college->id)->with('department')->orderBy('name')->get()
-            : collect();
+        $programs = \App\Models\Program::withoutGlobalScopes()
+            ->where('college_id', $college->id)->with('department')->orderBy('name')->get();
 
-        return view('admission.form', compact('colleges', 'college', 'programs'));
+        return view('admission.form', compact('college', 'programs'));
     }
 
     /**
@@ -65,6 +68,13 @@ class ApplicantController extends Controller
             // Section D — passport
             'passport'             => 'required|file|mimes:jpg,jpeg,png|max:2048',
         ]);
+
+        // STRICT tenancy: bind the application to the college that owns THIS
+        // domain, ignoring any college_id supplied by a tampered form. The
+        // chosen programme is then verified to belong to that college below.
+        if ($hostCollege = current_college()) {
+            $validated['college_id'] = $hostCollege->id;
+        }
 
         // Keep only fully-filled result rows (subject + grade).
         $results = collect($validated['results'] ?? [])

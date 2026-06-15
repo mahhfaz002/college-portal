@@ -9,19 +9,31 @@ class LandingPageController extends Controller
 {
     public function index()
     {
-        // Resolve the tenant from the request domain (bound by SetCollegeContext);
-        // fall back to the first active college for the shared/platform address.
-        $college = current_college()
-            ?? College::where('is_active', true)->orderBy('id')->first();
+        // STRICT host-based tenancy: resolve ONLY the college that owns this
+        // domain (bound by SetCollegeContext). Never fall back to "the first
+        // college" — that would leak one institution's branding onto another
+        // domain (and onto the super-admin address).
+        $college = current_college();
 
-        $programs = collect();
-        if ($college) {
-            $programs = Program::withoutGlobalScopes()
-                ->where('college_id', $college->id)
-                ->with('department')
-                ->orderBy('name')
-                ->get();
+        // Local development convenience ONLY (APP_ENV=local) — never on Cloud.
+        if (!$college && app()->isLocal()) {
+            $college = College::where('is_active', true)->orderBy('id')->first();
         }
+
+        // No institution maps to this host → it is the platform / super-admin
+        // address (or an unconfigured domain). Do NOT resolve any tenant data.
+        if (!$college) {
+            if (request()->getHost() === config('app.super_admin_domain')) {
+                return redirect()->route('login');   // super-admin entry only
+            }
+            abort(404);   // unknown domain must not resolve to any college
+        }
+
+        $programs = Program::withoutGlobalScopes()
+            ->where('college_id', $college->id)
+            ->with('department')
+            ->orderBy('name')
+            ->get();
 
         // Academic calendar / key dates (static defaults; per-college editable later).
         $calendar = [

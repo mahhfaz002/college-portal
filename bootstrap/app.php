@@ -11,6 +11,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Behind Laravel Cloud's load balancer: trust forwarded headers so
+        // request()->getHost() / scheme reflect the real client-facing domain.
+        // This is essential for host-based tenant resolution (the app is only
+        // reachable through the Cloud edge, so trusting it is safe).
+        $middleware->trustProxies(at: '*');
+
         // Registering both your existing Role middleware and the new Password Change middleware
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,

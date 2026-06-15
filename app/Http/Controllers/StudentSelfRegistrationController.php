@@ -22,13 +22,16 @@ class StudentSelfRegistrationController extends Controller
 {
     public function showForm()
     {
-        $college = College::where('is_active', true)->orderBy('id')->first();
-        $departments = $college
-            ? Department::withoutGlobalScopes()->where('college_id', $college->id)->orderBy('name')->get()
-            : collect();
-        $programs = $college
-            ? Program::withoutGlobalScopes()->where('college_id', $college->id)->orderBy('name')->get()
-            : collect();
+        // STRICT host-based tenancy: register against the college that owns THIS
+        // domain (bound by SetCollegeContext) — never "the first college".
+        $college = current_college();
+        if (!$college && app()->isLocal()) {
+            $college = College::where('is_active', true)->orderBy('id')->first();
+        }
+        abort_unless($college, 404);
+
+        $departments = Department::withoutGlobalScopes()->where('college_id', $college->id)->orderBy('name')->get();
+        $programs = Program::withoutGlobalScopes()->where('college_id', $college->id)->orderBy('name')->get();
 
         return view('auth.student_register', compact('college', 'departments', 'programs'));
     }
@@ -50,6 +53,13 @@ class StudentSelfRegistrationController extends Controller
         ]);
 
         $program = Program::withoutGlobalScopes()->with('department')->findOrFail($data['program_id']);
+
+        // STRICT tenancy: the chosen programme must belong to THIS domain's
+        // college (prevents registering under another institution via a tampered form).
+        if (($host = current_college()) && (int) $program->college_id !== (int) $host->id) {
+            abort(403, 'This programme does not belong to this institution.');
+        }
+
         $collegeId = $program->college_id;
 
         $username = \App\Support\Usernames::generate($data['first_name'], $data['other_name'] ?? null, $data['surname']);

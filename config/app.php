@@ -19,6 +19,11 @@ return [
     // each college reachable at <acronym>.myplatform.com (one wildcard DNS).
     'platform_domain' => env('PLATFORM_DOMAIN'),
 
+    // The canonical platform / SUPER-ADMIN address (Laravel Cloud URL). Requests
+    // to this host are NEVER resolved to a tenant college — they load the
+    // super-admin context only and must not pick up any institution's data.
+    'super_admin_domain' => env('SUPER_ADMIN_DOMAIN', 'mahhfazcollegeportal.laravel.cloud'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment
