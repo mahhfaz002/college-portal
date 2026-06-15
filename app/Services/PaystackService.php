@@ -291,6 +291,12 @@ class PaystackService
      */
     public function recordSettlement(Invoice $invoice, array $gatewayData = []): void
     {
+        // Guard against a database that hasn't run the subaccount migration yet
+        // (e.g. a deploy that skipped `migrate --force`) so marking an invoice
+        // paid can never 500 over a missing settlement column.
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('invoices', 'institution_share')) {
+            return;
+        }
         if ($invoice->institution_share !== null && empty($gatewayData)) {
             return; // already recorded
         }

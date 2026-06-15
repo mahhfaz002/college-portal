@@ -158,21 +158,25 @@ class GatewayPaymentController extends Controller
         );
 
         // Idempotency + replay protection: one row per (event + Paystack id/ref).
-        $dedupe = $type . ':' . ($data['id'] ?? $reference ?? md5($payload));
-        $log = \App\Models\PaystackWebhookEvent::firstOrNew(['dedupe_key' => $dedupe]);
-        if ($log->exists && $log->status === 'processed') {
-            return response()->json(['status' => true, 'note' => 'duplicate ignored']);
+        // Guarded so a deploy that hasn't run the migration yet still processes.
+        $log = null;
+        if (\Illuminate\Support\Facades\Schema::hasTable('paystack_webhook_events')) {
+            $dedupe = $type . ':' . ($data['id'] ?? $reference ?? md5($payload));
+            $log = \App\Models\PaystackWebhookEvent::firstOrNew(['dedupe_key' => $dedupe]);
+            if ($log->exists && $log->status === 'processed') {
+                return response()->json(['status' => true, 'note' => 'duplicate ignored']);
+            }
+            $log->fill([
+                'event'           => $type,
+                'reference'       => $reference,
+                'college_id'      => $invoice?->college_id,
+                'signature_valid' => (bool) $valid,
+                'payload'         => $event,
+                'attempts'        => (int) ($log->attempts ?? 0) + 1,
+                'status'          => $valid ? 'received' : 'failed',
+                'error'           => $valid ? null : 'invalid signature',
+            ])->save();
         }
-        $log->fill([
-            'event'           => $type,
-            'reference'       => $reference,
-            'college_id'      => $invoice?->college_id,
-            'signature_valid' => (bool) $valid,
-            'payload'         => $event,
-            'attempts'        => (int) ($log->attempts ?? 0) + 1,
-            'status'          => $valid ? 'received' : 'failed',
-            'error'           => $valid ? null : 'invalid signature',
-        ])->save();
 
         if (!$valid) {
             \Log::warning('Paystack webhook: invalid signature', ['event' => $type, 'reference' => $reference]);
@@ -181,12 +185,12 @@ class GatewayPaymentController extends Controller
 
         try {
             $this->processWebhookEvent($type, $data, $invoice);
-            $log->markProcessed();
+            $log?->markProcessed();
         } catch (\Throwable $e) {
             // Acknowledge 200 (so Paystack doesn't hammer-retry) but keep the
             // event flagged 'failed' in the log for our own retry.
             \Log::error('Paystack webhook processing failed', ['event' => $type, 'reference' => $reference, 'error' => $e->getMessage()]);
-            $log->markFailed($e->getMessage());
+            $log?->markFailed($e->getMessage());
         }
 
         return response()->json(['status' => true]);
