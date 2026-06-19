@@ -40,6 +40,11 @@ return [
     'anthropic' => [
         'key'   => env('ANTHROPIC_API_KEY'),
         'model' => env('ANTHROPIC_MODEL', 'claude-opus-4-8'),
+        // When the primary model is overloaded/unreachable, generation retries on
+        // this cheaper, faster model BEFORE dropping to the deterministic floor.
+        // Same provider, so no extra credential or response format to handle.
+        // Set blank to disable the step-down (deterministic stays the final floor).
+        'fallback_model' => env('ANTHROPIC_FALLBACK_MODEL', 'claude-haiku-4-5'),
     ],
 
     // Paystack — online payments. Per-college keys (stored on the College

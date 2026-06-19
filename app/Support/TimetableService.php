@@ -5,6 +5,8 @@ namespace App\Support;
 use App\Models\SchoolClass;
 use App\Models\TimetableEntry;
 use App\Models\TimetablePlan;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -154,22 +156,40 @@ class TimetableService
 
     /**
      * Returns [grid, engine]. grid: [class][day][period_no] => course array.
+     * engine is 'ai' (Claude proposed a grid that passed validation) or
+     * 'fallback' (the deterministic generator).
+     *
+     * Resilience: the AI is tried on the primary model, then the configured
+     * fallback model (cheaper/faster — used when the primary is overloaded),
+     * each call retrying transient failures. An AI grid is accepted ONLY when it
+     * passes BOTH validators (clash-free AND covers every course). Failing all of
+     * that, the deterministic generator runs — clash-free by construction — so
+     * timetable generation can never be blocked by an API outage.
      */
-    private function buildGrid(array $courses, array $params): array
+    public function buildGrid(array $courses, array $params): array
     {
         if (empty($courses)) {
             return [[], 'fallback'];
         }
 
-        // Try AI first if a key is configured.
+        // Try AI first if a key is configured: primary model, then fallback model.
         if (config('services.anthropic.key')) {
-            try {
-                $aiGrid = $this->aiGrid($courses, $params);
-                if ($aiGrid && $this->isClashFree($aiGrid, $params)) {
-                    return [$aiGrid, 'ai'];
+            $models = array_values(array_unique(array_filter([
+                config('services.anthropic.model', 'claude-opus-4-8'),
+                config('services.anthropic.fallback_model'),
+            ])));
+
+            foreach ($models as $model) {
+                try {
+                    $aiGrid = $this->aiGrid($courses, $params, $model);
+                    if ($aiGrid
+                        && $this->isClashFree($aiGrid, $params)
+                        && $this->coversAllCourses($aiGrid, $courses, $params)) {
+                        return [$aiGrid, 'ai'];
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning("Timetable AI generation failed (model {$model}): ".$e->getMessage());
                 }
-            } catch (\Throwable $e) {
-                Log::warning('Timetable AI generation failed: '.$e->getMessage());
             }
         }
 
@@ -238,10 +258,45 @@ class TimetableService
     }
 
     /**
-     * Ask Claude to lay out the grid by subject name, then map back to courses.
+     * Coverage validator: every course handed to the generator must appear at
+     * least once in the grid. An AI layout that silently drops a subject is
+     * invalid (a class would simply never be taught it). Capped at the number of
+     * available slots so a class with more courses than slots isn't failed for an
+     * impossible expectation.
      */
-    private function aiGrid(array $courses, array $params): ?array
+    public function coversAllCourses(array $grid, array $courses, array $params): bool
     {
+        $slots = count($params['days']) * (int) $params['periods'];
+
+        foreach ($courses as $class => $list) {
+            $expected = min(count($list), $slots);
+
+            $placed = [];
+            foreach ($params['days'] as $day) {
+                for ($p = 1; $p <= $params['periods']; $p++) {
+                    $subjectId = $grid[$class][$day][$p]['subject_id'] ?? null;
+                    if ($subjectId !== null) {
+                        $placed[$subjectId] = true;
+                    }
+                }
+            }
+
+            if (count($placed) < $expected) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Ask Claude to lay out the grid by subject name, then map back to courses.
+     * $model lets the caller step from the primary model to a fallback one.
+     */
+    private function aiGrid(array $courses, array $params, ?string $model = null): ?array
+    {
+        $model ??= config('services.anthropic.model', 'claude-opus-4-8');
+
         $payload = [];
         foreach ($courses as $class => $list) {
             $payload[$class] = array_map(fn ($c) => ['subject' => $c['subject'], 'teacher' => $c['teacher']], $list);
@@ -261,14 +316,23 @@ class TimetableService
             'x-api-key'         => config('services.anthropic.key'),
             'anthropic-version' => '2023-06-01',
             'content-type'      => 'application/json',
-        ])->timeout(120)->post('https://api.anthropic.com/v1/messages', [
-            'model'      => config('services.anthropic.model', 'claude-opus-4-8'),
+        ])->timeout(120)->retry(3, 300, function (\Throwable $e) {
+            // Retry transient failures only: connection drops and
+            // rate-limit / overload / gateway errors (429, 5xx, 529).
+            if ($e instanceof ConnectionException) {
+                return true;
+            }
+            $status = $e instanceof RequestException ? (int) $e->response?->status() : 0;
+
+            return in_array($status, [429, 500, 502, 503, 529], true);
+        }, throw: false)->post('https://api.anthropic.com/v1/messages', [
+            'model'      => $model,
             'max_tokens' => 16000,
             'messages'   => [['role' => 'user', 'content' => $prompt]],
         ]);
 
         if (!$resp->successful()) {
-            Log::warning('Anthropic timetable call failed: '.$resp->status());
+            Log::warning("Anthropic timetable call failed (model {$model}): ".$resp->status());
             return null;
         }
 
