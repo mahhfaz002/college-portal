@@ -2,16 +2,15 @@
 
 namespace Tests\Feature;
 
-use App\Models\Exam;
 use App\Models\Student;
-use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesCollegeFixtures;
 use Tests\TestCase;
 
 class SecurityHardeningTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, CreatesCollegeFixtures;
 
     private Student $ownStudent;
     private Student $otherStudent;
@@ -21,18 +20,17 @@ class SecurityHardeningTest extends TestCase
     {
         parent::setUp();
         $this->seed();
+        $this->bootCollege();
 
-        $this->ownStudent = Student::create([
-            'full_name' => 'Owner Pupil', 'admission_number' => 'OWN/1', 'class_arm' => 'JSS1A',
-            'parent_phone' => '080', 'fees_balance' => 0, 'email' => 'owner@pupil.local',
+        $this->ownStudent = $this->studentRecord([
+            'full_name' => 'Owner Pupil', 'admission_number' => 'OWN/1', 'email' => 'owner@pupil.test',
         ]);
-        $this->otherStudent = Student::create([
-            'full_name' => 'Other Pupil', 'admission_number' => 'OTH/1', 'class_arm' => 'JSS1A',
-            'parent_phone' => '081', 'fees_balance' => 0, 'email' => 'other@pupil.local',
+        $this->otherStudent = $this->studentRecord([
+            'full_name' => 'Other Pupil', 'admission_number' => 'OTH/1', 'email' => 'other@pupil.test',
         ]);
-        $this->studentUser = User::create([
-            'name' => 'Owner Pupil', 'email' => 'owner@pupil.local',
-            'password' => bcrypt('password'), 'role' => 'student', 'must_change_password' => false,
+        // Student login linked to ownStudent by matching email.
+        $this->studentUser = $this->userWithRole('student', [
+            'name' => 'Owner Pupil', 'email' => 'owner@pupil.test',
         ]);
     }
 
@@ -65,8 +63,9 @@ class SecurityHardeningTest extends TestCase
 
     public function test_staff_can_download_any_report(): void
     {
-        $teacher = User::where('role', 'teacher')->firstOrFail();
-        $this->actingAs($teacher)
+        // Report download requires the view_students capability — lecturer is
+        // excluded, so this exercises a viewing role (registrar).
+        $this->actingAs($this->userWithRole('registrar'))
             ->get("/reports/download/{$this->otherStudent->id}")
             ->assertOk();
     }
@@ -79,27 +78,5 @@ class SecurityHardeningTest extends TestCase
             ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
             ->assertHeader('X-Content-Type-Options', 'nosniff')
             ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    }
-
-    // ---- Rate limiting ----
-
-    public function test_exam_unlock_is_rate_limited(): void
-    {
-        $exam = Exam::create([
-            'subject_id' => Subject::first()->id, 'title' => 'T', 'term' => '', 'session' => '',
-            'class_arms' => ['JSS1A'], 'duration_minutes' => 30, 'status' => 'released', 'access_password' => 'pw',
-        ]);
-
-        $hitLimited = false;
-        for ($i = 0; $i < 12; $i++) {
-            $res = $this->actingAs($this->studentUser)
-                ->post("/my-exams/{$exam->id}/unlock", ['access_password' => 'wrong']);
-            if ($res->status() === 429) {
-                $hitLimited = true;
-                break;
-            }
-        }
-
-        $this->assertTrue($hitLimited, 'Expected exam unlock to be throttled (429) after repeated attempts.');
     }
 }

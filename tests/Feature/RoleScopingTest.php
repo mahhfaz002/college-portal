@@ -2,78 +2,77 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
+use App\Models\Student;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesCollegeFixtures;
 use Tests\TestCase;
 
 class RoleScopingTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, CreatesCollegeFixtures;
+
+    private Student $student;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->seed();
+        $this->bootCollege();
+        $this->student = $this->studentRecord();
     }
 
-    private function as(string $role): User
-    {
-        return User::where('role', $role)->firstOrFail();
-    }
+    // ---- Bursar: finance only — no courses/scores ----
 
-    // ---- Bursar: fees only, no subjects/attendance/scores ----
-
-    public function test_bursar_cannot_see_subjects_or_attendance(): void
+    public function test_bursar_cannot_manage_subjects_or_scores(): void
     {
-        $b = $this->as('accountant');
+        $b = $this->userWithRole('bursar');
         $this->actingAs($b)->get('/subjects')->assertForbidden();
-        $this->actingAs($b)->get('/attendance')->assertForbidden();
-        $this->actingAs($b)->get('/attendance/report')->assertForbidden();
-    }
-
-    public function test_bursar_cannot_enter_scores_or_manage_subjects(): void
-    {
-        $b = $this->as('accountant');
         $this->actingAs($b)->get('/scores/entry')->assertForbidden();
         $this->actingAs($b)->post('/subjects', ['name' => 'X'])->assertForbidden();
     }
 
     public function test_bursar_keeps_fees_and_announcements(): void
     {
-        $b = $this->as('accountant');
-        $this->actingAs($b)->get('/fees')->assertOk();
+        $b = $this->userWithRole('bursar');
+        $this->actingAs($b)->get('/fees/orders')->assertOk();
         $this->actingAs($b)->get('/announcements')->assertOk();
     }
 
-    // ---- ICT: no attendance/results; can edit students, manage subjects/classes ----
+    // ---- MIS: owns the class registry and student records ----
 
-    public function test_ict_cannot_see_attendance(): void
+    public function test_mis_manages_classes_and_edits_students(): void
     {
-        $this->actingAs($this->as('ict'))->get('/attendance')->assertForbidden();
-    }
+        $mis = $this->userWithRole('mis');
 
-    public function test_ict_can_manage_subjects_and_classes_and_edit_students(): void
-    {
-        $ict = $this->as('ict');
-        $this->actingAs($ict)->post('/subjects', ['name' => 'Civic Education'])->assertRedirect();
-        $this->actingAs($ict)->post('/classes', ['name' => 'JSS3B', 'section' => 'Junior Secondary'])->assertRedirect();
+        $this->actingAs($mis)->post('/classes', ['name' => 'UG1B', 'section' => 'UG'])->assertRedirect();
 
-        $student = \App\Models\Student::firstOrFail();
-        $this->actingAs($ict)->put("/students/{$student->id}", [
-            'full_name' => 'Renamed Pupil',
-            'admission_number' => $student->admission_number,
-            'class_arm' => 'JSS2A',
-            'parent_phone' => $student->parent_phone,
-            'fees_balance' => $student->fees_balance,
+        $this->actingAs($mis)->put("/students/{$this->student->id}", [
+            'full_name'        => 'Renamed Student',
+            'admission_number' => $this->student->admission_number,
+            'class_arm'        => $this->student->class_arm,
+            'parent_phone'     => $this->student->parent_phone,
+            'fees_balance'     => $this->student->fees_balance,
         ])->assertRedirect();
-        $this->assertSame('Renamed Pupil', $student->fresh()->full_name);
+
+        $this->assertSame('Renamed Student', $this->student->fresh()->full_name);
     }
 
-    public function test_ict_cannot_admit_or_delete_students(): void
+    // ---- Academic Secretary owns courses; MIS does not (capability split) ----
+
+    public function test_academic_secretary_manages_subjects(): void
     {
-        $ict = $this->as('ict');
-        $this->actingAs($ict)->post('/students', [])->assertForbidden();
-        $student = \App\Models\Student::firstOrFail();
-        $this->actingAs($ict)->delete("/students/{$student->id}")->assertForbidden();
+        $this->actingAs($this->userWithRole('academic_secretary'))
+            ->post('/subjects', ['name' => 'Civic Education'])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('subjects', ['name' => 'Civic Education']);
+    }
+
+    public function test_mis_cannot_manage_subjects(): void
+    {
+        // Course creation moved to the Academic Secretary; MIS is excluded.
+        $this->actingAs($this->userWithRole('mis'))
+            ->post('/subjects', ['name' => 'Should Be Blocked'])
+            ->assertForbidden();
     }
 }

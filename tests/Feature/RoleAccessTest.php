@@ -3,46 +3,41 @@
 namespace Tests\Feature;
 
 use App\Models\Student;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesCollegeFixtures;
 use Tests\TestCase;
 
 class RoleAccessTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, CreatesCollegeFixtures;
+
+    private Student $student;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->seed();
+        $this->bootCollege();
+        $this->student = $this->studentRecord();
     }
 
-    private function as(string $role): User
-    {
-        return User::where('role', $role)->firstOrFail();
-    }
-
-    private function student(): Student
-    {
-        return Student::firstOrFail();
-    }
-
-    // ---- Proprietor: can VIEW everything ----
+    // ---- Proprietor: can VIEW the oversight pages ----
 
     public function test_proprietor_can_view_core_pages(): void
     {
-        $p = $this->as('proprietor');
-        foreach (['/dashboard', '/students', '/staff', '/settings', '/announcements'] as $path) {
+        // Settings is now MIS-only, so it is no longer part of proprietor oversight.
+        $p = $this->userWithRole('proprietor');
+        foreach (['/dashboard', '/students', '/staff', '/announcements'] as $path) {
             $this->actingAs($p)->get($path)->assertOk();
         }
     }
 
-    // ---- Proprietor: cannot CHANGE anything ----
+    // ---- Proprietor: cannot CHANGE anything (read-only oversight) ----
 
     /** @dataProvider proprietorBlockedWrites */
     public function test_proprietor_writes_are_blocked(string $method, string $path): void
     {
-        $this->actingAs($this->as('proprietor'))
+        $this->actingAs($this->userWithRole('proprietor'))
             ->call($method, $path, ['_token' => csrf_token()])
             ->assertForbidden();
     }
@@ -50,52 +45,50 @@ class RoleAccessTest extends TestCase
     public static function proprietorBlockedWrites(): array
     {
         return [
-            'create student'   => ['post', '/students'],
-            'update settings'  => ['put', '/settings'],
-            'post announcement'=> ['post', '/announcements'],
-            'create staff'     => ['post', '/staff'],
+            'update settings'   => ['put', '/settings'],
+            'post announcement' => ['post', '/announcements'],
+            'create staff'      => ['post', '/staff'],
         ];
     }
 
     public function test_proprietor_can_manage_own_profile(): void
     {
         // Self-service writes are exempt from the read-only rule.
-        $this->actingAs($this->as('proprietor'))->patch('/profile', [
+        $this->actingAs($this->userWithRole('proprietor'))->patch('/profile', [
             'name' => 'New Name',
             'email' => 'proprietor@mahhfaz.edu',
         ])->assertSessionHasNoErrors();
     }
 
-    // ---- Cross-role isolation ----
+    // ---- Cross-role write isolation ----
 
-    public function test_teacher_cannot_create_students(): void
+    public function test_lecturer_cannot_take_payments(): void
     {
-        $this->actingAs($this->as('teacher'))->post('/students', [])->assertForbidden();
-    }
-
-    public function test_teacher_cannot_take_payments(): void
-    {
-        $this->actingAs($this->as('teacher'))
-            ->get('/students/'.$this->student()->id.'/pay')
+        $this->actingAs($this->userWithRole('lecturer'))
+            ->get('/students/'.$this->student->id.'/pay')
             ->assertForbidden();
     }
 
-    public function test_accountant_can_open_payment_form(): void
+    public function test_bursar_can_open_payment_form(): void
     {
-        $this->actingAs($this->as('accountant'))
-            ->get('/students/'.$this->student()->id.'/pay')
+        $this->actingAs($this->userWithRole('bursar'))
+            ->get('/students/'.$this->student->id.'/pay')
             ->assertOk();
     }
 
-    public function test_accountant_cannot_create_students(): void
+    public function test_lecturer_cannot_delete_students(): void
     {
-        $this->actingAs($this->as('accountant'))->post('/students', [])->assertForbidden();
+        // Student deletion is an MIS-only write.
+        $this->actingAs($this->userWithRole('lecturer'))
+            ->delete('/students/'.$this->student->id)
+            ->assertForbidden();
     }
 
-    public function test_admin_can_reach_student_store(): void
+    public function test_bursar_cannot_edit_students(): void
     {
-        // Registrar/admin owns student writes — should pass the role gate
-        // (validation may bounce it back, but it must NOT be 403).
-        $this->actingAs($this->as('admin'))->post('/students', [])->assertStatus(302);
+        // Editing student records is MIS-only; the bursar is scoped to finance.
+        $this->actingAs($this->userWithRole('bursar'))
+            ->put('/students/'.$this->student->id, ['full_name' => 'X'])
+            ->assertForbidden();
     }
 }

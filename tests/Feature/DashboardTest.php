@@ -2,83 +2,62 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesCollegeFixtures;
 use Tests\TestCase;
 
 class DashboardTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, CreatesCollegeFixtures;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->seed();
-    }
-
-    private function userWithRole(string $role): User
-    {
-        return User::create([
-            'name' => ucfirst($role) . ' User',
-            'email' => $role . '@test.local',
-            'password' => bcrypt('password'),
-            'role' => $role,
-            'must_change_password' => false,
-        ]);
+        $this->bootCollege();
     }
 
     /** @dataProvider roleProvider */
     public function test_dashboard_renders_for_each_role(string $role): void
     {
-        $user = $this->userWithRole($role);
-        $response = $this->actingAs($user)->get('/dashboard');
-        $response->assertOk();
+        if ($role === 'student') {
+            // The student dashboard resolves the pupil's record by email.
+            $this->studentRecord(['email' => 'dash.student@example.test']);
+            $user = $this->userWithRole('student', ['email' => 'dash.student@example.test']);
+        } else {
+            $user = $this->userWithRole($role);
+        }
+
+        $this->actingAs($user)->get('/dashboard')->assertOk();
     }
 
     public static function roleProvider(): array
     {
+        // Current college roles (see App\Support\Permissions).
         return [
-            ['proprietor'],
-            ['principal'],
-            ['admin'],
-            ['ict'],
-            ['accountant'],
-            ['teacher'],
-            ['student'],
-            ['exam_officer'],
+            ['proprietor'], ['provost'], ['registrar'], ['bursar'], ['mis'],
+            ['academic_secretary'], ['exam_officer'], ['lecturer'], ['hod'],
+            ['assistant_hod'], ['student_affairs'], ['office_secretary'],
+            ['admission_officer'], ['librarian'], ['student'],
         ];
     }
 
     public function test_announcements_page_loads(): void
     {
-        $user = $this->userWithRole('teacher');
-        $this->actingAs($user)->get('/announcements')->assertOk();
+        $this->actingAs($this->userWithRole('lecturer'))->get('/announcements')->assertOk();
     }
 
-    public function test_settings_page_requires_admin_role(): void
+    public function test_settings_page_is_mis_only(): void
     {
-        $teacher = $this->userWithRole('teacher');
-        $this->actingAs($teacher)->get('/settings')->assertForbidden();
-
-        // Proprietor may VIEW settings (oversight) ...
-        $proprietor = $this->userWithRole('proprietor');
-        $this->actingAs($proprietor)->get('/settings')->assertOk();
+        // Settings moved to MIS-only; even the proprietor (oversight) is excluded.
+        $this->actingAs($this->userWithRole('lecturer'))->get('/settings')->assertForbidden();
+        $this->actingAs($this->userWithRole('proprietor'))->get('/settings')->assertForbidden();
+        $this->actingAs($this->userWithRole('mis'))->get('/settings')->assertOk();
     }
 
-    public function test_proprietor_cannot_update_settings(): void
+    public function test_mis_can_update_settings(): void
     {
-        // ... but the read-only rule blocks any write, even settings.
-        $user = $this->userWithRole('proprietor');
-        $this->actingAs($user)->put('/settings', [
-            'school_name' => 'New School Name',
-            'currency_symbol' => '$',
-        ])->assertForbidden();
-    }
-
-    public function test_principal_can_update_settings(): void
-    {
-        $user = $this->userWithRole('principal');
-        $this->actingAs($user)->put('/settings', [
+        $this->actingAs($this->userWithRole('mis'))->put('/settings', [
             'school_name' => 'New School Name',
             'currency_symbol' => '$',
         ])->assertSessionHasNoErrors();

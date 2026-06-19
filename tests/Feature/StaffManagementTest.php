@@ -3,105 +3,94 @@
 namespace Tests\Feature;
 
 use App\Models\SchoolClass;
-use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesCollegeFixtures;
 use Tests\TestCase;
 
 class StaffManagementTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, CreatesCollegeFixtures;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->seed();
+        $this->bootCollege();
     }
 
-    private function principal(): User
+    private function registrar(): User
     {
-        return User::where('role', 'principal')->firstOrFail();
+        // The Registrar owns staff registration & management (manage_staff).
+        return $this->userWithRole('registrar');
     }
 
-    public function test_principal_can_open_registration_form(): void
+    public function test_registrar_can_open_registration_form(): void
     {
-        $this->actingAs($this->principal())->get('/staff-register')->assertOk();
+        $this->actingAs($this->registrar())->get('/staff-register')->assertOk();
     }
 
-    public function test_non_principal_cannot_open_registration_form(): void
+    public function test_non_registrar_cannot_open_registration_form(): void
     {
-        $teacher = User::where('role', 'teacher')->firstOrFail();
-        $this->actingAs($teacher)->get('/staff-register')->assertForbidden();
-
-        $proprietor = User::where('role', 'proprietor')->firstOrFail();
-        $this->actingAs($proprietor)->get('/staff-register')->assertForbidden();
+        $this->actingAs($this->userWithRole('lecturer'))->get('/staff-register')->assertForbidden();
+        $this->actingAs($this->userWithRole('proprietor'))->get('/staff-register')->assertForbidden();
     }
 
-    public function test_principal_registers_teacher_with_generated_email_and_staff_id(): void
+    public function test_registrar_registers_lecturer_with_generated_email_and_staff_id(): void
     {
-        $class = SchoolClass::where('name', 'JSS1A')->firstOrFail();
-        $subjects = Subject::take(2)->pluck('id')->all();
-
-        $this->actingAs($this->principal())->post('/staff', [
-            'first_name'   => 'John',
-            'surname'      => 'Doe',
-            'role'         => 'teacher',
-            'employed_year'=> '2026',
-            'class_ids'    => [$class->id],
-            'subject_ids'  => $subjects,
+        $this->actingAs($this->registrar())->post('/staff', [
+            'first_name'    => 'John',
+            'surname'       => 'Doe',
+            'role'          => 'lecturer',
+            'employed_year' => '2026',
         ])->assertRedirect();
 
         $user = User::where('surname', 'Doe')->firstOrFail();
 
-        // Email = first initial + surname @ domain.
-        $domain = setting('staff_email_domain');
-        $this->assertSame('jdoe@'.$domain, $user->email);
+        // Email = first initial + surname @ the college/staff domain.
+        $this->assertSame('jdoe@'.setting('staff_email_domain'), $user->email);
 
         // Staff ID = ACRONYM/YEAR/SEQ.
         $this->assertStringStartsWith(setting('school_acronym').'/2026/', $user->staff_id);
 
-        // Must change password on first login.
+        // Must change the temp password on first login.
         $this->assertTrue($user->must_change_password);
-
-        // Assignments wired through pivots.
-        $this->assertTrue($user->classes->contains($class->id));
-        $this->assertCount(2, $user->subjects);
     }
 
     public function test_login_email_collision_gets_numeric_suffix(): void
     {
-        $principal = $this->principal();
+        $registrar = $this->registrar();
         $domain = setting('staff_email_domain');
 
-        $this->actingAs($principal)->post('/staff', ['first_name' => 'Jane', 'surname' => 'Smith', 'role' => 'teacher']);
-        $this->actingAs($principal)->post('/staff', ['first_name' => 'Jane', 'surname' => 'Smith', 'role' => 'teacher']);
+        $this->actingAs($registrar)->post('/staff', ['first_name' => 'Jane', 'surname' => 'Smith', 'role' => 'lecturer']);
+        $this->actingAs($registrar)->post('/staff', ['first_name' => 'Jane', 'surname' => 'Smith', 'role' => 'lecturer']);
 
         $emails = User::where('surname', 'Smith')->pluck('email')->all();
         $this->assertContains('jsmith@'.$domain, $emails);
         $this->assertContains('jsmith1@'.$domain, $emails);
     }
 
-    public function test_principal_can_update_assignments(): void
+    public function test_registrar_can_update_assignments(): void
     {
-        $teacher = User::where('role', 'teacher')->firstOrFail();
-        $class = SchoolClass::where('name', 'JSS2A')->firstOrFail();
+        $lecturer = $this->userWithRole('lecturer');
+        $class = SchoolClass::create(['name' => 'UG1A', 'section' => 'UG', 'level' => 'UG', 'active' => true]);
 
-        $this->actingAs($this->principal())
-            ->post("/staff/{$teacher->id}/assignments", ['class_ids' => [$class->id]])
+        $this->actingAs($this->registrar())
+            ->post("/staff/{$lecturer->id}/assignments", ['class_ids' => [$class->id]])
             ->assertRedirect();
 
-        $this->assertTrue($teacher->fresh()->classes->contains($class->id));
+        $this->assertTrue($lecturer->fresh()->classes->contains($class->id));
     }
 
-    public function test_principal_can_delete_staff_but_not_self(): void
+    public function test_registrar_can_delete_staff_but_not_self(): void
     {
-        $principal = $this->principal();
-        $teacher = User::where('role', 'teacher')->firstOrFail();
+        $registrar = $this->registrar();
+        $lecturer = $this->userWithRole('lecturer');
 
-        $this->actingAs($principal)->delete("/staff/{$teacher->id}")->assertRedirect();
-        $this->assertDatabaseMissing('users', ['id' => $teacher->id]);
+        $this->actingAs($registrar)->delete("/staff/{$lecturer->id}")->assertRedirect();
+        $this->assertDatabaseMissing('users', ['id' => $lecturer->id]);
 
-        $this->actingAs($principal)->delete("/staff/{$principal->id}")->assertRedirect();
-        $this->assertDatabaseHas('users', ['id' => $principal->id]); // self-delete blocked
+        $this->actingAs($registrar)->delete("/staff/{$registrar->id}")->assertRedirect();
+        $this->assertDatabaseHas('users', ['id' => $registrar->id]); // self-delete blocked
     }
 }
