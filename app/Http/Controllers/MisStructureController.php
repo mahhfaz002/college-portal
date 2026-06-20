@@ -39,9 +39,11 @@ class MisStructureController extends Controller
             'courses.*.name'                => 'required|string|max:255',
             'courses.*.acronym'             => 'nullable|string|max:20',
             'courses.*.levels'              => 'required|integer|min:1|max:8',
-            'courses.*.application_fee'     => 'nullable|numeric|min:0',
-            'courses.*.acceptance_fee'      => 'nullable|numeric|min:0',
-            'courses.*.registration_fee'    => 'nullable|numeric|min:0',
+            'courses.*.application_fee'         => 'nullable|numeric|min:0',
+            'courses.*.acceptance_fee'          => 'nullable|numeric|min:0',
+            'courses.*.registration_fee'        => 'nullable|numeric|min:0',
+            'courses.*.registration_fee_first'  => 'nullable|numeric|min:0',
+            'courses.*.registration_fee_other'  => 'nullable|numeric|min:0',
         ]);
 
         DB::transaction(function () use ($data) {
@@ -63,8 +65,7 @@ class MisStructureController extends Controller
                     'duration_years'   => max(1, (int) ceil(((int) $c['levels']) / 2)),
                     'application_fee'  => $c['application_fee'] ?? 0,
                     'acceptance_fee'   => $c['acceptance_fee'] ?? 0,
-                    'registration_fee' => $c['registration_fee'] ?? 0,
-                ]);
+                ] + $this->registrationFees($c));
             }
         });
 
@@ -76,12 +77,14 @@ class MisStructureController extends Controller
     public function addCourse(Request $request, Department $department)
     {
         $data = $request->validate([
-            'name'             => 'required|string|max:255',
-            'acronym'          => 'nullable|string|max:20',
-            'levels'           => 'required|integer|min:1|max:8',
-            'application_fee'  => 'nullable|numeric|min:0',
-            'acceptance_fee'   => 'nullable|numeric|min:0',
-            'registration_fee' => 'nullable|numeric|min:0',
+            'name'                    => 'required|string|max:255',
+            'acronym'                 => 'nullable|string|max:20',
+            'levels'                  => 'required|integer|min:1|max:8',
+            'application_fee'         => 'nullable|numeric|min:0',
+            'acceptance_fee'          => 'nullable|numeric|min:0',
+            'registration_fee'        => 'nullable|numeric|min:0',
+            'registration_fee_first'  => 'nullable|numeric|min:0',
+            'registration_fee_other'  => 'nullable|numeric|min:0',
         ]);
 
         Program::create([
@@ -94,8 +97,7 @@ class MisStructureController extends Controller
             'duration_years'   => max(1, (int) ceil(((int) $data['levels']) / 2)),
             'application_fee'  => $data['application_fee'] ?? 0,
             'acceptance_fee'   => $data['acceptance_fee'] ?? 0,
-            'registration_fee' => $data['registration_fee'] ?? 0,
-        ]);
+        ] + $this->registrationFees($data));
 
         return back()->with('success', 'Course of study added.');
     }
@@ -103,17 +105,40 @@ class MisStructureController extends Controller
     public function updateCourse(Request $request, Program $program)
     {
         $data = $request->validate([
-            'name'             => 'required|string|max:255',
-            'acronym'          => 'nullable|string|max:20',
-            'levels'           => 'required|integer|min:1|max:8',
-            'application_fee'  => 'nullable|numeric|min:0',
-            'acceptance_fee'   => 'nullable|numeric|min:0',
-            'registration_fee' => 'nullable|numeric|min:0',
+            'name'                    => 'required|string|max:255',
+            'acronym'                 => 'nullable|string|max:20',
+            'levels'                  => 'required|integer|min:1|max:8',
+            'application_fee'         => 'nullable|numeric|min:0',
+            'acceptance_fee'          => 'nullable|numeric|min:0',
+            'registration_fee'        => 'nullable|numeric|min:0',
+            'registration_fee_first'  => 'nullable|numeric|min:0',
+            'registration_fee_other'  => 'nullable|numeric|min:0',
         ]);
 
-        $program->update($data);
+        $program->update(
+            collect($data)->except(['registration_fee', 'registration_fee_first', 'registration_fee_other'])->all()
+            + $this->registrationFees($data)
+        );
 
         return back()->with('success', 'Course of study updated.');
+    }
+
+    /**
+     * Normalise the split registration fees. First-semester (100L) is the
+     * canonical "registration_fee" for backward compatibility; the other-semester
+     * fee falls back to it when left blank.
+     */
+    private function registrationFees(array $input): array
+    {
+        $base  = $input['registration_fee'] ?? null;
+        $first = $input['registration_fee_first'] ?? $base ?? 0;
+        $other = $input['registration_fee_other'] ?? $base ?? $first;
+
+        return [
+            'registration_fee'        => $first,
+            'registration_fee_first'  => $first,
+            'registration_fee_other'  => $other,
+        ];
     }
 
     public function destroyCourse(Program $program)

@@ -27,7 +27,7 @@
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             @forelse($applicants as $applicant)
-                            <tr class="hover:bg-gray-50 align-top">
+                            <tr class="hover:bg-gray-50 align-top" x-data="{ cred:false, offer:false }">
                                 <td class="px-4 py-4">
                                     <div class="flex items-center gap-3">
                                         @if($applicant->passport)
@@ -44,11 +44,55 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-4 text-xs space-y-1">
+                                    <button type="button" @click="cred=true" class="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded font-bold hover:bg-indigo-100">🔍 Show credentials</button>
                                     @if($applicant->birth_cert_path)<a href="{{ media_url($applicant->birth_cert_path) }}" target="_blank" class="block text-indigo-600 underline">Birth certificate</a>@endif
                                     @if($applicant->fslc_path)<a href="{{ media_url($applicant->fslc_path) }}" target="_blank" class="block text-indigo-600 underline">FSLC</a>@endif
-                                    @if($applicant->junior_waec_path)<a href="{{ media_url($applicant->junior_waec_path) }}" target="_blank" class="block text-indigo-600 underline">Junior WAEC</a>@endif
-                                    @if($applicant->indigene_letter_path)<a href="{{ media_url($applicant->indigene_letter_path) }}" target="_blank" class="block text-indigo-600 underline">Indigene letter</a>@endif
-                                    @if(!$applicant->birth_cert_path && !$applicant->indigene_letter_path)<span class="text-gray-400">—</span>@endif
+
+                                    {{-- Credentials popup: everything the applicant filled in, for review. --}}
+                                    <div x-show="cred" x-cloak @keydown.escape.window="cred=false" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display:none">
+                                        <div class="absolute inset-0 bg-black/50" @click="cred=false"></div>
+                                        <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto">
+                                            <div class="flex justify-between items-center px-6 py-4 border-b sticky top-0 bg-white">
+                                                <h3 class="font-bold text-gray-800">Applicant Credentials — {{ $applicant->full_name }}</h3>
+                                                <button type="button" @click="cred=false" class="text-gray-400 hover:text-gray-700 text-2xl leading-none">&times;</button>
+                                            </div>
+                                            <div class="p-6 space-y-5 text-sm">
+                                                <div class="flex items-start gap-4">
+                                                    @if($applicant->passport)<img src="{{ $applicant->passport }}" class="w-20 h-20 rounded-lg object-cover border">@endif
+                                                    <div class="grid grid-cols-2 gap-x-6 gap-y-1">
+                                                        <div><span class="text-gray-400">Full name</span><br><b>{{ $applicant->full_name }}</b></div>
+                                                        <div><span class="text-gray-400">Gender</span><br>{{ $applicant->gender ?: '—' }}</div>
+                                                        <div><span class="text-gray-400">Date of birth</span><br>{{ optional($applicant->date_of_birth)->format('d M Y') ?: '—' }}</div>
+                                                        <div><span class="text-gray-400">Email</span><br>{{ $applicant->email ?: '—' }}</div>
+                                                        <div><span class="text-gray-400">Phone</span><br>{{ $applicant->phone ?: '—' }}</div>
+                                                        <div class="col-span-2"><span class="text-gray-400">Address</span><br>{{ $applicant->address ?: '—' }}</div>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p class="font-bold text-gray-600 uppercase text-[11px] mb-1">Programme choices</p>
+                                                    <p>1st: <b>{{ optional($applicant->firstChoice)->name ?: $applicant->desired_class ?: '—' }}</b></p>
+                                                    <p>2nd: {{ optional($applicant->secondChoice)->name ?: '—' }}</p>
+                                                </div>
+                                                <div>
+                                                    <p class="font-bold text-gray-600 uppercase text-[11px] mb-1">Guardian / Sponsor</p>
+                                                    <p>{{ $applicant->guardian_name ?: $applicant->parent_name }} ({{ $applicant->guardian_relationship ?: '—' }})</p>
+                                                    <p class="text-gray-500">{{ $applicant->guardian_phone ?: $applicant->parent_phone }} · {{ $applicant->guardian_email ?: $applicant->parent_email }}</p>
+                                                </div>
+                                                <div>
+                                                    <p class="font-bold text-gray-600 uppercase text-[11px] mb-1">O'Level results ({{ $applicant->exam_type ?: '—' }} {{ $applicant->exam_year }})</p>
+                                                    @php $ol = is_array($applicant->olevel_results) ? $applicant->olevel_results : []; @endphp
+                                                    @if(count($ol))
+                                                        <ul class="grid grid-cols-2 gap-x-6">
+                                                            @foreach($ol as $r)<li>{{ $r['subject'] ?? '' }} — <b>{{ $r['grade'] ?? '' }}</b></li>@endforeach
+                                                        </ul>
+                                                    @else <span class="text-gray-400">Not provided</span> @endif
+                                                </div>
+                                            </div>
+                                            <div class="px-6 py-4 border-t text-right sticky bottom-0 bg-white">
+                                                <button type="button" @click="cred=false" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-200">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="px-4 py-4 text-sm text-gray-600">
                                     {{ $applicant->parent_name }}<br>
@@ -62,24 +106,45 @@
                                 </td>
                                 <td class="px-4 py-4 text-center">
                                     @can('manage_admissions')
-                                        @if($applicant->status === 'pending')
-                                        <div class="flex justify-center gap-2">
-                                            <form action="{{ route('admission.approve', $applicant->id) }}" method="POST" onsubmit="return confirm('Admit {{ $applicant->full_name }} and create a student record?')">
-                                                @csrf
-                                                <button class="bg-green-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-green-700">Admit</button>
-                                            </form>
-                                            <details class="text-left">
-                                                <summary class="cursor-pointer bg-red-100 text-red-700 px-3 py-1.5 rounded text-xs font-bold">Reject</summary>
-                                                <form action="{{ route('admission.reject', $applicant->id) }}" method="POST" class="mt-2 w-44">
-                                                    @csrf
-                                                    <input name="reason" placeholder="Reason" class="w-full border-gray-300 rounded text-xs mb-1">
-                                                    <button class="bg-red-600 text-white px-3 py-1 rounded text-xs font-bold w-full">Confirm Reject</button>
-                                                </form>
-                                            </details>
-                                        </div>
+                                        @if(in_array($applicant->status, ['pending', 'admitted']))
+                                            <button type="button" @click="offer=true" class="bg-indigo-600 text-white px-4 py-1.5 rounded text-xs font-bold hover:bg-indigo-700">View</button>
                                         @else
-                                        <span class="text-xs text-gray-400 italic">{{ ucfirst($applicant->status) }}</span>
+                                            <span class="text-xs text-gray-400 italic">{{ ucfirst($applicant->status) }}</span>
                                         @endif
+
+                                        {{-- Offer / reject popup: pick the course of study to offer admission into. --}}
+                                        <div x-show="offer" x-cloak @keydown.escape.window="offer=false" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display:none">
+                                            <div class="absolute inset-0 bg-black/50" @click="offer=false"></div>
+                                            <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-md text-left">
+                                                <div class="flex justify-between items-center px-6 py-4 border-b">
+                                                    <h3 class="font-bold text-gray-800">Admission decision — {{ $applicant->full_name }}</h3>
+                                                    <button type="button" @click="offer=false" class="text-gray-400 hover:text-gray-700 text-2xl leading-none">&times;</button>
+                                                </div>
+                                                <div class="p-6 space-y-5">
+                                                    <form action="{{ route('admissions.offer', $applicant->id) }}" method="POST" class="space-y-3">
+                                                        @csrf
+                                                        <label class="block text-xs font-bold text-gray-500 uppercase">Offer admission into course of study</label>
+                                                        <select name="program_id" required class="w-full border-gray-300 rounded-lg text-sm">
+                                                            <option value="">— Select course —</option>
+                                                            @foreach($programs as $p)
+                                                                <option value="{{ $p->id }}" @selected($applicant->first_choice_program_id == $p->id)>
+                                                                    {{ $p->name }}@if($p->department) — {{ $p->department->name }}@endif
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                        <button class="w-full bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700">Offer Admission</button>
+                                                    </form>
+                                                    <div class="border-t pt-4">
+                                                        <form action="{{ route('admissions.decline', $applicant->id) }}" method="POST" class="space-y-2">
+                                                            @csrf
+                                                            <label class="block text-xs font-bold text-gray-500 uppercase">Or reject — reason</label>
+                                                            <input name="reason" placeholder="Reason for rejection" class="w-full border-gray-300 rounded-lg text-sm">
+                                                            <button class="w-full bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-700">Reject Application</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     @else
                                         <span class="text-xs text-gray-400 italic">View only</span>
                                     @endcan

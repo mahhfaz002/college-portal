@@ -10,7 +10,7 @@
 
             {{-- Builder --}}
             <div class="bg-white rounded-2xl shadow-sm border p-6"
-                 x-data="{ courses: [{name:'',acronym:'',levels:2,application_fee:'',acceptance_fee:'',registration_fee:''}] }">
+                 x-data="{ courses: [{name:'',acronym:'',levels:2,application_fee:'',acceptance_fee:'',registration_fee_first:'',registration_fee_other:''}] }">
                 <h3 class="font-bold text-gray-800 mb-4">Create a Department</h3>
                 <form method="POST" action="{{ route('structure.store') }}" class="space-y-5">
                     @csrf
@@ -35,11 +35,12 @@
                                 <input x-model="c.levels" :name="`courses[${i}][levels]`" type="number" min="1" max="8" required placeholder="Levels" title="Number of levels" class="md:col-span-1 border-gray-300 rounded-lg text-sm">
                                 <input x-model="c.application_fee" :name="`courses[${i}][application_fee]`" type="number" step="100" placeholder="App. fee" class="md:col-span-2 border-gray-300 rounded-lg text-sm">
                                 <input x-model="c.acceptance_fee" :name="`courses[${i}][acceptance_fee]`" type="number" step="100" placeholder="Accept. fee" class="md:col-span-2 border-gray-300 rounded-lg text-sm">
-                                <input x-model="c.registration_fee" :name="`courses[${i}][registration_fee]`" type="number" step="100" placeholder="Reg. fee" class="md:col-span-1 border-gray-300 rounded-lg text-sm">
-                                <button type="button" @click="courses.splice(i,1)" x-show="courses.length>1" class="md:col-span-1 text-red-500 text-xs font-bold">Remove</button>
+                                <input x-model="c.registration_fee_first" :name="`courses[${i}][registration_fee_first]`" type="number" step="100" placeholder="Reg: 1st sem (100L)" title="Registration — first semester, 100 level (new students)" class="md:col-span-2 border-gray-300 rounded-lg text-sm">
+                                <input x-model="c.registration_fee_other" :name="`courses[${i}][registration_fee_other]`" type="number" step="100" placeholder="Reg: other sems" title="Registration — every subsequent semester" class="md:col-span-2 border-gray-300 rounded-lg text-sm">
+                                <button type="button" @click="courses.splice(i,1)" x-show="courses.length>1" class="md:col-span-2 text-red-500 text-xs font-bold">Remove</button>
                             </div>
                         </template>
-                        <button type="button" @click="courses.push({name:'',acronym:'',levels:2,application_fee:'',acceptance_fee:'',registration_fee:''})"
+                        <button type="button" @click="courses.push({name:'',acronym:'',levels:2,application_fee:'',acceptance_fee:'',registration_fee_first:'',registration_fee_other:''})"
                                 class="text-indigo-600 text-sm font-bold hover:underline">+ Add course of study</button>
                     </div>
 
@@ -80,7 +81,8 @@
                                                         <input name="levels" type="number" min="1" max="8" value="{{ $p->levels }}" class="border-gray-300 rounded text-xs py-1 w-14">
                                                         <input name="application_fee" type="number" value="{{ (int)$p->application_fee }}" class="border-gray-300 rounded text-xs py-1 w-20" title="App fee">
                                                         <input name="acceptance_fee" type="number" value="{{ (int)$p->acceptance_fee }}" class="border-gray-300 rounded text-xs py-1 w-20" title="Accept fee">
-                                                        <input name="registration_fee" type="number" value="{{ (int)$p->registration_fee }}" class="border-gray-300 rounded text-xs py-1 w-20" title="Reg fee">
+                                                        <input name="registration_fee_first" type="number" value="{{ (int) ($p->registration_fee_first ?: $p->registration_fee) }}" class="border-gray-300 rounded text-xs py-1 w-24" title="Registration — 1st semester (100L)">
+                                                        <input name="registration_fee_other" type="number" value="{{ (int) ($p->registration_fee_other ?: $p->registration_fee) }}" class="border-gray-300 rounded text-xs py-1 w-24" title="Registration — other semesters">
                                                         <button class="bg-emerald-600 text-white px-2 py-1 rounded text-xs font-bold">Save</button>
                                                     </form>
                                                 </td>

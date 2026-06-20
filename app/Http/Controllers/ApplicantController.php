@@ -142,8 +142,11 @@ class ApplicantController extends Controller
     /** Registrar review panel. */
     public function index()
     {
-        $applicants = Applicant::latest()->get();
-        return view('admission.admin', compact('applicants'));
+        $applicants = Applicant::with(['firstChoice', 'secondChoice', 'admittedProgram'])->latest()->get();
+        // Courses of study the registrar can offer admission into.
+        $programs = \App\Models\Program::with('department')->orderBy('name')->get();
+
+        return view('admission.admin', compact('applicants', 'programs'));
     }
 
     /**
