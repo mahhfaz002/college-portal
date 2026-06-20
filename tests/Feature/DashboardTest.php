@@ -55,14 +55,24 @@ class DashboardTest extends TestCase
         $this->actingAs($this->userWithRole('mis'))->get('/settings')->assertOk();
     }
 
-    public function test_mis_can_update_settings(): void
+    public function test_mis_updates_academic_settings_and_own_college_provost(): void
     {
+        // Branding (school_name etc.) is super-admin-only now; the MIS edits
+        // academic settings + its OWN college's provost block and key dates.
         $this->actingAs($this->userWithRole('mis'))->put('/settings', [
-            'school_name' => 'New School Name',
             'currency_symbol' => '$',
+            'provost_name'    => 'Prof. Aminu',
+            'provost_message' => 'Welcome to our college.',
+            'key_dates'       => [
+                ['title' => 'Resumption', 'date' => '10 January 2027'],
+                ['title' => '', 'date' => ''], // blank row is dropped
+            ],
         ])->assertSessionHasNoErrors();
 
-        $this->assertSame('New School Name', setting('school_name'));
         $this->assertSame('$', setting('currency_symbol'));
+
+        $college = $this->college->fresh();
+        $this->assertSame('Prof. Aminu', $college->provost_name);
+        $this->assertSame([['title' => 'Resumption', 'date' => '10 January 2027']], $college->key_dates);
     }
 }

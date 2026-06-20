@@ -19,46 +19,58 @@
                 @csrf
                 @method('PUT')
 
-                {{-- Branding --}}
+                {{-- Branding is set by the platform super-admin on the College record (name,
+                     logo, colours, contact). It is intentionally NOT editable here so a
+                     college can never change another college's identity. --}}
+                <div class="bg-blue-50 border border-blue-200 text-blue-800 text-sm rounded-xl p-4">
+                    Branding (college name, logo, colours, contact details &amp; domain) is managed by the
+                    platform administrator. You manage your <strong>Provost block</strong> and
+                    <strong>homepage key dates</strong> below — both appear only on
+                    <strong>{{ $college?->name ?? 'your college' }}</strong>'s homepage.
+                </div>
+
+                {{-- Provost (per-college, shown on this college's homepage) --}}
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h3 class="font-bold text-gray-700 mb-4 border-b pb-2">Branding</h3>
+                    <h3 class="font-bold text-gray-700 mb-4 border-b pb-2">Provost / Head of College</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">School Name</label>
-                            <input name="school_name" value="{{ $settings['school_name'] ?? '' }}" class="w-full rounded-lg border-gray-300" required>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Provost Name</label>
+                            <input name="provost_name" value="{{ old('provost_name', $college?->provost_name) }}" class="w-full rounded-lg border-gray-300" placeholder="Prof. ...">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tagline</label>
-                            <input name="school_tagline" value="{{ $settings['school_tagline'] ?? '' }}" class="w-full rounded-lg border-gray-300">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label>
+                            <input name="provost_title" value="{{ old('provost_title', $college?->provost_title) }}" class="w-full rounded-lg border-gray-300" placeholder="Provost">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Welcome Message</label>
+                            <textarea name="provost_message" rows="4" class="w-full rounded-lg border-gray-300" placeholder="A short welcome shown on the homepage.">{{ old('provost_message', $college?->provost_message) }}</textarea>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Primary Color</label>
-                            <input type="color" name="primary_color" value="{{ $settings['primary_color'] ?? '#2563eb' }}" class="h-10 w-20 rounded border-gray-300">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Logo</label>
-                            <input type="file" name="logo" accept="image/*" class="w-full text-sm">
-                            @if(!empty($settings['school_logo']))
-                                <img src="{{ media_url($settings['school_logo']) }}" class="h-12 mt-2 rounded">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Provost Picture</label>
+                            <input type="file" name="provost_photo" accept="image/*" class="w-full text-sm">
+                            @if($college?->provost_photo)
+                                <img src="{{ $college->provost_photo }}" class="h-16 mt-2 rounded-lg object-cover">
                             @endif
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Address</label>
-                            <input name="school_address" value="{{ $settings['school_address'] ?? '' }}" class="w-full rounded-lg border-gray-300">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Phone</label>
-                            <input name="school_phone" value="{{ $settings['school_phone'] ?? '' }}" class="w-full rounded-lg border-gray-300">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Public Email</label>
-                            <input name="school_email" value="{{ $settings['school_email'] ?? '' }}" class="w-full rounded-lg border-gray-300">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Staff Email Domain</label>
-                            <input name="staff_email_domain" value="{{ $settings['staff_email_domain'] ?? '' }}" placeholder="excellence.edu" class="w-full rounded-lg border-gray-300">
-                        </div>
                     </div>
+                </div>
+
+                {{-- Key Dates (per-college, feeds the homepage "Key Dates & Timeline") --}}
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-gray-700 mb-1 border-b pb-2">Homepage Key Dates</h3>
+                    <p class="text-xs text-gray-400 mb-3">Shown in the "Key Dates &amp; Timeline" section of your college homepage. Leave a row blank to skip it.</p>
+                    @php $dates = $college?->key_dates ?: []; @endphp
+                    <table class="w-full text-sm">
+                        <thead><tr class="text-gray-400 uppercase text-xs"><th class="text-left pb-2">Event</th><th class="text-left pb-2">Date (free text)</th></tr></thead>
+                        <tbody>
+                            @foreach(array_pad($dates, max(count($dates), 6), ['title'=>'','date'=>'']) as $i => $row)
+                                <tr>
+                                    <td class="py-1 pr-2"><input name="key_dates[{{ $i }}][title]" value="{{ $row['title'] ?? '' }}" class="w-full rounded border-gray-300" placeholder="e.g. Application Deadline"></td>
+                                    <td class="py-1 pr-2"><input name="key_dates[{{ $i }}][date]" value="{{ $row['date'] ?? '' }}" class="w-full rounded border-gray-300" placeholder="e.g. 30 September 2026"></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
 
                 {{-- Academic --}}

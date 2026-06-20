@@ -183,9 +183,13 @@
         <div class="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-brand opacity-30 blur-3xl"></div>
         <div class="relative flex flex-col md:flex-row gap-8 items-start">
             <div class="shrink-0 text-center mx-auto md:mx-0">
-                <div class="w-28 h-28 rounded-2xl grid place-items-center text-3xl font-display font-700 bg-brand text-white shadow-xl">
-                    {{ \Illuminate\Support\Str::substr($provost['name'],0,1) }}
-                </div>
+                @if(!empty($provost['photo']))
+                    <img src="{{ $provost['photo'] }}" alt="{{ $provost['name'] }}" class="w-28 h-28 rounded-2xl object-cover shadow-xl">
+                @else
+                    <div class="w-28 h-28 rounded-2xl grid place-items-center text-3xl font-display font-700 bg-brand text-white shadow-xl">
+                        {{ \Illuminate\Support\Str::substr($provost['name'],0,1) }}
+                    </div>
+                @endif
                 <p class="font-bold mt-3">{{ $provost['name'] }}</p>
                 <p class="text-xs brand font-semibold">{{ $provost['title'] }}</p>
             </div>

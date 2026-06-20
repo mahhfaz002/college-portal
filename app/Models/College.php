@@ -15,7 +15,7 @@ class College extends Model
         'primary_color', 'paystack_public_key', 'paystack_secret_key',
         'registration_no_format', 'is_active',
         'domain', 'tagline', 'motto', 'about', 'established_year',
-        'provost_name', 'provost_title', 'provost_message',
+        'provost_name', 'provost_title', 'provost_message', 'provost_photo', 'key_dates',
         // Paystack marketplace / subaccount (settlement split per institution).
         'paystack_subaccount_code', 'paystack_subaccount_name', 'commission_percentage',
         'settlement_bank', 'settlement_account_number', 'settlement_account_name',
@@ -27,6 +27,7 @@ class College extends Model
         return [
             'is_active'             => 'boolean',
             'commission_percentage' => 'decimal:2',
+            'key_dates'             => 'array',
         ];
     }
 
