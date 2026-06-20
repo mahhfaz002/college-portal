@@ -6,31 +6,33 @@ use App\Models\Applicant;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesCollegeFixtures;
 use Tests\TestCase;
 
 class AdmissionTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, CreatesCollegeFixtures;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->seed();
+        $this->bootCollege();
     }
 
     private function registrar(): User
     {
-        return User::where('role', 'admin')->firstOrFail();
+        return $this->userWithRole('registrar');
     }
 
-    private function applicant(): Applicant
+    private function applicant(array $attrs = []): Applicant
     {
-        return Applicant::create([
-            'full_name' => 'New Pupil', 'date_of_birth' => '2014-01-01', 'gender' => 'Male',
-            'parent_name' => 'Parent', 'parent_phone' => '080', 'parent_email' => 'np@example.com',
-            'desired_class' => 'JSS1A', 'status' => 'pending',
+        return Applicant::create(array_merge([
+            'full_name' => 'New Applicant', 'date_of_birth' => '2004-01-01', 'gender' => 'Male',
+            'parent_name' => 'Parent', 'parent_phone' => '080', 'parent_email' => 'np@example.test',
+            'desired_class' => 'UG1', 'status' => 'pending',
             'passport' => 'data:image/png;base64,AAAA',
-        ]);
+        ], $attrs));
     }
 
     public function test_registrar_can_view_admissions(): void
@@ -52,7 +54,7 @@ class AdmissionTest extends TestCase
 
         $student = Student::where('admission_number', $applicant->admission_number)->first();
         $this->assertNotNull($student);
-        $this->assertSame('JSS1A', $student->class_arm);
+        $this->assertSame('UG1', $student->class_arm);
         $this->assertSame($applicant->passport, $student->photo); // base64 carried to ID card
         $this->assertStringStartsWith(setting('admission_prefix').'/', $student->admission_number);
     }
@@ -60,11 +62,7 @@ class AdmissionTest extends TestCase
     public function test_admission_numbers_are_unique(): void
     {
         $a1 = $this->applicant();
-        $a2 = Applicant::create([
-            'full_name' => 'Second Pupil', 'date_of_birth' => '2014-02-02', 'gender' => 'Female',
-            'parent_name' => 'P2', 'parent_phone' => '081', 'parent_email' => 'p2@example.com',
-            'desired_class' => 'JSS1A', 'status' => 'pending',
-        ]);
+        $a2 = $this->applicant(['full_name' => 'Second Applicant', 'parent_email' => 'p2@example.test']);
 
         $reg = $this->registrar();
         $this->actingAs($reg)->post("/admin/admissions/{$a1->id}/approve");
@@ -76,39 +74,19 @@ class AdmissionTest extends TestCase
         ])->count());
     }
 
-    public function test_ict_can_create_application_but_not_approve(): void
-    {
-        \Illuminate\Support\Facades\Storage::fake('local');
-        $ict = User::where('role', 'ict')->firstOrFail();
-
-        $this->actingAs($ict)->post('/admissions/apply', [
-            'full_name' => 'New Kid', 'address' => '1 Road', 'gender' => 'Male',
-            'date_of_birth' => '2014-05-01', 'parent_name' => 'P', 'parent_phone' => '080',
-            'parent_email' => 'p@example.com', 'section' => 'Junior Secondary', 'desired_class' => 'JSS1',
-            'passport' => \Illuminate\Http\UploadedFile::fake()->create('p.jpg', 100, 'image/jpeg'),
-            'birth_certificate' => \Illuminate\Http\UploadedFile::fake()->create('bc.pdf', 100),
-            'fslc' => \Illuminate\Http\UploadedFile::fake()->create('fslc.pdf', 100),
-        ])->assertRedirect();
-
-        $this->assertDatabaseHas('applicants', ['full_name' => 'New Kid', 'section' => 'Junior Secondary']);
-
-        // ICT can no longer approve.
-        $a = Applicant::where('full_name', 'New Kid')->firstOrFail();
-        $this->actingAs($ict)->post("/admin/admissions/{$a->id}/approve")->assertForbidden();
-    }
-
-    public function test_teacher_cannot_admit(): void
+    public function test_lecturer_cannot_admit(): void
     {
         $applicant = $this->applicant();
-        $teacher = User::where('role', 'teacher')->firstOrFail();
-        $this->actingAs($teacher)->post("/admin/admissions/{$applicant->id}/approve")->assertForbidden();
+        $this->actingAs($this->userWithRole('lecturer'))
+            ->post("/admin/admissions/{$applicant->id}/approve")->assertForbidden();
     }
 
     public function test_proprietor_can_view_but_not_admit(): void
     {
         $applicant = $this->applicant();
-        $p = User::where('role', 'proprietor')->firstOrFail();
-        $this->actingAs($p)->get('/admin/admissions')->assertOk();
-        $this->actingAs($p)->post("/admin/admissions/{$applicant->id}/approve")->assertForbidden();
+        $proprietor = $this->userWithRole('proprietor');
+
+        $this->actingAs($proprietor)->get('/admin/admissions')->assertOk();
+        $this->actingAs($proprietor)->post("/admin/admissions/{$applicant->id}/approve")->assertForbidden();
     }
 }

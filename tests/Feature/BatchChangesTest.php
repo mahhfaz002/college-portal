@@ -6,108 +6,106 @@ use App\Models\Payslip;
 use App\Models\SchoolClass;
 use App\Models\Setting;
 use App\Models\Subject;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesCollegeFixtures;
 use Tests\TestCase;
 
 class BatchChangesTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, CreatesCollegeFixtures;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->seed();
+        $this->bootCollege();
     }
 
-    private function as(string $role): User
+    // --- Course (subject) management is Academic Secretary's ---
+    public function test_lecturer_cannot_manage_subjects(): void
     {
-        return User::where('role', $role)->firstOrFail();
+        $this->actingAs($this->userWithRole('lecturer'))
+            ->post('/subjects', ['name' => 'Hacking'])->assertForbidden();
     }
 
-    // --- Item 1: only principal + ICT manage subjects ---
-    public function test_teacher_cannot_manage_subjects(): void
+    public function test_academic_secretary_can_add_subjects(): void
     {
-        $this->actingAs($this->as('teacher'))->post('/subjects', ['name' => 'Hacking', 'section' => 'Primary'])->assertForbidden();
+        $this->actingAs($this->userWithRole('academic_secretary'))
+            ->post('/subjects', ['name' => 'Community Health'])->assertRedirect();
+
+        $this->assertDatabaseHas('subjects', ['name' => 'Community Health']);
     }
 
-    public function test_principal_and_ict_can_add_subjects(): void
+    // --- Score entry scoped to assigned courses ---
+    public function test_lecturer_cannot_post_scores_for_unassigned_subject(): void
     {
-        $this->actingAs($this->as('principal'))->post('/subjects', ['name' => 'Civic Ed', 'section' => 'Junior Secondary'])->assertRedirect();
-        $this->actingAs($this->as('ict'))->post('/subjects', ['name' => 'ICT Studies', 'section' => 'Senior Secondary'])->assertRedirect();
-        $this->assertDatabaseHas('subjects', ['name' => 'Civic Ed', 'section' => 'Junior Secondary']);
-    }
+        $lecturer = $this->userWithRole('lecturer');
+        $subject = Subject::create(['name' => 'Unassigned Course']);
 
-    // --- Item 5: CA entry scoped to assigned subjects ---
-    public function test_teacher_cannot_post_scores_for_unassigned_subject(): void
-    {
-        $teacher = $this->as('teacher');
-        $subject = Subject::create(['name' => 'Unassigned Subj', 'section' => 'Primary']);
-
-        $this->actingAs($teacher)->post('/scores/store', [
+        // Passes the role gate (lecturer), but the controller blocks an
+        // unassigned course.
+        $this->actingAs($lecturer)->post('/scores/store', [
             'subject_id' => $subject->id,
             'scores' => [1 => ['ca' => 10, 'exam' => 20]],
         ])->assertForbidden();
     }
 
-    // --- Item 6: principal term/session control ---
-    public function test_principal_sets_active_term(): void
+    // --- Term / session control is MIS's ---
+    public function test_mis_sets_active_term(): void
     {
-        $this->actingAs($this->as('principal'))->post('/term', [
+        $this->actingAs($this->userWithRole('mis'))->post('/term', [
             'current_session' => '2026/2027',
-            'current_term' => 'Second Term',
+            'current_term' => 'Second Semester',
             'term_start' => '2027-01-10',
             'term_end' => '2027-04-10',
-        ])->assertRedirect();
+        ])->assertRedirect()->assertSessionHasNoErrors();
 
-        $this->assertSame('Second Term', Setting::get('current_term'));
+        $this->assertSame('Second Semester', Setting::get('current_term'));
         $this->assertSame('2026/2027', Setting::get('current_session'));
     }
 
-    public function test_non_principal_cannot_set_term(): void
+    public function test_non_mis_cannot_set_term(): void
     {
-        $this->actingAs($this->as('ict'))->post('/term', [
-            'current_session' => '2026/2027', 'current_term' => 'Second Term',
+        $this->actingAs($this->userWithRole('lecturer'))->post('/term', [
+            'current_session' => '2026/2027', 'current_term' => 'Second Semester',
             'term_start' => '2027-01-10', 'term_end' => '2027-04-10',
         ])->assertForbidden();
     }
 
-    public function test_principal_can_clear_assignments(): void
+    public function test_mis_can_clear_assignments(): void
     {
-        $teacher = $this->as('teacher');
-        $class = SchoolClass::first();
-        $subject = Subject::first();
-        $teacher->classes()->sync([$class->id]);
-        $teacher->subjects()->sync([$subject->id]);
+        $lecturer = $this->userWithRole('lecturer');
+        $class = SchoolClass::create(['name' => 'UG1A', 'section' => 'UG', 'level' => 'UG', 'active' => true]);
+        $subject = Subject::create(['name' => 'Anatomy']);
+        $lecturer->classes()->sync([$class->id]);
+        $lecturer->subjects()->sync([$subject->id]);
 
-        $this->actingAs($this->as('principal'))->post('/term/clear-assignments')->assertRedirect();
+        $this->actingAs($this->userWithRole('mis'))->post('/term/clear-assignments')->assertRedirect();
 
-        $this->assertCount(0, $teacher->fresh()->classes);
-        $this->assertCount(0, $teacher->fresh()->subjects);
+        $this->assertCount(0, $lecturer->fresh()->classes);
+        $this->assertCount(0, $lecturer->fresh()->subjects);
     }
 
-    // --- Item 8: notifications page ---
+    // --- Notifications page loads for every role ---
     public function test_notifications_page_loads_for_each_role(): void
     {
-        foreach (['principal', 'accountant', 'ict', 'teacher', 'student'] as $role) {
-            $user = User::where('role', $role)->first();
-            if ($user) {
-                $this->actingAs($user)->get('/notifications')->assertOk();
-            }
+        foreach (['mis', 'bursar', 'lecturer', 'student', 'registrar'] as $role) {
+            $user = $this->userWithRole($role);
+            $this->actingAs($user)->get('/notifications')->assertOk();
         }
     }
 
-    // --- Item 4: payslip view is for staff with payroll access ---
-    public function test_payslip_view_accessible_to_bursar(): void
+    // --- Payslip view is gated to payroll access (bursar) ---
+    public function test_payslip_view_accessible_to_bursar_only(): void
     {
-        $teacher = $this->as('teacher');
-        $this->actingAs($this->as('accountant'))->post('/payroll/'.$teacher->id, [
+        $staff = $this->userWithRole('lecturer');
+        $this->actingAs($this->userWithRole('bursar'))->post('/payroll/'.$staff->id, [
             'month' => '2026-06', 'basic_salary' => 50000, 'allowances' => 0, 'tax' => 0,
         ])->assertRedirect();
-        $slip = Payslip::where('user_id', $teacher->id)->firstOrFail();
+        $slip = Payslip::where('user_id', $staff->id)->firstOrFail();
 
-        $this->actingAs($this->as('accountant'))->get("/payroll/{$slip->id}/slip")->assertOk();
-        // A teacher has no payroll route access at all.
-        $this->actingAs($teacher)->get("/payroll/{$slip->id}/slip")->assertForbidden();
+        $this->actingAs($this->userWithRole('bursar'))->get("/payroll/{$slip->id}/slip")->assertOk();
+        // A lecturer has no payroll route access at all.
+        $this->actingAs($staff)->get("/payroll/{$slip->id}/slip")->assertForbidden();
     }
 }
