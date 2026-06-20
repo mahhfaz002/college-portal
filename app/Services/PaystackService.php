@@ -348,6 +348,14 @@ class PaystackService
             return route('payments.sandbox', ['invoice' => $invoice->id]);
         }
 
+        // Mint a FRESH reference for THIS attempt. Paystack rejects a reference it
+        // has already seen, so reusing the stored one breaks every retry. The new
+        // reference keeps the fixed college tag and a unique changing tail, and is
+        // persisted so verify()/callback/webhook all match this attempt.
+        $invoice->forceFill([
+            'reference' => self::reference($this->prefixForInvoice($invoice), $invoice->college_id),
+        ])->save();
+
         $payload = [
             'email'        => $this->payerEmail($invoice, $college),
             'amount'       => (int) round($invoice->chargeable() * 100), // kobo (fee + surcharges)
@@ -431,8 +439,35 @@ class PaystackService
         $this->recordSettlement($invoice, $gatewayData);
     }
 
-    public static function reference(string $prefix = 'INV'): string
+    /**
+     * A globally-unique transaction reference of the form
+     *   PREFIX-C{collegeId}-{YmdHis+microseconds}{random}
+     * The fixed `C{collegeId}` tag identifies the owning college; the changing
+     * tail guarantees every attempt (even a retry of the same invoice) is unique,
+     * so Paystack never rejects a duplicate reference.
+     */
+    public static function reference(string $prefix = 'INV', ?int $collegeId = null): string
     {
-        return strtoupper($prefix) . '-' . now()->format('YmdHis') . '-' . strtoupper(Str::random(6));
+        $cid = $collegeId ?? (current_college_id() ?? 0);
+
+        do {
+            $tail = now()->format('YmdHisu') . strtoupper(Str::random(4));
+            $ref  = strtoupper($prefix) . '-C' . $cid . '-' . $tail;
+        } while (Invoice::withoutGlobalScopes()->where('reference', $ref)->exists());
+
+        return $ref;
+    }
+
+    /** Short reference prefix derived from the invoice purpose. */
+    private function prefixForInvoice(Invoice $invoice): string
+    {
+        return match ($invoice->purpose) {
+            'application_fee'       => 'APP',
+            'acceptance_fee'        => 'ACC',
+            'registration_fee'      => 'REG',
+            'platform_registration' => 'PLT',
+            'change_of_course'      => 'COC',
+            default                 => 'INV',
+        };
     }
 }

@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCollege;
 use Illuminate\Database\Eloquent\Model;
 
 class ActivityLog extends Model
 {
+    use BelongsToCollege;
+
     protected $fillable = [
+        'college_id',
         'user_id',
         'action',
         'description',

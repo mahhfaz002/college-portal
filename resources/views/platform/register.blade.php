@@ -19,6 +19,7 @@
                         <input name="phone" value="{{ old('phone') }}" placeholder="Phone" class="border-gray-300 rounded-lg">
                         <input name="address" value="{{ old('address') }}" placeholder="Address" class="border-gray-300 rounded-lg md:col-span-2">
                         <input name="tagline" value="{{ old('tagline') }}" placeholder="Tagline (shown on homepage)" class="border-gray-300 rounded-lg">
+                        <input name="established_year" type="number" min="1900" max="{{ date('Y') }}" value="{{ old('established_year') }}" placeholder="Year established (e.g. 1998)" class="border-gray-300 rounded-lg">
                         <div class="flex items-center gap-2">
                             <label class="text-xs font-bold text-gray-500 uppercase">Brand colour</label>
                             <input name="primary_color" type="color" value="{{ old('primary_color','#1d4ed8') }}" class="h-9 w-16 border-gray-300 rounded">

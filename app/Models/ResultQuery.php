@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCollege;
 use Illuminate\Database\Eloquent\Model;
 
 class ResultQuery extends Model
 {
+    use BelongsToCollege;
+
     protected $fillable = [
-        'student_id', 'score_id', 'message',
+        'college_id', 'student_id', 'score_id', 'message',
         'resolution', 'status', 'resolved_by',
     ];
 

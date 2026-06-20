@@ -83,14 +83,15 @@ class PlatformController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'          => 'required|string|max:255',
-            'acronym'       => 'required|string|max:20',
-            'domain'        => 'nullable|string|max:255|unique:colleges,domain',
-            'email'         => 'nullable|email|max:255',
-            'phone'         => 'nullable|string|max:50',
-            'address'       => 'nullable|string|max:255',
-            'primary_color' => 'nullable|string|max:20',
-            'tagline'       => 'nullable|string|max:255',
+            'name'             => 'required|string|max:255',
+            'acronym'          => 'required|string|max:20',
+            'domain'           => 'nullable|string|max:255|unique:colleges,domain',
+            'email'            => 'nullable|email|max:255',
+            'phone'            => 'nullable|string|max:50',
+            'address'          => 'nullable|string|max:255',
+            'primary_color'    => 'nullable|string|max:20',
+            'tagline'          => 'nullable|string|max:255',
+            'established_year' => 'nullable|integer|min:1900|max:'.date('Y'),
         ]);
 
         $college = College::create([
@@ -102,7 +103,8 @@ class PlatformController extends Controller
             'address' => $data['address'] ?? null,
             'primary_color' => $data['primary_color'] ?? '#1d4ed8',
             'tagline' => $data['tagline'] ?? null,
-            'registration_no_format' => '{acronym}/{year}/{type}/{program}/{serial}',
+            'established_year' => $data['established_year'] ?? null,
+            'registration_no_format' => '{acronym}/{year}/{program}/{serial}',
             'is_active' => true,
         ]);
 
@@ -224,6 +226,7 @@ class PlatformController extends Controller
             'tagline'       => 'nullable|string|max:255',
             'motto'         => 'nullable|string|max:255',
             'about'         => 'nullable|string|max:2000',
+            'established_year' => 'nullable|integer|min:1900|max:'.date('Y'),
             'provost_name'  => 'nullable|string|max:255',
             'provost_message' => 'nullable|string|max:2000',
         ]);

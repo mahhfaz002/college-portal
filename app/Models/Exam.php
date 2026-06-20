@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCollege;
 use Illuminate\Database\Eloquent\Model;
 
 class Exam extends Model
 {
+    use BelongsToCollege;
+
     protected $fillable = [
-        'subject_id', 'exam_cycle_id', 'title', 'term', 'session', 'class_arms',
+        'college_id', 'subject_id', 'exam_cycle_id', 'title', 'term', 'session', 'class_arms',
         'duration_minutes', 'access_password', 'status', 'created_by', 'submitted_at',
         'hod_feedback', 'reviewed_by', 'reviewed_at',
     ];

@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCollege;
 use Illuminate\Database\Eloquent\Model;
 
 class Payslip extends Model
 {
+    use BelongsToCollege;
+
     protected $fillable = [
-        'user_id', 'month', 'basic_salary', 'allowances', 'deductions',
+        'college_id', 'user_id', 'month', 'basic_salary', 'allowances', 'deductions',
         'tax', 'net_salary', 'status', 'flag_comment', 'created_by',
         'submitted_at', 'approved_at', 'paid_at',
     ];

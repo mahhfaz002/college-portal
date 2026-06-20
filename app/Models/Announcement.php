@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCollege;
 use Illuminate\Database\Eloquent\Model;
 
 class Announcement extends Model
 {
-    protected $fillable = ['user_id', 'title', 'body', 'audience', 'target_class', 'is_published'];
+    use BelongsToCollege;
+
+    protected $fillable = ['college_id', 'user_id', 'title', 'body', 'audience', 'target_class', 'is_published'];
 
     protected $casts = ['is_published' => 'boolean'];
 

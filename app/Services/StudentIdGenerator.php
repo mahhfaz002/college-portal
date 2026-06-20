@@ -8,8 +8,8 @@ use App\Models\Student;
 
 /**
  * Builds a student/registration number following the rule:
- *   collegeAcronym / admissionYear / programType (UG|DIP|CERT) / courseAcronym / serial
- * e.g.  MAHHFAZ/2026/UG/SLT/0001
+ *   collegeAcronym / admissionYear / courseOfStudyAcronym / serial
+ * e.g.  MAHHFAZ/2026/SLT/0001
  *
  * The format is configurable per course of study (program). Tokens:
  *   {acronym} {year} {type} {program} {dept} {serial}
@@ -24,8 +24,9 @@ class StudentIdGenerator
         $program->loadMissing('department');
 
         // Per-program format takes precedence, then the college default.
+        // Format: collegeAcronym/admissionYear/courseAcronym/serial.
         $format = $program->id_format
-            ?: ($college?->registration_no_format ?: '{acronym}/{year}/{type}/{program}/{serial}');
+            ?: ($college?->registration_no_format ?: '{acronym}/{year}/{program}/{serial}');
 
         $serial = Student::where('program_id', $program->id)
             ->whereYear('created_at', $year)

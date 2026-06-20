@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCollege;
 use Illuminate\Database\Eloquent\Model;
 
 class SupportTicket extends Model
 {
+    use BelongsToCollege;
+
     protected $fillable = [
-        'user_id', 'subject', 'body', 'priority',
+        'college_id', 'user_id', 'subject', 'body', 'priority',
         'status', 'response', 'handled_by',
     ];
 
