@@ -2,24 +2,33 @@
 
 namespace Tests\Feature;
 
-use App\Models\Attendance;
+use App\Models\Department;
 use App\Models\Exam;
-use App\Models\ExamSubmission;
-use App\Models\ResultQuery;
+use App\Models\Program;
 use App\Models\Score;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesCollegeFixtures;
 use Tests\TestCase;
 
+/**
+ * Covers the exam lifecycle that survives in the college platform:
+ * officer creates → (questions) → release → lecturer grades → officer approves,
+ * plus eligibility overrides and access control. The removed online
+ * exam-taking flow (student unlock/submit/auto-grade, student-raised result
+ * queries) is intentionally not covered. Question authoring via the UI is now
+ * gated behind an active Exam Mode cycle, so the lifecycle test seeds a question
+ * directly as a fixture.
+ */
 class ExamWorkflowTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, CreatesCollegeFixtures;
 
     private User $officer;
-    private User $teacher;
-    private Subject $maths;
+    private User $lecturer;
+    private Subject $course;
     private Student $student;
     private User $studentUser;
 
@@ -27,69 +36,58 @@ class ExamWorkflowTest extends TestCase
     {
         parent::setUp();
         $this->seed();
+        $this->bootCollege();
 
-        $this->officer = User::where('role', 'exam_officer')->firstOrFail();
-        $this->teacher = User::where('role', 'teacher')->firstOrFail(); // teaches Mathematics (seeded)
-        $this->maths = Subject::where('name', 'Mathematics')->firstOrFail();
+        $department = Department::create(['name' => 'Health Sciences', 'acronym' => 'HS', 'section' => 'UG']);
+        $program = Program::create(['name' => 'Nursing', 'acronym' => 'NUR', 'department_id' => $department->id]);
 
-        // An eligible student: fees cleared + present today, with a login.
-        $this->student = Student::create([
-            'full_name' => 'Test Pupil', 'admission_number' => 'TST/2026/999',
-            'class_arm' => 'JSS1A', 'parent_phone' => '080', 'fees_balance' => 0,
-            'email' => 'pupil@test.local',
+        $this->officer = $this->userWithRole('exam_officer');
+        $this->lecturer = $this->userWithRole('lecturer');
+
+        $this->course = Subject::create([
+            'name' => 'Anatomy', 'course_code' => 'NUR101',
+            'department_id' => $department->id, 'program_id' => $program->id, 'level' => '100',
         ]);
-        Attendance::create([
-            'student_id' => $this->student->id,
-            'attendance_date' => now()->toDateString(), 'status' => 'present',
+        $this->course->teachers()->attach($this->lecturer->id);
+
+        $this->student = $this->studentRecord([
+            'class_arm' => 'UG1', 'program_id' => $program->id, 'level' => '100',
+            'email' => 'pupil@test.local', 'fees_balance' => 0,
         ]);
-        $this->studentUser = User::create([
-            'name' => 'Test Pupil', 'email' => 'pupil@test.local',
-            'password' => bcrypt('password'), 'role' => 'student', 'must_change_password' => false,
-        ]);
+        $this->studentUser = $this->userWithRole('student', ['email' => 'pupil@test.local']);
     }
 
-    public function test_full_exam_lifecycle(): void
+    private function createExam(string $title = 'First Semester Anatomy'): Exam
     {
-        // 1. Officer creates the exam.
         $this->actingAs($this->officer)->post('/exams', [
-            'subject_id' => $this->maths->id,
-            'title' => 'First Term Maths',
+            'subject_id' => $this->course->id,
+            'title' => $title,
             'duration_minutes' => 30,
-            'class_arms' => ['JSS1A'],
+            'class_arms' => ['UG1'],
         ])->assertRedirect();
 
-        $exam = Exam::firstOrFail();
+        return Exam::latest('id')->firstOrFail();
+    }
 
-        // 2. Teacher authors a question.
-        $this->actingAs($this->teacher)->post("/exams/{$exam->id}/questions", [
+    public function test_exam_lifecycle_release_grade_approve(): void
+    {
+        $exam = $this->createExam();
+
+        // A question is required before release. (UI authoring is Exam-Mode gated;
+        // seed one directly to exercise the officer/grading lifecycle.)
+        $exam->questions()->create([
             'question_text' => '2 + 2 = ?', 'option_a' => '4', 'option_b' => '5',
-            'correct_option' => 'a', 'marks' => 5,
-        ])->assertRedirect();
-        $question = $exam->questions()->firstOrFail();
+            'correct_option' => 'a', 'marks' => 5, 'type' => 'objective', 'created_by' => $this->lecturer->id,
+        ]);
 
-        // 3. Officer releases with a password.
+        // Officer releases.
         $this->actingAs($this->officer)->post("/exams/{$exam->id}/release", [
             'access_password' => 'open123',
         ])->assertRedirect();
         $this->assertSame('released', $exam->fresh()->status);
 
-        // 4. Student unlock: wrong password fails, right one works.
-        $this->actingAs($this->studentUser)
-            ->post("/my-exams/{$exam->id}/unlock", ['access_password' => 'nope'])
-            ->assertRedirect();
-        $this->assertFalse(session()->get("exam_unlocked_{$exam->id}", false));
-
-        // 5. Student submits (objective auto-grade = 5/5).
-        $this->actingAs($this->studentUser)
-            ->withSession(["exam_unlocked_{$exam->id}" => true])
-            ->post("/my-exams/{$exam->id}/submit", ['answers' => [$question->id => 'a']])
-            ->assertRedirect();
-
-        $sub = ExamSubmission::where('exam_id', $exam->id)->where('student_id', $this->student->id)->firstOrFail();
-        $this->assertSame(5, $sub->objective_score);
-
-        // 6. Teacher grades (CA 30 + exam 5 = 35) -> forwarded.
-        $this->actingAs($this->teacher)->post("/exams/{$exam->id}/grade", [
+        // Course lecturer grades (CA 30 + exam 5 = 35) -> forwarded to officer.
+        $this->actingAs($this->lecturer)->post("/exams/{$exam->id}/grade", [
             'ca' => [$this->student->id => 30],
             'exam' => [$this->student->id => 5],
         ])->assertRedirect();
@@ -98,32 +96,14 @@ class ExamWorkflowTest extends TestCase
         $this->assertSame('submitted', $score->status);
         $this->assertSame(35, (int) $score->total);
 
-        // 7. Officer approves -> published.
+        // Officer approves -> published.
         $this->actingAs($this->officer)->post("/exams/{$exam->id}/approve")->assertRedirect();
         $this->assertSame('published', $score->fresh()->status);
-
-        // 8. Student raises a query.
-        $this->actingAs($this->studentUser)->post("/results/{$score->id}/query", [
-            'message' => 'Please recheck my CA.',
-        ])->assertRedirect();
-        $query = ResultQuery::firstOrFail();
-        $this->assertSame('open', $query->status);
-
-        // 9. Officer resolves (and amends the score).
-        $this->actingAs($this->officer)->post("/exam-queries/{$query->id}/resolve", [
-            'resolution' => 'Rechecked, CA corrected.',
-            'ca_score' => 35, 'exam_score' => 5,
-        ])->assertRedirect();
-        $this->assertSame('resolved', $query->fresh()->status);
-        $this->assertSame(40, (int) $score->fresh()->total);
     }
 
     public function test_exam_cannot_release_without_questions(): void
     {
-        $this->actingAs($this->officer)->post('/exams', [
-            'subject_id' => $this->maths->id, 'title' => 'Empty', 'duration_minutes' => 30, 'class_arms' => ['JSS1A'],
-        ]);
-        $exam = Exam::firstOrFail();
+        $exam = $this->createExam('Empty');
 
         $this->actingAs($this->officer)->post("/exams/{$exam->id}/release", ['access_password' => 'pw12'])
             ->assertRedirect();
@@ -132,13 +112,10 @@ class ExamWorkflowTest extends TestCase
 
     public function test_ineligible_student_can_be_admitted_by_officer(): void
     {
-        $this->actingAs($this->officer)->post('/exams', [
-            'subject_id' => $this->maths->id, 'title' => 'X', 'duration_minutes' => 30, 'class_arms' => ['JSS1A'],
-        ]);
-        $exam = Exam::firstOrFail();
+        $exam = $this->createExam('Eligibility');
 
-        // A debtor in JSS1A (seeded Fatima has 50,000 balance).
-        $debtor = Student::where('class_arm', 'JSS1A')->where('fees_balance', '>', 0)->firstOrFail();
+        // A fees debtor in the same class arm is ineligible by default.
+        $debtor = $this->studentRecord(['class_arm' => 'UG1', 'fees_balance' => 50000]);
         $this->assertFalse($debtor->feesCleared());
 
         $this->actingAs($this->officer)->post("/exams/{$exam->id}/eligibility/{$debtor->id}", [
@@ -152,13 +129,15 @@ class ExamWorkflowTest extends TestCase
 
     public function test_access_control(): void
     {
-        // Teacher cannot create exams.
-        $this->actingAs($this->teacher)->get('/exams/create')->assertForbidden();
-        // Student cannot view the officer exam list.
+        // Lecturer is not an exam-admin role.
+        $this->actingAs($this->lecturer)->get('/exams')->assertForbidden();
+        $this->actingAs($this->lecturer)->get('/exams/create')->assertForbidden();
+
+        // Students cannot reach the officer exam list.
         $this->actingAs($this->studentUser)->get('/exams')->assertForbidden();
-        // Proprietor can view but not create.
-        $prop = User::where('role', 'proprietor')->firstOrFail();
-        $this->actingAs($prop)->get('/exams')->assertOk();
-        $this->actingAs($prop)->get('/exams/create')->assertForbidden();
+
+        // The exam officer owns the lifecycle.
+        $this->actingAs($this->officer)->get('/exams')->assertOk();
+        $this->actingAs($this->officer)->get('/exams/create')->assertOk();
     }
 }

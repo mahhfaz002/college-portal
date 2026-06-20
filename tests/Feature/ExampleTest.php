@@ -2,18 +2,25 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesCollegeFixtures;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
-    /**
-     * A basic test example.
-     */
+    use RefreshDatabase, CreatesCollegeFixtures;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed();
+        // Tenancy is strict host-based: the landing page 404s unless a college
+        // owns the request host. Test requests resolve to host 'localhost'.
+        $this->bootCollege(['domain' => 'localhost']);
+    }
+
     public function test_the_application_returns_a_successful_response(): void
     {
-        $response = $this->get('/');
-
-        $response->assertStatus(200);
+        $this->get('/')->assertStatus(200);
     }
 }
