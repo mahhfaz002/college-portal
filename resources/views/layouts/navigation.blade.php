@@ -115,6 +115,7 @@
                 <x-responsive-nav-link :href="route('library.index')" :active="request()->routeIs('library.*')">{{ __('Library') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('dashboard').'#results'">{{ __('Results') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('dashboard').'#fees'">{{ __('Fees') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('change-of-course.index')" :active="request()->routeIs('change-of-course.*')">{{ __('Change of Course') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('notifications.index')" :active="request()->routeIs('notifications.*')">{{ __('Notifications') }}</x-responsive-nav-link>
             @endif
 
@@ -145,6 +146,7 @@
                 @endcan
                 @can('assign_courses')
                     <x-responsive-nav-link :href="route('academic.assign')" :active="request()->routeIs('academic.assign')">{{ __('Assign Courses') }}</x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('change-of-course.review')" :active="request()->routeIs('change-of-course.review')">{{ __('Change of Course') }}</x-responsive-nav-link>
                 @endcan
 
                 @can('author_questions')
@@ -163,6 +165,9 @@
                 @can('manage_admissions')
                     <x-responsive-nav-link :href="route('admissions.review')" :active="request()->routeIs('admissions.review')">{{ __('Admission Queue') }}</x-responsive-nav-link>
                 @endcan
+                @if($role === 'registrar')
+                    <x-responsive-nav-link :href="route('change-of-course.approvals')" :active="request()->routeIs('change-of-course.approvals')">{{ __('Change of Course') }}</x-responsive-nav-link>
+                @endif
 
                 {{-- HOD / Assistant HOD --}}
                 @can('approve_registration')

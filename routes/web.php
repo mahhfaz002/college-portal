@@ -284,6 +284,21 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::delete('/timetable/{plan}', [TimetableController::class, 'destroy'])->name('timetable.destroy');
     });
 
+    // --- Change of Course (student applies → pays → academic secretary → registrar) ---
+    $COC = \App\Http\Controllers\ChangeOfCourseController::class;
+    Route::middleware('role:student')->group(function () use ($COC) {
+        Route::get('/change-of-course', [$COC, 'index'])->name('change-of-course.index');
+        Route::post('/change-of-course', [$COC, 'store'])->middleware('throttle:10,1')->name('change-of-course.store');
+    });
+    Route::middleware('role:academic_secretary')->group(function () use ($COC) {
+        Route::get('/change-of-course/review', [$COC, 'review'])->name('change-of-course.review');
+        Route::post('/change-of-course/{changeOfCourse}/recommend', [$COC, 'recommend'])->name('change-of-course.recommend');
+    });
+    Route::middleware('role:registrar')->group(function () use ($COC) {
+        Route::get('/change-of-course/approvals', [$COC, 'approvals'])->name('change-of-course.approvals');
+        Route::post('/change-of-course/{changeOfCourse}/decide', [$COC, 'decide'])->name('change-of-course.decide');
+    });
+
     // --- Term / Session control (Principal) ---
     Route::middleware('role:'.Permissions::middleware('manage_term'))->group(function () {
         Route::post('/term', [TermController::class, 'update'])->name('term.update');

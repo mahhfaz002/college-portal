@@ -241,6 +241,12 @@ class GatewayPaymentController extends Controller
             return;
         }
 
+        // Change-of-course fee: forward the application to the Academic Secretary.
+        if ($invoice->purpose === 'change_of_course') {
+            \App\Http\Controllers\ChangeOfCourseController::markPaidByInvoice($invoice);
+            return;
+        }
+
         $applicant = $invoice->applicant_id ? Applicant::withoutGlobalScopes()->find($invoice->applicant_id) : null;
         if (!$applicant) {
             return;
@@ -287,6 +293,11 @@ class GatewayPaymentController extends Controller
         if ($invoice->purpose === 'registration_fee' && $applicant) {
             return redirect()->route('dashboard')->with('success',
                 'Registration fee paid. Your student dashboard is unlocked — please upload your documents to complete registration.');
+        }
+
+        if ($invoice->purpose === 'change_of_course' && Auth::check()) {
+            return redirect()->route('change-of-course.index')
+                ->with('success', 'Application fee paid. Your change-of-course request has been forwarded to the Academic Secretary for review.');
         }
 
         // General student fees (bursar payment orders): straight to the printable
