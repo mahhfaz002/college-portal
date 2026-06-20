@@ -100,6 +100,7 @@
                 <x-responsive-nav-link :href="route('platform.dashboard')" :active="request()->routeIs('platform.dashboard')">{{ __('Overview') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('platform.colleges')" :active="request()->routeIs('platform.colleges')">{{ __('Colleges') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('platform.register')" :active="request()->routeIs('platform.register')">{{ __('Register College') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('platform.admitted-records')" :active="request()->routeIs('platform.admitted-records')">{{ __('Admitted Records') }}</x-responsive-nav-link>
             @endif
 
             @if($role === 'applicant')

@@ -1,0 +1,99 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\AdmittedRecord;
+use App\Models\Department;
+use App\Models\Program;
+use App\Models\Student;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Tests\Concerns\CreatesCollegeFixtures;
+use Tests\TestCase;
+
+class AdmittedRecordsTest extends TestCase
+{
+    use RefreshDatabase, CreatesCollegeFixtures;
+
+    private Program $program;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed();
+        // host 'localhost' so the public self-registration resolves this tenant.
+        $this->bootCollege(['domain' => 'localhost']);
+
+        $dept = Department::create(['name' => 'Health Sciences', 'acronym' => 'HS', 'section' => 'UG']);
+        $this->program = Program::create(['name' => 'Nursing', 'acronym' => 'NUR', 'department_id' => $dept->id]);
+    }
+
+    public function test_superadmin_imports_admitted_records_from_csv(): void
+    {
+        $csv = "Full Name,Registration Number,Department,Level\n"
+             ."John Doe,REG/2026/001,Nursing,100\n"
+             ."Jane Smith,REG/2026/002,Nursing,200\n";
+        $file = UploadedFile::fake()->createWithContent('admitted.csv', $csv);
+
+        $this->actingAs($this->userWithRole('superadmin'))
+            ->post('/platform/admitted-records', ['college_id' => $this->college->id, 'csv' => $file])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('admitted_records', [
+            'college_id' => $this->college->id, 'registration_number' => 'REG/2026/001', 'full_name' => 'John Doe', 'level' => '100',
+        ]);
+        $this->assertSame(2, AdmittedRecord::withoutGlobalScopes()->count());
+    }
+
+    public function test_lookup_finds_record_or_tells_student_to_see_registrar(): void
+    {
+        AdmittedRecord::create([
+            'college_id' => $this->college->id, 'full_name' => 'John Doe',
+            'registration_number' => 'REG/2026/001', 'department' => 'Nursing', 'level' => '100',
+        ]);
+
+        // Known reg number → prefilled form renders.
+        $this->post('/student/register/lookup', ['registration_number' => 'REG/2026/001'])
+            ->assertOk()->assertSee('John Doe');
+
+        // Unknown reg number → sent back with a "contact the Registrar" error.
+        $this->post('/student/register/lookup', ['registration_number' => 'NOPE/999'])
+            ->assertSessionHasErrors('registration_number');
+    }
+
+    public function test_store_requires_a_valid_admitted_record(): void
+    {
+        // No matching record → rejected, no account created.
+        $this->post('/student/register', [
+            'registration_number' => 'GHOST/1', 'program_id' => $this->program->id,
+            'phone' => '080', 'email' => 'ghost@example.test', 'address' => '1 Rd',
+            'password' => 'secret123', 'password_confirmation' => 'secret123',
+            'passport' => UploadedFile::fake()->create('p.jpg', 100, 'image/jpeg'),
+        ])->assertRedirect(route('student.register'));
+
+        $this->assertDatabaseMissing('students', ['email' => 'ghost@example.test']);
+    }
+
+    public function test_valid_registration_creates_account_and_claims_record(): void
+    {
+        $record = AdmittedRecord::create([
+            'college_id' => $this->college->id, 'full_name' => 'John Doe',
+            'registration_number' => 'REG/2026/001', 'department' => 'Nursing', 'level' => '100',
+        ]);
+
+        $this->post('/student/register', [
+            'registration_number' => 'REG/2026/001', 'program_id' => $this->program->id,
+            'phone' => '08011112222', 'email' => 'john@example.test', 'address' => '1 College Rd',
+            'password' => 'secret123', 'password_confirmation' => 'secret123',
+            'passport' => UploadedFile::fake()->create('passport.jpg', 100, 'image/jpeg'),
+        ])->assertRedirect(); // → payment checkout
+
+        $this->assertDatabaseHas('users', ['email' => 'john@example.test', 'role' => 'student']);
+        $this->assertDatabaseHas('students', [
+            'registration_number' => 'REG/2026/001', 'full_name' => 'John Doe',
+            'program_id' => $this->program->id, 'level' => '100',
+        ]);
+        $this->assertNotNull($record->fresh()->claimed_at);
+    }
+}

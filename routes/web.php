@@ -43,6 +43,8 @@ Route::post('/apply', [ApplicantController::class, 'submit'])
 // Student self-onboarding (existing students create their own account).
 Route::get('/student/login', fn () => view('auth.student_login'))->name('student.login');
 Route::get('/student/register', [\App\Http\Controllers\StudentSelfRegistrationController::class, 'showForm'])->name('student.register');
+Route::post('/student/register/lookup', [\App\Http\Controllers\StudentSelfRegistrationController::class, 'lookup'])
+    ->middleware('throttle:10,1')->name('student.register.lookup');
 Route::post('/student/register', [\App\Http\Controllers\StudentSelfRegistrationController::class, 'store'])
     ->middleware('throttle:6,1')->name('student.register.store');
 
@@ -99,6 +101,11 @@ Route::middleware(['auth', 'verified', 'two.factor', 'force.password.change', 'p
         Route::delete('/platform/colleges/{college}/admins/{user}', [$PF, 'removeAdmin'])->name('platform.colleges.admins.remove');
         Route::post('/platform/colleges/{college}/admins/{user}/reset', [$PF, 'resetAdmin'])->name('platform.colleges.admins.reset');
         Route::post('/platform/colleges/{college}/toggle', [$PF, 'toggle'])->name('platform.colleges.toggle');
+
+        // Admitted-student records: CSV upload per college (gates self-registration).
+        $AR = \App\Http\Controllers\AdmissionRecordController::class;
+        Route::get('/platform/admitted-records', [$AR, 'index'])->name('platform.admitted-records');
+        Route::post('/platform/admitted-records', [$AR, 'upload'])->middleware('throttle:20,1')->name('platform.admitted-records.upload');
 
         // Paystack marketplace: subaccount + settlement management & transactions.
         Route::post('/platform/colleges/{college}/settlement', [$PF, 'updateSettlement'])->name('platform.colleges.settlement');
