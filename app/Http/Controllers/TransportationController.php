@@ -19,7 +19,13 @@ class TransportationController extends Controller
 
     public function assignStudent(Request $request)
     {
-        $vehicle = Vehicle::findOrFail($request->vehicle_id);
+        $data = $request->validate([
+            'vehicle_id' => 'required|exists:vehicles,id',
+            'route_id'   => 'nullable|exists:routes,id',
+            'student_id' => 'required|exists:students,id',
+        ]);
+
+        $vehicle = Vehicle::findOrFail($data['vehicle_id']);
 
         // Check capacity
         $currentAssignments = TransportAssignment::where('vehicle_id', $vehicle->id)->count();
@@ -27,7 +33,7 @@ class TransportationController extends Controller
             return back()->with('error', 'Vehicle is at maximum capacity.');
         }
 
-        TransportAssignment::create($request->all());
+        TransportAssignment::create($data);
 
         return back()->with('success', 'Student assigned to route successfully.');
     }

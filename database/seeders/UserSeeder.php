@@ -31,6 +31,7 @@ class UserSeeder extends Seeder
                 'college_id'           => null,
                 'platform_fee_paid'    => true,
                 'must_change_password' => false,
+                'email_verified_at'    => now(),
             ]
         );
     }

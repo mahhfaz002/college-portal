@@ -436,6 +436,16 @@ class PaystackService
             'paid_at'           => now(),
         ]);
 
+        // Audit trail for money received (webhook/callback may have no auth user;
+        // stamp the invoice's college explicitly so it stays tenant-scoped).
+        \App\Models\ActivityLog::create([
+            'college_id'  => $invoice->college_id,
+            'user_id'     => auth()->id(),
+            'action'      => 'payment.paid',
+            'description' => 'Payment received — '.$invoice->purpose.' '.money((float) $invoice->amount)
+                             .' (invoice #'.$invoice->id.', ref '.$invoice->reference.', via '.$method.')',
+        ]);
+
         $this->recordSettlement($invoice, $gatewayData);
     }
 

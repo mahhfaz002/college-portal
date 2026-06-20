@@ -84,6 +84,7 @@ class StudentSelfRegistrationController extends Controller
             'passport'          => $passport,
             'platform_fee_paid' => false,
             'must_change_password' => false,
+            'email_verified_at' => now(),   // identity confirmed via the paid platform fee
         ]);
 
         $student = Student::create([

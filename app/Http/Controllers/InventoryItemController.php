@@ -23,15 +23,17 @@ class InventoryItemController extends Controller
     // CREATE: Save item
     public function store(Request $request)
     {
-        $request->validate([
+        // Only whitelisted fields — never $request->all(): college_id is stamped
+        // by the BelongsToCollege hook so it can't be spoofed to another tenant.
+        $data = $request->validate([
             'item_name' => 'required|string|max:255',
-            'category' => 'required|string',
+            'category' => 'required|string|max:255',
             'quantity' => 'required|integer|min:0',
-            'status' => 'required|string',
-            'location' => 'required|string',
+            'status' => 'required|string|max:50',
+            'location' => 'required|string|max:255',
         ]);
 
-        InventoryItem::create($request->all());
+        InventoryItem::create($data);
 
         return redirect()->route('inventory.index')->with('success', 'Item added successfully!');
     }
@@ -45,12 +47,15 @@ class InventoryItemController extends Controller
     // UPDATE: Save changes
     public function update(Request $request, InventoryItem $item)
     {
-        $request->validate([
+        $data = $request->validate([
             'item_name' => 'required|string|max:255',
-            'quantity' => 'required|integer|min:0',
+            'category'  => 'nullable|string|max:255',
+            'quantity'  => 'required|integer|min:0',
+            'status'    => 'nullable|string|max:50',
+            'location'  => 'nullable|string|max:255',
         ]);
 
-        $item->update($request->all());
+        $item->update(array_filter($data, fn ($v) => $v !== null));
 
         return redirect()->route('inventory.index')->with('success', 'Item updated successfully!');
     }

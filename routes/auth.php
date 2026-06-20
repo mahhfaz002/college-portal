@@ -13,10 +13,12 @@ use Illuminate\Support\Facades\Route;
 
 // --- GUEST ROUTES (Not logged in) ---
 Route::middleware('guest')->group(function () {
-    Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('register');
-
-    Route::post('register', [RegisteredUserController::class, 'store']);
+    // NOTE: the generic Breeze self-registration route is intentionally removed.
+    // Accounts are created only through vouched/paid paths: students via
+    // /student/register, applicants via /apply, and staff/admins by the
+    // registrar / super-admin. An open register created role-less, college-less
+    // accounts that bypassed tenant scoping (CollegeScope is a no-op when
+    // college_id is null), so it is disabled.
 
     // LOGIN ROUTES MOVE HERE
     Route::get('login', [AuthenticatedSessionController::class, 'create'])

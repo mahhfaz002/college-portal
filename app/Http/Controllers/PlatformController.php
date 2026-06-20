@@ -254,6 +254,7 @@ class PlatformController extends Controller
             'college_id'           => $college->id,
             'platform_fee_paid'    => true,
             'must_change_password' => true,
+            'email_verified_at'    => now(),   // super-admin-created (vouched) → pre-verified
         ]);
 
         return back()->with('success', ucfirst(str_replace('_', ' ', $data['role']))." account created for {$college->name}.");

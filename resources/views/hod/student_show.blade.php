@@ -25,7 +25,7 @@
                 <div class="px-6 py-4 bg-gray-50 border-b font-bold text-gray-700">Uploaded Documents</div>
                 <div class="p-6 flex flex-wrap gap-2">
                     @forelse($documents as $d)
-                        <a href="{{ media_url($d->path) }}" target="_blank" class="text-xs bg-indigo-50 text-indigo-700 px-3 py-2 rounded-lg hover:bg-indigo-100 font-semibold">
+                        <a href="{{ route('documents.show', $d) }}" target="_blank" class="text-xs bg-indigo-50 text-indigo-700 px-3 py-2 rounded-lg hover:bg-indigo-100 font-semibold">
                             📎 {{ $d->label ?? $d->type }}
                         </a>
                     @empty

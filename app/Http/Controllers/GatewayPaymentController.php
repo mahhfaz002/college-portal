@@ -334,6 +334,7 @@ class GatewayPaymentController extends Controller
             'role'                 => 'applicant',
             'college_id'           => $applicant->college_id,
             'must_change_password' => true,
+            'email_verified_at'    => now(),   // identity confirmed via the paid application fee
         ]);
 
         $applicant->update(['user_id' => $user->id]);

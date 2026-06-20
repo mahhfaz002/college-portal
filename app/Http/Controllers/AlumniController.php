@@ -16,13 +16,15 @@ class AlumniController extends Controller
     // Register a new alumnus
     public function register(Request $request)
     {
-        $request->validate([
-            'full_name' => 'required|string',
+        $data = $request->validate([
+            'full_name' => 'required|string|max:255',
             'email' => 'required|email|unique:alumni',
             'graduation_year' => 'required|integer',
+            'program' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:50',
         ]);
 
-        Alumni::create($request->all());
+        Alumni::create($data);
 
         return back()->with('success', 'Alumni record registered successfully.');
     }

@@ -29,7 +29,7 @@
 
                             <div class="mt-3 flex flex-wrap gap-2">
                                 @forelse($docs->get($s->id, collect()) as $d)
-                                    <a href="{{ media_url($d->path) }}" target="_blank"
+                                    <a href="{{ route('documents.show', $d) }}" target="_blank"
                                        class="text-xs bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full hover:bg-indigo-100">
                                         📎 {{ $d->label ?? $d->type }}
                                     </a>

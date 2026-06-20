@@ -252,6 +252,9 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
     // --- Reports ---
     Route::get('/reports/download/{studentId}', [ReportController::class, 'downloadPdf'])->name('reports.download');
 
+    // --- Secure document streaming (private; authorization in the controller) ---
+    Route::get('/documents/{document}', [\App\Http\Controllers\DocumentController::class, 'show'])->name('documents.show');
+
     // --- Announcements / Communications (everyone can read) ---
     Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
     Route::middleware(['role:proprietor,mis'])->group(function () {

@@ -123,6 +123,7 @@ class UserController extends Controller
             'staff_id'          => $this->generateStaffId($role, $validated['employed_year'] ?? date('Y'), optional(\App\Models\Department::find($departmentId))->acronym),
             'status'            => 'active',
             'must_change_password' => true,
+            'email_verified_at' => now(),   // registrar-created (vouched) → pre-verified
         ]);
 
         return redirect()->route('staff.show', $user)->with('success',

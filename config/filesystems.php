@@ -21,7 +21,11 @@ return [
     | the S3_* env vars) so uploads persist across deploys instead of being lost
     | on the ephemeral container filesystem.
     */
-    'documents' => env('DOCUMENTS_DISK', 'public'),
+    // PRIVATE by default — registration/admission PII (certificates, results)
+    // must NOT be web-served. Files are streamed through the authenticated
+    // DocumentController after an authorization check. On Laravel Cloud set
+    // DOCUMENTS_DISK=s3 with a PRIVATE bucket.
+    'documents' => env('DOCUMENTS_DISK', 'local'),
 
     /*
     |--------------------------------------------------------------------------
