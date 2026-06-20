@@ -20,6 +20,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Two-Factor Authentication (email OTP)
+    |--------------------------------------------------------------------------
+    | When enabled, staff logins (any role except student/applicant) must enter
+    | a 6-digit code emailed to them before reaching the dashboard. Set
+    | TWO_FACTOR_ENABLED=false to disable (used by the test suite).
+    */
+    'two_factor_enabled' => (bool) env('TWO_FACTOR_ENABLED', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Authentication Guards
     |--------------------------------------------------------------------------
     |
