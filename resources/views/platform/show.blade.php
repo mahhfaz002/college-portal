@@ -71,6 +71,29 @@
                     <a href="{{ route('platform.colleges.transactions', $college) }}" class="text-sm font-bold text-indigo-600 hover:underline">View transactions →</a>
                 </div>
                 <div class="p-6 space-y-5">
+                    {{-- Split status banner: the whole marketplace model depends on a linked subaccount code. --}}
+                    @php
+                        $hasAccount = !empty($college->settlement_account_number);
+                        $hasCode    = !empty($college->paystack_subaccount_code);
+                    @endphp
+                    @if($hasCode)
+                        <div class="p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm flex items-center gap-2">
+                            <span>✅</span><span><strong>Auto-split active.</strong> Payments on this college's domain split natively to its subaccount; the platform keeps {{ (float) ($college->commission_percentage ?? 0) }}%.</span>
+                        </div>
+                    @elseif($hasAccount)
+                        <div class="p-3 rounded-lg bg-amber-50 border border-amber-300 text-amber-800 text-sm">
+                            <strong>⚠️ Auto-split is INACTIVE.</strong> Settlement details are saved but no Paystack subaccount is linked, so payments currently settle 100% to the platform with no split.
+                            Click <strong>Create Subaccount</strong> below, or <strong>Recover from Paystack</strong> if you already created one there.
+                            <form method="POST" action="{{ route('platform.colleges.subaccount.sync', $college) }}" class="mt-2">@csrf
+                                <button class="bg-amber-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-amber-700">Recover from Paystack</button>
+                            </form>
+                        </div>
+                    @else
+                        <div class="p-3 rounded-lg bg-gray-50 border border-gray-200 text-gray-600 text-sm">
+                            <strong>Split not set up.</strong> Add this college's settlement bank &amp; account below and create its subaccount to enable native payment splitting.
+                        </div>
+                    @endif
+
                     <div class="grid sm:grid-cols-3 gap-4 text-sm">
                         <div><p class="text-[10px] uppercase font-bold text-gray-400">Subaccount Code</p>
                             <p class="font-mono text-gray-800 break-all">{{ $college->paystack_subaccount_code ?? '— not set up —' }}</p></div>

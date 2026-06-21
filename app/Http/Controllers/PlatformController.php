@@ -181,13 +181,26 @@ class PlatformController extends Controller
         return back()->with('success', "Subaccount configured for {$college->name} (code {$college->paystack_subaccount_code}, commission {$college->commission_percentage}%).");
     }
 
-    /** Pull the latest subaccount status/details from Paystack. */
+    /**
+     * Pull the latest subaccount status/details from Paystack — and RECOVER the
+     * subaccount code by settlement account when it exists on Paystack but isn't
+     * linked locally (lost code / made manually / older version).
+     */
     public function syncSubaccount(College $college)
     {
         try {
-            $data = app(\App\Services\PaystackService::class)->fetchSubaccount($college);
-            return back()->with($data ? 'success' : 'error',
-                $data ? 'Subaccount synced from Paystack.' : 'No subaccount to sync yet — create one first.');
+            $hadCode = $college->usesSubaccount();
+            $data    = app(\App\Services\PaystackService::class)->fetchSubaccount($college);
+
+            if (!$data) {
+                return back()->with('error',
+                    'No subaccount found on Paystack for this settlement account. Set the settlement details and click Create Subaccount.');
+            }
+
+            $recovered = !$hadCode && $college->fresh()->usesSubaccount();
+            return back()->with('success', $recovered
+                ? "Subaccount recovered from Paystack and linked ({$college->fresh()->paystack_subaccount_code})."
+                : 'Subaccount synced from Paystack.');
         } catch (\Throwable $e) {
             return back()->with('error', 'Subaccount sync failed: '.$e->getMessage());
         }
