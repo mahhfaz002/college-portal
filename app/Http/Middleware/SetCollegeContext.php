@@ -23,6 +23,31 @@ class SetCollegeContext
                 app()->instance('current_college_id', (int) auth()->user()->college_id);
             }
         } else {
+            // LOCAL DEV ONLY: localhost matches no college domain, so allow
+            // explicitly choosing which tenant to preview/test via
+            // ?college=<id|acronym>. The choice is sticky (stored in the session)
+            // so subsequent form posts (e.g. self-registration lookup) keep it.
+            // This branch can never run in production (isLocal guard).
+            if (app()->isLocal()) {
+                if ($request->filled('college')) {
+                    $key = trim((string) $request->query('college'));
+                    $picked = \App\Models\College::where('is_active', true)
+                        ->where(function ($q) use ($key) {
+                            $q->whereRaw('LOWER(acronym) = ?', [strtolower($key)]);
+                            if (ctype_digit($key)) {
+                                $q->orWhere('id', (int) $key);
+                            }
+                        })->first();
+                    if ($picked) {
+                        session(['dev_college_id' => $picked->id]);
+                    }
+                }
+                if ($devId = session('dev_college_id')) {
+                    app()->instance('current_college_id', (int) $devId);
+                    return $next($request);
+                }
+            }
+
             // Guests: resolve the tenant by the request domain so the public
             // landing page and frontend render that college's branding/content.
             $host = $request->getHost();
