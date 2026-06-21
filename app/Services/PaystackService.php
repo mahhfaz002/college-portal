@@ -203,15 +203,29 @@ class PaystackService
             throw new \RuntimeException('Platform Paystack secret key is not configured.');
         }
 
+        $bank    = $details['settlement_bank'] ?? $college->settlement_bank;
+        $account = $details['account_number']  ?? $college->settlement_account_number;
+
         $payload = [
             'business_name'         => $details['business_name'] ?? $college->name,
-            'settlement_bank'       => $details['settlement_bank'],
-            'account_number'        => $details['account_number'],
+            'settlement_bank'       => $bank,
+            'account_number'        => $account,
             'percentage_charge'     => (float) ($details['percentage_charge']
                                         ?? $college->commission_percentage
                                         ?? config('services.paystack.default_commission_percentage', 2)),
-            'primary_contact_email' => $college->email,
+            'primary_contact_email' => $college->email ?: config('services.paystack.fallback_email'),
         ];
+
+        // SELF-HEAL: if we have no stored code but Paystack already has a subaccount
+        // for this exact settlement account, ADOPT it (PUT update) instead of POSTing
+        // a duplicate. This is what makes re-clicking "Create" idempotent and lets a
+        // code that exists on Paystack but was never saved locally be reconciled.
+        if (empty($college->paystack_subaccount_code) && $bank && $account) {
+            $existing = $this->findSubaccountByAccount($bank, $account);
+            if ($existing && !empty($existing['subaccount_code'])) {
+                $college->forceFill(['paystack_subaccount_code' => $existing['subaccount_code']])->save();
+            }
+        }
 
         $http = Http::withToken($secret)->acceptJson();
         $resp = $college->paystack_subaccount_code
@@ -224,20 +238,123 @@ class PaystackService
         }
 
         $data = $resp->json('data');
+        $code = $data['subaccount_code'] ?? $college->paystack_subaccount_code;
+
+        // Persist the code FIRST and on its own, so a hiccup writing the cosmetic
+        // fields can never lose the one value the whole split depends on.
+        if ($code && $code !== $college->paystack_subaccount_code) {
+            $college->forceFill(['paystack_subaccount_code' => $code])->save();
+        }
         $college->forceFill([
-            'paystack_subaccount_code'   => $data['subaccount_code'] ?? $college->paystack_subaccount_code,
+            'paystack_subaccount_code'   => $code,
             'paystack_subaccount_name'   => $data['business_name'] ?? $payload['business_name'],
             'settlement_account_name'    => $data['account_name'] ?? $college->settlement_account_name,
-            'paystack_subaccount_status' => 'active',
+            'paystack_subaccount_status' => (($data['active'] ?? true)) ? 'active' : 'inactive',
         ])->save();
 
+        if (empty($college->fresh()->paystack_subaccount_code)) {
+            throw new \RuntimeException('Subaccount was created on Paystack but its code could not be stored. Please retry.');
+        }
+
         return $data;
+    }
+
+    /**
+     * One page (or all pages) of the platform's Paystack subaccounts. Used to
+     * reconcile a college whose subaccount exists on Paystack but isn't linked
+     * locally (lost code, created manually, or created by an older version).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function listSubaccounts(int $perPage = 200): array
+    {
+        if (empty($this->masterSecret())) {
+            return [];
+        }
+
+        $all  = [];
+        $page = 1;
+        do {
+            $resp = Http::withToken($this->masterSecret())->acceptJson()
+                ->get($this->endpoint('/subaccount'), ['perPage' => $perPage, 'page' => $page]);
+            if (!$resp->ok() || !$resp->json('status')) {
+                break;
+            }
+            $batch = $resp->json('data') ?? [];
+            $all   = array_merge($all, $batch);
+            $page++;
+        } while (count($batch) === $perPage && $page <= 25); // hard stop: never loop forever
+
+        return $all;
+    }
+
+    /**
+     * Find an existing Paystack subaccount that settles to the given bank +
+     * account number. Returns the raw subaccount record (incl. subaccount_code)
+     * or null. The backbone of subaccount reconciliation / recovery.
+     */
+    public function findSubaccountByAccount(string $bankCode, string $accountNumber): ?array
+    {
+        $account = ltrim(trim($accountNumber), '0');   // compare without leading zeros
+        foreach ($this->listSubaccounts() as $sub) {
+            $subAcct = ltrim(trim((string) ($sub['account_number'] ?? '')), '0');
+            $subBank = (string) ($sub['settlement_bank'] ?? $sub['bank'] ?? '');
+            if ($subAcct !== '' && $subAcct === $account
+                && (string) $bankCode === $subBank) {
+                return $sub;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Ensure a college has a usable subaccount: adopt an existing one by account
+     * number, or create it. Idempotent. Returns the subaccount code (or null if
+     * the college has no settlement account to work with). Used by the reconcile
+     * command and as the last-resort self-heal at payment time.
+     */
+    public function ensureSubaccount(College $college): ?string
+    {
+        if ($college->usesSubaccount()) {
+            return $college->paystack_subaccount_code;
+        }
+        if (empty($college->settlement_account_number) || empty($college->settlement_bank)) {
+            return null; // nothing to link against yet
+        }
+
+        $this->createOrUpdateSubaccount($college, [
+            'settlement_bank'   => $college->settlement_bank,
+            'account_number'    => $college->settlement_account_number,
+            'percentage_charge' => $college->commission_percentage,
+            'business_name'     => $college->name,
+        ]);
+
+        return $college->fresh()->paystack_subaccount_code;
     }
 
     /** Refresh a college's subaccount details/status from Paystack. */
     public function fetchSubaccount(College $college): ?array
     {
-        if (!$college->paystack_subaccount_code || empty($this->masterSecret())) {
+        if (empty($this->masterSecret())) {
+            return null;
+        }
+
+        // RECOVERY: no local code but settlement details on file → look the
+        // subaccount up by account number and adopt its code, so a code that
+        // exists on Paystack (lost locally / made manually) is pulled back in.
+        if (!$college->paystack_subaccount_code
+            && $college->settlement_bank && $college->settlement_account_number) {
+            $existing = $this->findSubaccountByAccount($college->settlement_bank, $college->settlement_account_number);
+            if ($existing && !empty($existing['subaccount_code'])) {
+                $college->forceFill([
+                    'paystack_subaccount_code'   => $existing['subaccount_code'],
+                    'paystack_subaccount_name'   => $existing['business_name'] ?? $college->paystack_subaccount_name,
+                    'paystack_subaccount_status' => (($existing['active'] ?? true)) ? 'active' : 'inactive',
+                ])->save();
+            }
+        }
+
+        if (!$college->paystack_subaccount_code) {
             return null;
         }
         $resp = Http::withToken($this->masterSecret())->acceptJson()
@@ -370,9 +487,32 @@ class PaystackService
 
         // Marketplace split: route the institution's share to ITS OWN subaccount
         // only (never another college's). Platform invoices stay on the master.
-        if (!$this->isPlatformInvoice($invoice) && $college && $college->usesSubaccount()) {
-            $payload['subaccount'] = $college->paystack_subaccount_code;
-            $payload['bearer']     = config('services.paystack.subaccount_bearer', 'account');
+        if (!$this->isPlatformInvoice($invoice) && $college) {
+            // LAST-RESORT SELF-HEAL: a college with settlement details but no linked
+            // subaccount would otherwise be charged WITHOUT a split (the whole bug).
+            // Try to reconcile the code right here so the split still happens.
+            if (!$college->usesSubaccount()
+                && $college->settlement_bank && $college->settlement_account_number) {
+                try {
+                    $this->ensureSubaccount($college);
+                    $college->refresh();
+                } catch (\Throwable $e) {
+                    \Log::warning('Paystack split self-heal failed at initialize', [
+                        'college' => $college->id, 'invoice' => $invoice->id, 'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            if ($college->usesSubaccount()) {
+                $payload['subaccount'] = $college->paystack_subaccount_code;
+                $payload['bearer']     = config('services.paystack.subaccount_bearer', 'account');
+            } elseif ($college->settlement_account_number) {
+                // Settlement account set up but still no subaccount → the payment
+                // will NOT split. Make that loud instead of silently going to master.
+                \Log::warning('Paystack payment will NOT split — college has settlement account but no subaccount code', [
+                    'college' => $college->id, 'invoice' => $invoice->id,
+                ]);
+            }
         }
 
         $response = Http::withToken($secret)->acceptJson()
