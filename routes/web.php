@@ -66,20 +66,13 @@ Route::get('/pay/{invoice}/sandbox', [\App\Http\Controllers\GatewayPaymentContro
 Route::middleware(['auth'])->group(function () {
     Route::get('/change-password', [PasswordChangeController::class, 'showChangeForm'])->name('password.change.notice');
     Route::post('/change-password', [PasswordChangeController::class, 'updatePassword'])->name('password.change.update');
-
-    // Two-factor (email OTP) challenge — reachable after login but BEFORE 2FA is
-    // cleared, so it sits outside the fully-protected group (like change-password).
-    $TF = \App\Http\Controllers\Auth\TwoFactorController::class;
-    Route::get('/two-factor', [$TF, 'show'])->name('two-factor.challenge');
-    Route::post('/two-factor', [$TF, 'verify'])->name('two-factor.verify');
-    Route::post('/two-factor/resend', [$TF, 'resend'])->middleware('throttle:5,1')->name('two-factor.resend');
 });
 
 
 // ==========================================
 // 3. FULLY PROTECTED ROUTES (Locked until Password Changed)
 // ==========================================
-Route::middleware(['auth', 'verified', 'two.factor', 'force.password.change', 'platform.fee', 'readonly'])->group(function () {
+Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 'readonly'])->group(function () {
 
     // --- Core Dashboard ---
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

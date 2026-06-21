@@ -27,15 +27,6 @@ public function store(LoginRequest $request): RedirectResponse
     $request->authenticate();
     $request->session()->regenerate();
 
-    // Staff roles must clear an emailed one-time code before reaching the app.
-    $user = Auth::user();
-    if ($user->requiresTwoFactor()) {
-        $user->sendTwoFactorCode();
-        $request->session()->put('2fa_verified', false);
-
-        return redirect()->route('two-factor.challenge');
-    }
-
     // All roles land on the single dashboard route; DashboardController@index
     // is the "traffic warden" that renders the correct view per role.
     return redirect()->intended(route('dashboard'));
