@@ -96,4 +96,62 @@ class AdmittedRecordsTest extends TestCase
         ]);
         $this->assertNotNull($record->fresh()->claimed_at);
     }
+
+    public function test_per_college_list_shows_records_with_status(): void
+    {
+        // Unclaimed → pending.
+        AdmittedRecord::create([
+            'college_id' => $this->college->id, 'full_name' => 'Pending Pat',
+            'registration_number' => 'REG/2026/010', 'department' => 'Nursing', 'level' => '100',
+        ]);
+
+        // Claimed by a fee-paid user → registered.
+        $paid = User::factory()->role('student')->create(['platform_fee_paid' => true]);
+        AdmittedRecord::create([
+            'college_id' => $this->college->id, 'full_name' => 'Registered Reg',
+            'registration_number' => 'REG/2026/011', 'department' => 'Nursing', 'level' => '200',
+            'claimed_at' => now(), 'claimed_by' => $paid->id,
+        ]);
+
+        $this->actingAs($this->userWithRole('superadmin'))
+            ->get(route('platform.colleges.students', $this->college))
+            ->assertOk()
+            ->assertSee('Pending Pat')->assertSee('Pending')
+            ->assertSee('Registered Reg')->assertSee('Registered');
+    }
+
+    public function test_registered_students_search_filters_results(): void
+    {
+        AdmittedRecord::create([
+            'college_id' => $this->college->id, 'full_name' => 'Aisha Bello',
+            'registration_number' => 'REG/2026/020', 'department' => 'Nursing', 'level' => '100',
+        ]);
+        AdmittedRecord::create([
+            'college_id' => $this->college->id, 'full_name' => 'Yusuf Musa',
+            'registration_number' => 'REG/2026/021', 'department' => 'Pharmacy', 'level' => '100',
+        ]);
+
+        $this->actingAs($this->userWithRole('superadmin'))
+            ->get(route('platform.colleges.students', $this->college).'?q=Aisha')
+            ->assertOk()->assertSee('Aisha Bello')->assertDontSee('Yusuf Musa');
+    }
+
+    public function test_superadmin_edits_an_uploaded_record(): void
+    {
+        $record = AdmittedRecord::create([
+            'college_id' => $this->college->id, 'full_name' => 'Jon Doe',
+            'registration_number' => 'REG/2026/030', 'department' => 'Nursing', 'level' => '100',
+        ]);
+
+        $this->actingAs($this->userWithRole('superadmin'))
+            ->put(route('platform.colleges.students.update', [$this->college, $record]), [
+                'full_name' => 'John Doe', 'registration_number' => 'REG/2026/031',
+                'department' => 'Nursing', 'level' => '200',
+            ])->assertRedirect();
+
+        $this->assertDatabaseHas('admitted_records', [
+            'id' => $record->id, 'full_name' => 'John Doe',
+            'registration_number' => 'REG/2026/031', 'level' => '200',
+        ]);
+    }
 }

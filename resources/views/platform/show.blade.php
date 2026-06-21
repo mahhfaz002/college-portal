@@ -16,6 +16,15 @@
                 <div class="bg-white rounded-xl border p-4"><p class="text-xs uppercase text-gray-400 font-bold">Revenue</p><p class="text-2xl font-black text-emerald-600">{{ money($revenue) }}</p></div>
             </div>
 
+            {{-- Registered students (CSV upload + list/search/edit) --}}
+            <div class="bg-white rounded-2xl shadow-sm border p-6 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h3 class="font-bold text-gray-800">🎓 Registered Students</h3>
+                    <p class="text-sm text-gray-500">Upload the admitted-students CSV, view the list with registration status, search and fix records.</p>
+                </div>
+                <a href="{{ route('platform.colleges.students', $college) }}" class="bg-emerald-600 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 whitespace-nowrap">Manage registered students →</a>
+            </div>
+
             {{-- Leadership accounts --}}
             <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
                 <div class="px-6 py-4 bg-gray-50 border-b font-bold text-gray-700">Leadership Accounts</div>

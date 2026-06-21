@@ -99,6 +99,9 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         $AR = \App\Http\Controllers\AdmissionRecordController::class;
         Route::get('/platform/admitted-records', [$AR, 'index'])->name('platform.admitted-records');
         Route::post('/platform/admitted-records', [$AR, 'upload'])->middleware('throttle:20,1')->name('platform.admitted-records.upload');
+        // Per-college registered-students list (status + search) and inline edit.
+        Route::get('/platform/colleges/{college}/registered-students', [$AR, 'students'])->name('platform.colleges.students');
+        Route::put('/platform/colleges/{college}/registered-students/{record}', [$AR, 'updateRecord'])->name('platform.colleges.students.update');
 
         // Paystack marketplace: subaccount + settlement management & transactions.
         Route::post('/platform/colleges/{college}/settlement', [$PF, 'updateSettlement'])->name('platform.colleges.settlement');
