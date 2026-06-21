@@ -115,4 +115,28 @@ class User extends Authenticatable implements MustVerifyEmail
         'password' => 'hashed',
         'must_change_password' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        // This portal has NO open/self-service registration: every account is
+        // created either by an admin (vouched) or after a CONFIRMED payment
+        // (applicants via /apply, students via /student/register). Email
+        // verification therefore adds no security — only friction — and it
+        // silently broke once `email_verified_at` was dropped from $fillable
+        // (so `User::create([... 'email_verified_at' => now()])` was a no-op and
+        // paid applicants were stranded on /verify-email). Mark every new account
+        // verified at creation so it reaches its dashboard immediately.
+        //
+        // We only backfill when `email_verified_at` was NEVER supplied. App code
+        // reaches User::create() through mass assignment, which strips
+        // `email_verified_at` (not in $fillable) — that's the broken case we fix.
+        // Code that sets the attribute explicitly (e.g. a factory's unverified()
+        // state, run unguarded) keeps full control, so the MustVerifyEmail gate
+        // stays testable and usable if open registration is ever introduced.
+        static::creating(function (self $user) {
+            if (! array_key_exists('email_verified_at', $user->getAttributes())) {
+                $user->email_verified_at = now();
+            }
+        });
+    }
 }
