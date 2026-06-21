@@ -278,6 +278,9 @@ class PaystackService
             $resp = Http::withToken($this->masterSecret())->acceptJson()
                 ->get($this->endpoint('/subaccount'), ['perPage' => $perPage, 'page' => $page]);
             if (!$resp->ok() || !$resp->json('status')) {
+                \Log::warning('Paystack list subaccounts failed', [
+                    'page' => $page, 'http' => $resp->status(), 'message' => $resp->json('message'),
+                ]);
                 break;
             }
             $batch = $resp->json('data') ?? [];
@@ -289,19 +292,63 @@ class PaystackService
     }
 
     /**
-     * Find an existing Paystack subaccount that settles to the given bank +
-     * account number. Returns the raw subaccount record (incl. subaccount_code)
-     * or null. The backbone of subaccount reconciliation / recovery.
+     * Find an existing Paystack subaccount that settles to the given account
+     * number. Returns the raw subaccount record (incl. subaccount_code) or null.
+     * The backbone of subaccount reconciliation / recovery.
+     *
+     * Matching is keyed on the ACCOUNT NUMBER, which uniquely identifies an
+     * institution's settlement account within the platform's Paystack business.
+     * The bank is only a tie-breaker for the (vanishingly rare) case of the same
+     * account number at two banks — and even then it tolerates Paystack returning
+     * `settlement_bank` as the bank NAME (e.g. "Kuda Bank") while we store the
+     * bank CODE (e.g. "50211"). Requiring code === name was THE bug that made
+     * "Recover from Paystack" silently find nothing.
      */
     public function findSubaccountByAccount(string $bankCode, string $accountNumber): ?array
     {
-        $account = ltrim(trim($accountNumber), '0');   // compare without leading zeros
-        foreach ($this->listSubaccounts() as $sub) {
-            $subAcct = ltrim(trim((string) ($sub['account_number'] ?? '')), '0');
-            $subBank = (string) ($sub['settlement_bank'] ?? $sub['bank'] ?? '');
-            if ($subAcct !== '' && $subAcct === $account
-                && (string) $bankCode === $subBank) {
+        $account = $this->normalizeAccount($accountNumber);
+        if ($account === '') {
+            return null;
+        }
+
+        $matches = array_values(array_filter(
+            $this->listSubaccounts(),
+            fn ($sub) => $this->normalizeAccount((string) ($sub['account_number'] ?? '')) === $account
+        ));
+
+        if (count($matches) <= 1) {
+            return $matches[0] ?? null;   // account number is a unique enough key
+        }
+
+        // Same account number on multiple subaccounts → disambiguate by bank,
+        // accepting either the bank CODE or the resolved bank NAME.
+        $wantCode = strtolower(trim($bankCode));
+        $wantName = strtolower((string) $this->bankNameForCode($bankCode));
+        foreach ($matches as $sub) {
+            $sb = strtolower(trim((string) ($sub['settlement_bank'] ?? $sub['bank'] ?? '')));
+            if ($sb !== '' && ($sb === $wantCode || ($wantName !== '' && $sb === $wantName))) {
                 return $sub;
+            }
+        }
+
+        return $matches[0];
+    }
+
+    /** Normalise an account number for comparison (trim + drop leading zeros). */
+    private function normalizeAccount(string $n): string
+    {
+        return ltrim(trim($n), '0');
+    }
+
+    /** Resolve a Paystack bank code to its display name via the banks list. */
+    private function bankNameForCode(?string $code): ?string
+    {
+        if (!$code) {
+            return null;
+        }
+        foreach ($this->banks() as $b) {
+            if ((string) ($b['code'] ?? '') === (string) $code) {
+                return $b['name'] ?? null;
             }
         }
         return null;

@@ -114,6 +114,26 @@ class PaystackSubaccountTest extends TestCase
         $this->assertSame('ACCT_recovered', $college->fresh()->paystack_subaccount_code);
     }
 
+    public function test_recover_matches_on_account_number_when_paystack_returns_bank_name(): void
+    {
+        // PRODUCTION REPRO: we store the bank CODE ("50211"), but Paystack's
+        // subaccount list returns `settlement_bank` as the bank NAME ("Kuda Bank").
+        // Recovery must still match on the account number alone.
+        $this->fakePaystack([[
+            'subaccount_code' => 'ACCT_pozji0uyw2g6vjz', 'account_number' => '2025801604',
+            'settlement_bank' => 'Kuda Bank', 'business_name' => 'ALBAZ COLLEGE', 'active' => true,
+        ]]);
+        $college = $this->college([
+            'settlement_bank' => '50211', 'settlement_account_number' => '2025801604',
+        ]);
+
+        $data = app(PaystackService::class)->fetchSubaccount($college);
+
+        $this->assertNotNull($data);
+        $this->assertSame('ACCT_pozji0uyw2g6vjz', $college->fresh()->paystack_subaccount_code);
+        $this->assertTrue($college->fresh()->usesSubaccount());
+    }
+
     public function test_initialize_sends_the_subaccount_split_param(): void
     {
         $this->fakePaystack();
