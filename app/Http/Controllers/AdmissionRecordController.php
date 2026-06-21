@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AdmittedRecord;
 use App\Models\College;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 /**
  * Super-admin upload of admitted-student records from a CSV, per college.
@@ -77,5 +78,61 @@ class AdmissionRecordController extends Controller
         }
 
         return back()->with('success', "Import complete — {$created} added, {$updated} updated".($skipped ? ", {$skipped} skipped (missing name/reg no.)" : '').'.');
+    }
+
+    /**
+     * Per-college list of uploaded students, with search and onboarding status.
+     * Reachable from each college's "Manage College" page.
+     */
+    public function students(Request $request, College $college)
+    {
+        $term = trim((string) $request->query('q', ''));
+
+        $records = AdmittedRecord::withoutGlobalScopes()
+            ->with('claimer:id,platform_fee_paid')
+            ->where('college_id', $college->id)
+            ->when($term !== '', function ($query) use ($term) {
+                $like = '%'.$term.'%';
+                $query->where(function ($q) use ($like) {
+                    $q->where('full_name', 'like', $like)
+                      ->orWhere('registration_number', 'like', $like)
+                      ->orWhere('department', 'like', $like);
+                });
+            })
+            ->orderBy('full_name')
+            ->paginate(50)
+            ->withQueryString();
+
+        return view('platform.college_students', compact('college', 'records', 'term'));
+    }
+
+    /**
+     * Fix a single uploaded record (e.g. a misspelt name or wrong reg number)
+     * after import. Scoped to the college that owns the record.
+     */
+    public function updateRecord(Request $request, College $college, AdmittedRecord $record)
+    {
+        abort_unless((int) $record->college_id === (int) $college->id, 404);
+
+        $data = $request->validate([
+            'full_name'           => 'required|string|max:255',
+            'registration_number' => [
+                'required', 'string', 'max:100',
+                Rule::unique('admitted_records', 'registration_number')
+                    ->where(fn ($q) => $q->where('college_id', $college->id))
+                    ->ignore($record->id),
+            ],
+            'department'          => 'nullable|string|max:255',
+            'level'               => 'nullable|string|max:50',
+        ]);
+
+        $record->forceFill([
+            'full_name'           => $data['full_name'],
+            'registration_number' => $data['registration_number'],
+            'department'          => $data['department'] ?? null,
+            'level'               => $data['level'] ?? null,
+        ])->save();
+
+        return back()->with('success', "Updated record for {$record->full_name}.");
     }
 }

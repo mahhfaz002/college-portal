@@ -42,7 +42,7 @@
                 <div class="px-6 py-3 bg-gray-50 border-b"><h3 class="font-bold text-gray-700">Records per college</h3></div>
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 text-xs uppercase text-gray-400">
-                        <tr><th class="px-6 py-2 text-left">College</th><th class="px-4 py-2 text-right">Total</th><th class="px-4 py-2 text-right">Claimed</th><th class="px-4 py-2 text-right">Available</th></tr>
+                        <tr><th class="px-6 py-2 text-left">College</th><th class="px-4 py-2 text-right">Total</th><th class="px-4 py-2 text-right">Claimed</th><th class="px-4 py-2 text-right">Available</th><th class="px-4 py-2"></th></tr>
                     </thead>
                     <tbody class="divide-y">
                         @foreach($colleges as $c)
@@ -52,6 +52,7 @@
                                 <td class="px-4 py-2 text-right">{{ $total }}</td>
                                 <td class="px-4 py-2 text-right text-gray-500">{{ $claimed }}</td>
                                 <td class="px-4 py-2 text-right font-bold text-emerald-700">{{ $total - $claimed }}</td>
+                                <td class="px-4 py-2 text-right"><a href="{{ route('platform.colleges.students', $c) }}" class="text-indigo-600 text-xs font-bold hover:underline whitespace-nowrap">View list →</a></td>
                             </tr>
                         @endforeach
                     </tbody>
