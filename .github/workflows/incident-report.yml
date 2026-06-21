@@ -1,0 +1,22 @@
+name: Incident Report
+
+# When an auto-fix PR merges, ask the DEPLOYED app to send the plain-English
+# report. Running it on the app (not in CI) means it reuses your existing Laravel
+# Mail config — no mail secrets need to live in GitHub.
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  trigger:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'autofix/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger report on app
+        run: |
+          curl -fsS -X POST "${{ secrets.APP_URL }}/api/ops/incident-report" \
+            -H "X-Ops-Secret: ${{ secrets.OPS_TRIGGER_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"pr\": ${{ github.event.pull_request.number }} }"
