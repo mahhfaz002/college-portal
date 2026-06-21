@@ -55,8 +55,12 @@ class SecurityFixesTest extends TestCase
     /** H1 — registration documents are streamed only to authorised users. */
     public function test_documents_are_access_controlled(): void
     {
-        Storage::fake('local');
-        Storage::disk('local')->put('documents/registration/test.pdf', 'PDFDATA');
+        // Fake whichever disk the controller is configured to use (DOCUMENTS_DISK):
+        // 'local' in dev, 'public'/'s3' elsewhere. Hardcoding 'local' made this
+        // test pass locally but 404 in CI (where .env.example sets it to 'public').
+        $disk = config('filesystems.documents', 'local');
+        Storage::fake($disk);
+        Storage::disk($disk)->put('documents/registration/test.pdf', 'PDFDATA');
 
         $student = $this->studentRecord(['email' => 'doc.owner@example.test', 'department_id' => null]);
         $ownerUser = $this->userWithRole('student', ['email' => 'doc.owner@example.test']);

@@ -103,50 +103,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $hidden = [
         'password',
         'remember_token',
-        'two_factor_code',
     ];
-
-    /**
-     * Whether this account must clear email-OTP two-factor at login.
-     * Mandatory for every staff role (anyone who isn't a student/applicant);
-     * disabled wholesale when config('auth.two_factor_enabled') is false.
-     */
-    public function requiresTwoFactor(): bool
-    {
-        return config('auth.two_factor_enabled', true)
-            && ! in_array($this->role, ['student', 'applicant'], true);
-    }
-
-    /**
-     * Generate, store (hashed) and email a fresh 6-digit OTP valid for 10 minutes.
-     */
-    public function sendTwoFactorCode(): void
-    {
-        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
-        $this->forceFill([
-            'two_factor_code'       => \Illuminate\Support\Facades\Hash::make($code),
-            'two_factor_expires_at' => now()->addMinutes(10),
-        ])->save();
-
-        $this->notify(new \App\Notifications\TwoFactorCodeNotification($code));
-    }
-
-    /** Verify a submitted OTP; clears it on success. */
-    public function verifyTwoFactorCode(string $code): bool
-    {
-        if (! $this->two_factor_code || ! $this->two_factor_expires_at || now()->greaterThan($this->two_factor_expires_at)) {
-            return false;
-        }
-
-        if (! \Illuminate\Support\Facades\Hash::check($code, $this->two_factor_code)) {
-            return false;
-        }
-
-        $this->forceFill(['two_factor_code' => null, 'two_factor_expires_at' => null])->save();
-
-        return true;
-    }
 
     /**
      * Get the attributes that should be cast.
@@ -157,6 +114,5 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'must_change_password' => 'boolean',
-        'two_factor_expires_at' => 'datetime',
     ];
 }
