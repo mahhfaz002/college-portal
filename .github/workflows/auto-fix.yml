@@ -1,0 +1,83 @@
+name: Auto-Fix
+
+# Fires when the Sentry dispatcher opens an issue labeled "auto-fix".
+# Claude Code investigates, fixes minimally, runs Pint + PHPUnit, and opens a PR.
+# It never pushes to main — a human (or a narrow auto-merge rule) merges.
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  autofix:
+    if: github.event.label.name == 'auto-fix'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          tools: composer
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      # Sentry MCP lets the agent pull the full stack trace + breadcrumbs for the
+      # fingerprint. The Postgres schema lives in the repo migrations, so no DB
+      # MCP is needed — the agent reads models/migrations directly.
+      - name: Write MCP config
+        run: |
+          cat > /tmp/mcp.json <<'EOF'
+          {
+            "mcpServers": {
+              "sentry": {
+                "command": "npx",
+                "args": ["-y", "@sentry/mcp-server@latest"],
+                "env": { "SENTRY_AUTH_TOKEN": "${SENTRY_AUTH_TOKEN}" }
+              }
+            }
+          }
+          EOF
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+      - name: Claude Code auto-fix
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            A production error was filed as issue #${{ github.event.issue.number }}.
+            Read the issue body. Follow .github/AUTOFIX_POLICY.md exactly.
+
+            Your job:
+            1. Use the sentry MCP to pull the full stack trace and breadcrumbs for
+               the fingerprint in the issue.
+            2. Find the ROOT cause in this Laravel app. Make the smallest correct
+               fix. Do not refactor and do not bump dependencies.
+            3. Add or update a PHPUnit test (in tests/Feature or tests/Unit) that fails WITHOUT your fix and passes WITH it.
+            4. Run: vendor/bin/pint --test && php artisan test
+               If anything fails, do NOT open a PR — comment on the issue with what
+               is blocking you and stop.
+            5. Create a branch autofix/issue-${{ github.event.issue.number }} and
+               open a PR that closes #${{ github.event.issue.number }}.
+            6. The PR description must include a PLAIN-ENGLISH explanation a
+               non-engineer can understand: what broke, who it affected, what you
+               changed, and how you verified it.
+            7. If the issue has the "needs-human" label, add a bold PR comment that a
+               human must review before merge. Never enable auto-merge.
+          claude_args: |
+            --model claude-sonnet-4-6
+            --max-turns 25
+            --mcp-config /tmp/mcp.json
+            --allowedTools "Bash(composer:*),Bash(php:*),Bash(./vendor/bin/pint:*),Bash(vendor/bin/pint:*),Bash(git:*),View,GlobTool,GrepTool,Edit,mcp__sentry"
