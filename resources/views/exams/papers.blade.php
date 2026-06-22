@@ -6,8 +6,9 @@
     <div class="py-10">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">
             <div class="bg-indigo-50 border border-indigo-200 text-indigo-800 px-4 py-3 rounded-lg text-sm">
-                Submitted question sets. <strong>Print / download</strong> the full paper (college title, exam format,
-                instructions &amp; questions) or download a <strong>CSV of objectives only</strong> for the offline portal.
+                HOD-approved &amp; released question sets. <strong>Print / download</strong> the full paper (college title,
+                exam format, instructions &amp; questions) or a <strong>CSV of objectives only</strong> for the offline portal.
+                Papers the HOD scheduled for a later release appear here only once that time has passed.
             </div>
 
             <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">

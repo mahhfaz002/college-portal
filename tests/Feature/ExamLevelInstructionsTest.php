@@ -51,7 +51,7 @@ class ExamLevelInstructionsTest extends TestCase
         ])->assertSessionHasErrors('level');
     }
 
-    public function test_submitted_paper_is_downloadable_with_custom_instructions(): void
+    public function test_paper_is_blocked_until_hod_approves_and_release_time_arrives(): void
     {
         $exam = Exam::create([
             'college_id' => $this->college->id, 'subject_id' => $this->course->id,
@@ -69,10 +69,40 @@ class ExamLevelInstructionsTest extends TestCase
             'marks' => 10, 'type' => 'theory', 'theory_number' => 1, 'created_by' => $this->officer->id,
         ]);
 
+        // SUBMITTED but not yet HOD-approved → officer cannot access it.
+        $this->actingAs($this->officer)->get(route('exams.papers.print', $exam))->assertNotFound();
+
+        // Approved but scheduled for a FUTURE release → still blocked.
+        $exam->update(['status' => 'approved', 'release_at' => now()->addDay()]);
+        $this->actingAs($this->officer)->get(route('exams.papers.print', $exam))->assertNotFound();
+
+        // Release time reached → now downloadable, with the custom instructions.
+        $exam->update(['release_at' => now()->subMinute()]);
         $this->actingAs($this->officer)->get(route('exams.papers.print', $exam))
             ->assertOk()
             ->assertSee($this->college->name)
             ->assertSee('Shade the correct option on your OMR sheet.')
             ->assertSee('Answer ANY FOUR questions.');
+    }
+
+    public function test_hod_approval_can_schedule_a_future_release(): void
+    {
+        $dept = \App\Models\Department::create(['name' => 'D2', 'acronym' => 'D2', 'section' => 'UG']);
+        $hod = $this->userWithRole('hod', ['department_id' => $this->course->department_id]);
+        $exam = Exam::create([
+            'college_id' => $this->college->id, 'subject_id' => $this->course->id,
+            'title' => 'Anatomy', 'term' => 'First', 'session' => '2025/2026', 'level' => '100',
+            'class_arms' => [], 'duration_minutes' => 60, 'status' => 'submitted',
+            'submitted_at' => now(), 'created_by' => $this->officer->id,
+        ]);
+
+        $this->actingAs($hod)->post(route('hod.exam-reviews.approve', $exam), [
+            'release_at' => now()->addDays(2)->format('Y-m-d\TH:i'),
+        ])->assertRedirect();
+
+        $exam->refresh();
+        $this->assertSame('approved', $exam->status);
+        $this->assertNotNull($exam->release_at);
+        $this->assertFalse($exam->isReleasedToOfficer(), 'A future-scheduled paper is not released yet');
     }
 }
