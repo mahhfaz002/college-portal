@@ -69,9 +69,14 @@ class FeeOrderController extends Controller
             'section'       => 'nullable|string',
             'department_id' => 'nullable|exists:departments,id',
             'program_id'    => 'nullable|exists:programs,id',
-            'level'         => 'nullable|string',
+            // Targeting a programme REQUIRES a level, so an order can never spill
+            // across every level of that course of study (a 300L order must not
+            // reach 100L students of the same programme).
+            'level'         => 'nullable|string|required_with:program_id',
             'student_ids'   => 'nullable|array',
             'student_ids.*' => 'integer',
+        ], [
+            'level.required_with' => 'Select the level too — a payment order for a course of study must target a specific level.',
         ]);
 
         [$targets, $label] = $this->resolveTargets($data);
