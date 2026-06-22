@@ -82,9 +82,21 @@
                                                     <p class="font-bold text-gray-600 uppercase text-[11px] mb-1">O'Level results ({{ $applicant->exam_type ?: '—' }} {{ $applicant->exam_year }})</p>
                                                     @php $ol = is_array($applicant->olevel_results) ? $applicant->olevel_results : []; @endphp
                                                     @if(count($ol))
-                                                        <ul class="grid grid-cols-2 gap-x-6">
-                                                            @foreach($ol as $r)<li>{{ $r['subject'] ?? '' }} — <b>{{ $r['grade'] ?? '' }}</b></li>@endforeach
-                                                        </ul>
+                                                        <table class="w-full text-[11px] border">
+                                                            <thead class="bg-gray-50 text-gray-500"><tr>
+                                                                <th class="px-2 py-1 text-left">Subject</th><th class="px-2 py-1">Grade</th>
+                                                                <th class="px-2 py-1">Type</th><th class="px-2 py-1">Year</th><th class="px-2 py-1 text-left">Exam No.</th>
+                                                            </tr></thead>
+                                                            <tbody class="divide-y">
+                                                                @foreach($ol as $r)<tr>
+                                                                    <td class="px-2 py-1">{{ $r['subject'] ?? '' }}</td>
+                                                                    <td class="px-2 py-1 text-center font-bold">{{ $r['grade'] ?? '' }}</td>
+                                                                    <td class="px-2 py-1 text-center">{{ $r['exam_type'] ?? '—' }}</td>
+                                                                    <td class="px-2 py-1 text-center">{{ $r['exam_year'] ?? '—' }}</td>
+                                                                    <td class="px-2 py-1">{{ $r['exam_number'] ?? '—' }}</td>
+                                                                </tr>@endforeach
+                                                            </tbody>
+                                                        </table>
                                                     @else <span class="text-gray-400">Not provided</span> @endif
                                                 </div>
                                             </div>
