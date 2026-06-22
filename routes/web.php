@@ -79,6 +79,9 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
 
     // --- Online-payment invoice receipt (owner or finance staff) ---
     Route::get('/invoices/{invoice}/receipt', [\App\Http\Controllers\InvoiceController::class, 'receipt'])->name('invoices.receipt');
+    // Cancel / delete an unpaid invoice the payer no longer wants.
+    Route::post('/invoices/{invoice}/cancel', [\App\Http\Controllers\InvoiceController::class, 'cancel'])->name('invoices.cancel');
+    Route::delete('/invoices/{invoice}', [\App\Http\Controllers\InvoiceController::class, 'destroy'])->name('invoices.destroy');
 
     // --- Platform super-admin (cross-college analytics + college registration) ---
     Route::middleware('role:superadmin')->group(function () {

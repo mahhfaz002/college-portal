@@ -41,7 +41,7 @@
                                         </div>
                                         <div>
                                             <p class="font-bold text-gray-800">{{ $student->full_name }}</p>
-                                            <p class="text-xs text-gray-500">{{ $student->admission_number }} • {{ $student->class_arm }}</p>
+                                            <p class="text-xs text-gray-500">{{ $student->registration_number ?? $student->admission_number }} • {{ $student->class_arm }}</p>
                                         </div>
                                     </div>
                                     <span class="text-blue-500 text-xs font-bold uppercase tracking-tighter">Profile →</span>

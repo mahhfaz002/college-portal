@@ -5,7 +5,7 @@
                 🎓 Student Portal: <span class="text-blue-600">{{ $student->full_name ?? 'Guest' }}</span>
             </h2>
             <span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold border">
-                ID: {{ $student->admission_number ?? 'N/A' }}
+                ID: {{ $student->registration_number ?? ($student->admission_number ?? 'N/A') }}
             </span>
         </div>
     </x-slot>
@@ -183,7 +183,7 @@
             <div id="payments" class="mt-6 bg-white rounded-xl shadow-sm border overflow-hidden">
                 <div class="px-6 py-4 border-b font-bold text-gray-700 flex items-center justify-between">
                     <span>Payment Orders &amp; Invoices</span>
-                    @php $due = ($invoices ?? collect())->where('status','!=','paid')->count(); @endphp
+                    @php $due = ($invoices ?? collect())->where('status','pending')->count(); @endphp
                     @if($due)<span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-bold">{{ $due }} due</span>@endif
                 </div>
                 <table class="w-full text-sm">
@@ -195,12 +195,21 @@
                             <tr>
                                 <td class="px-6 py-3 font-semibold text-gray-800">{{ $inv->description }}</td>
                                 <td class="px-6 py-3">{{ money($inv->amount) }}</td>
-                                <td class="px-6 py-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold {{ $inv->isPaid() ? 'bg-green-100 text-green-700':'bg-amber-100 text-amber-700' }}">{{ ucfirst($inv->status) }}</span></td>
-                                <td class="px-6 py-3 text-right">
+                                <td class="px-6 py-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold {{ $inv->isPaid() ? 'bg-green-100 text-green-700' : ($inv->status === 'cancelled' ? 'bg-gray-100 text-gray-500' : 'bg-amber-100 text-amber-700') }}">{{ ucfirst($inv->status) }}</span></td>
+                                <td class="px-6 py-3 text-right whitespace-nowrap">
                                     @if($inv->isPaid())
                                         <a href="{{ route('invoices.receipt', $inv) }}" target="_blank" class="text-indigo-600 font-semibold hover:underline">Print Receipt</a>
+                                    @elseif($inv->status === 'cancelled')
+                                        <form method="POST" action="{{ route('invoices.destroy', $inv) }}" class="inline" onsubmit="return confirm('Delete this cancelled invoice?')">
+                                            @csrf @method('DELETE')
+                                            <button class="text-red-500 text-xs font-bold hover:underline">Delete</button>
+                                        </form>
                                     @else
                                         <a href="{{ route('payments.checkout', $inv) }}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-emerald-700">Pay Now</a>
+                                        <form method="POST" action="{{ route('invoices.cancel', $inv) }}" class="inline ml-2" onsubmit="return confirm('Cancel this payment? You can delete it afterwards.')">
+                                            @csrf
+                                            <button class="text-gray-400 text-xs font-bold hover:text-red-500 hover:underline">Cancel</button>
+                                        </form>
                                     @endif
                                 </td>
                             </tr>
