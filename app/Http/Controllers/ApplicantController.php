@@ -59,12 +59,13 @@ class ApplicantController extends Controller
             'guardian_email'        => 'nullable|email|max:255',
             'guardian_address'      => 'nullable|string|max:255',
             'guardian_occupation'   => 'nullable|string|max:150',
-            // Section C — O'Level results
-            'exam_type'            => 'required|in:WAEC,NECO',
-            'exam_year'            => 'required|digits:4',
+            // Section C — O'Level results (per-subject: grade, exam body, year, exam no.)
             'results'              => 'required|array|min:5',
             'results.*.subject'    => 'nullable|string|max:60',
             'results.*.grade'      => 'nullable|in:A1,B2,B3,C4,C5,C6,D7,E8,F9',
+            'results.*.exam_type'  => 'nullable|in:WAEC,NECO,NABTEB',
+            'results.*.exam_year'  => 'nullable|digits:4',
+            'results.*.exam_number'=> 'nullable|string|max:60',
             // Section D — passport
             'passport'             => 'required|file|mimes:jpg,jpeg,png|max:2048',
         ]);
@@ -76,11 +77,24 @@ class ApplicantController extends Controller
             $validated['college_id'] = $hostCollege->id;
         }
 
-        // Keep only fully-filled result rows (subject + grade).
+        // Keep only fully-filled result rows (subject + grade), capturing the
+        // exam body, year and examination number PER subject (combined sittings).
         $results = collect($validated['results'] ?? [])
-            ->map(fn ($r) => ['subject' => strtoupper(trim($r['subject'] ?? '')), 'grade' => $r['grade'] ?? null])
+            ->map(fn ($r) => [
+                'subject'     => strtoupper(trim($r['subject'] ?? '')),
+                'grade'       => $r['grade'] ?? null,
+                'exam_type'   => $r['exam_type'] ?? null,
+                'exam_year'   => $r['exam_year'] ?? null,
+                'exam_number' => trim($r['exam_number'] ?? ''),
+            ])
             ->filter(fn ($r) => $r['subject'] !== '' && $r['grade'])
             ->values()->all();
+
+        // Back-compat: the applicant's headline exam_type/exam_year columns take
+        // the values from the first graded subject (per-subject detail lives in
+        // olevel_results).
+        $primaryExamType = $results[0]['exam_type'] ?? null;
+        $primaryExamYear = $results[0]['exam_year'] ?? null;
 
         $program = \App\Models\Program::withoutGlobalScopes()->findOrFail($validated['first_choice_program_id']);
 
@@ -109,8 +123,8 @@ class ApplicantController extends Controller
             'guardian_email'        => $validated['guardian_email'] ?? null,
             'guardian_address'      => $validated['guardian_address'] ?? null,
             'guardian_occupation'   => $validated['guardian_occupation'] ?? null,
-            'exam_type'      => $validated['exam_type'],
-            'exam_year'      => $validated['exam_year'],
+            'exam_type'      => $primaryExamType,
+            'exam_year'      => $primaryExamYear,
             'olevel_results' => $results,
             'passport'     => $passport,
             'status'       => 'pending',
