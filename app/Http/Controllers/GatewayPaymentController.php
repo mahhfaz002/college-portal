@@ -393,9 +393,9 @@ class GatewayPaymentController extends Controller
             $regNumber = app(\App\Services\StudentIdGenerator::class)->generate($program);
 
             $student = \App\Models\Student::create([
-                'full_name'           => $applicant->full_name,
+                'full_name'           => $applicant->full_name ?: trim($applicant->surname.' '.$applicant->first_name),
                 'email'               => $applicant->email,
-                'admission_number'    => $applicant->admission_number,
+                'admission_number'    => $applicant->admission_number ?: $regNumber, // NOT NULL — fall back to the reg no.
                 'registration_number' => $regNumber,
                 'college_id'          => $applicant->college_id,
                 'department_id'       => $program->department_id,
