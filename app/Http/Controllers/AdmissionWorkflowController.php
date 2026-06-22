@@ -96,11 +96,22 @@ class AdmissionWorkflowController extends Controller
         $applicant = $this->myApplicant();
         abort_unless($applicant && $applicant->application_status === 'admitted', 403);
 
+        // Already paid — don't raise (or charge) it again.
+        if ($this->acceptancePaid($applicant)) {
+            return redirect()->route('dashboard')->with('success', 'Your acceptance fee is already paid.');
+        }
+
         $program = $applicant->admittedProgram;
         $applicant->update(['admission_response' => 'accepted']);
 
-        $invoice = $this->raiseInvoice($applicant, 'acceptance_fee',
-            'Admission acceptance fee — '.$program->name, $program->acceptance_fee, $program);
+        // Idempotent: reuse an existing pending acceptance invoice instead of
+        // creating a duplicate every time the applicant re-clicks "Accept".
+        $invoice = Invoice::where('applicant_id', $applicant->id)
+            ->where('purpose', 'acceptance_fee')
+            ->where('status', 'pending')
+            ->latest()->first()
+            ?: $this->raiseInvoice($applicant, 'acceptance_fee',
+                'Admission acceptance fee — '.$program->name, $program->acceptance_fee, $program);
 
         return redirect()->route('payments.checkout', $invoice);
     }
