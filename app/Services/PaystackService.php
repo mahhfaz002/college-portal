@@ -623,6 +623,18 @@ class PaystackService
             'paid_at'           => now(),
         ]);
 
+        // Void any DUPLICATE pending invoices for the same payer + purpose (e.g. a
+        // re-issued acceptance fee), so the dashboard never shows a stray "Pay Now"
+        // for a fee that's already settled.
+        Invoice::withoutGlobalScopes()
+            ->where('id', '!=', $invoice->id)
+            ->where('purpose', $invoice->purpose)
+            ->where('status', 'pending')
+            ->when($invoice->applicant_id, fn ($q) => $q->where('applicant_id', $invoice->applicant_id))
+            ->when(!$invoice->applicant_id && $invoice->student_id, fn ($q) => $q->where('student_id', $invoice->student_id))
+            ->when(!$invoice->applicant_id && !$invoice->student_id && $invoice->user_id, fn ($q) => $q->where('user_id', $invoice->user_id))
+            ->update(['status' => 'cancelled']);
+
         // Audit trail for money received (webhook/callback may have no auth user;
         // stamp the invoice's college explicitly so it stays tenant-scoped).
         \App\Models\ActivityLog::create([
