@@ -497,6 +497,12 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
     Route::get('/registration', [$AW, 'registration'])->name('registration.documents');
     Route::post('/registration', [$AW, 'storeDocuments'])->name('registration.documents.store');
 
+    // Student: course (registration) form — live courses for their programme+level.
+    Route::middleware('role:student')->group(function () {
+        Route::get('/my/course-form', [\App\Http\Controllers\CourseFormController::class, 'show'])->name('student.course-form');
+        Route::get('/my/course-form/pdf', [\App\Http\Controllers\CourseFormController::class, 'pdf'])->name('student.course-form.pdf');
+    });
+
     // HOD / Assistant HOD: review and approve registrations.
     Route::middleware('role:hod,assistant_hod')->group(function () use ($AW) {
         Route::get('/hod/registrations', [$AW, 'hodRegistrations'])->name('hod.registrations');
