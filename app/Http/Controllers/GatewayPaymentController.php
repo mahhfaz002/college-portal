@@ -381,40 +381,6 @@ class GatewayPaymentController extends Controller
      */
     private function completeRegistration(Applicant $applicant): void
     {
-        $program = \App\Models\Program::withoutGlobalScopes()->with('department')->find($applicant->admitted_program_id);
-        if (!$program) {
-            return;
-        }
-
-        $student = \App\Models\Student::withoutGlobalScopes()
-            ->where('email', $applicant->email)->first();
-
-        if (!$student) {
-            $regNumber = app(\App\Services\StudentIdGenerator::class)->generate($program);
-
-            $student = \App\Models\Student::create([
-                'full_name'           => $applicant->full_name ?: trim($applicant->surname.' '.$applicant->first_name),
-                'email'               => $applicant->email,
-                'admission_number'    => $applicant->admission_number ?: $regNumber, // NOT NULL — fall back to the reg no.
-                'registration_number' => $regNumber,
-                'college_id'          => $applicant->college_id,
-                'department_id'       => $program->department_id,
-                'program_id'          => $program->id,
-                'level'               => '100',
-                'class_arm'           => $program->name,
-                'parent_phone'        => $applicant->guardian_phone ?? $applicant->parent_phone,
-                'fees_balance'        => 0,
-                'photo'               => $applicant->passport,
-                'applicant_id'        => $applicant->id,
-                'registration_status' => 'registration_paid',
-            ]);
-        }
-
-        $applicant->update(['application_status' => 'registered']);
-
-        if ($applicant->user_id) {
-            \App\Models\User::withoutGlobalScopes()->where('id', $applicant->user_id)
-                ->update(['role' => 'student']);
-        }
+        app(\App\Services\RegistrationPromotionService::class)->promote($applicant);
     }
 }
