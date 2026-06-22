@@ -112,6 +112,7 @@
                 @if(($studentReg ?? null) && $studentReg !== 'registered')
                     <x-responsive-nav-link :href="route('registration.documents')" :active="request()->routeIs('registration.*')">{{ __('Registration') }}</x-responsive-nav-link>
                 @endif
+                <x-responsive-nav-link :href="route('student.course-form')" :active="request()->routeIs('student.course-form*')">{{ __('Course Form') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('timetable.index')" :active="request()->routeIs('timetable.*')">{{ __('Timetable') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('library.index')" :active="request()->routeIs('library.*')">{{ __('Library') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('dashboard').'#results'">{{ __('Results') }}</x-responsive-nav-link>

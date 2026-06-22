@@ -54,11 +54,12 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Level</label>
-                                <select name="level" x-model="level" class="w-full border-gray-300 rounded-lg text-sm" :disabled="!programId">
-                                    <option value="">All levels</option>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Level <span x-show="programId" class="text-red-500">*</span></label>
+                                <select name="level" x-model="level" class="w-full border-gray-300 rounded-lg text-sm" :disabled="!programId" :required="!!programId">
+                                    <option value="" x-text="programId ? '— Select level —' : 'All levels'"></option>
                                     <template x-for="l in levelOptions()" :key="l"><option :value="l" x-text="'L'+l"></option></template>
                                 </select>
+                                <p x-show="programId" class="text-[11px] text-gray-400 mt-1">Required — keeps this order to one level of the programme.</p>
                             </div>
                         </div>
                     </div>
