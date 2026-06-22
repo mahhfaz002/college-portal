@@ -19,7 +19,7 @@
                         <tr class="bg-gray-50 border-b text-xs uppercase text-gray-500">
                             <th class="p-3 font-bold">Exam</th>
                             <th class="p-3 font-bold">Course</th>
-                            <th class="p-3 font-bold">Programmes</th>
+                            <th class="p-3 font-bold">Level / Term</th>
                             <th class="p-3 font-bold">Questions</th>
                             <th class="p-3 font-bold">Submissions</th>
                             <th class="p-3 font-bold">Status</th>
@@ -31,7 +31,10 @@
                         <tr class="border-b hover:bg-gray-50">
                             <td class="p-3 font-bold">{{ $exam->title }}</td>
                             <td class="p-3">{{ $exam->subject->name ?? '—' }}</td>
-                            <td class="p-3 text-xs">{{ implode(', ', $exam->class_arms) }}</td>
+                            <td class="p-3 text-xs">
+                                {{ $exam->level ? (is_numeric($exam->level) ? 'L'.$exam->level : $exam->level) : (optional($exam->subject)->level ? 'L'.$exam->subject->level : '—') }}
+                                <span class="text-gray-400">· {{ $exam->term ?: '—' }}</span>
+                            </td>
                             <td class="p-3">{{ $exam->questions_count }}</td>
                             <td class="p-3">{{ $exam->submissions_count }}</td>
                             <td class="p-3">

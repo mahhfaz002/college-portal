@@ -74,6 +74,7 @@ class ExamWorkController extends Controller
                 'title'      => $subject->name.' — '.$cycle->title,
                 'term'       => setting('current_term', ''),
                 'session'    => setting('current_session', ''),
+                'level'      => $subject->level,
                 'class_arms' => [],
                 'status'     => 'draft',
                 'created_by' => auth()->id(),
@@ -88,6 +89,25 @@ class ExamWorkController extends Controller
         $this->authorizeSubject($exam);
         $exam->load('subject', 'questions');
         return view('exams.questions', compact('exam'));
+    }
+
+    /** Save OPTIONAL per-section instructions printed on the question paper. */
+    public function storeInstructions(Request $request, Exam $exam)
+    {
+        $this->authorizeSubject($exam);
+        $this->assertEditable($exam);
+
+        $data = $request->validate([
+            'instructions_objective' => 'nullable|string|max:1000',
+            'instructions_theory'    => 'nullable|string|max:1000',
+        ]);
+
+        $exam->update([
+            'instructions_objective' => $data['instructions_objective'] ?: null,
+            'instructions_theory'    => $data['instructions_theory'] ?: null,
+        ]);
+
+        return redirect()->route('exams.my', ['open' => $exam->id])->with('success', 'Section instructions saved.');
     }
 
     /** Add a theory question (numbered 1–10, text only). */

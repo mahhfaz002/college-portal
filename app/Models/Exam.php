@@ -11,6 +11,7 @@ class Exam extends Model
 
     protected $fillable = [
         'college_id', 'subject_id', 'exam_cycle_id', 'title', 'term', 'session', 'class_arms',
+        'level', 'instructions_objective', 'instructions_theory',
         'duration_minutes', 'access_password', 'status', 'created_by', 'submitted_at',
         'hod_feedback', 'reviewed_by', 'reviewed_at',
     ];

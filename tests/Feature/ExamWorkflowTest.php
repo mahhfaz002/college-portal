@@ -63,7 +63,7 @@ class ExamWorkflowTest extends TestCase
             'subject_id' => $this->course->id,
             'title' => $title,
             'duration_minutes' => 30,
-            'class_arms' => ['UG1'],
+            'level' => '100',
         ])->assertRedirect();
 
         return Exam::latest('id')->firstOrFail();

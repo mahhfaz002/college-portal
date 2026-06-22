@@ -94,6 +94,29 @@
                         </div>
                     @endif
 
+                    {{-- Optional per-section instructions (printed on the question paper) --}}
+                    @unless($openExam->isLocked())
+                    <div x-data="{ open: {{ ($openExam->instructions_objective || $openExam->instructions_theory) ? 'true' : 'false' }} }" class="bg-indigo-50/40 border border-indigo-100 rounded-xl p-4">
+                        <button type="button" @click="open = !open" class="w-full flex items-center justify-between text-left">
+                            <span class="text-xs font-bold text-indigo-700 uppercase">Section instructions (optional)</span>
+                            <span class="text-xs text-indigo-500" x-text="open ? 'Hide' : 'Edit'"></span>
+                        </button>
+                        <form x-show="open" x-cloak method="POST" action="{{ route('exams.instructions.store', $openExam) }}" class="mt-3 space-y-3">
+                            @csrf
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Section A — Objective instructions</label>
+                                <textarea name="instructions_objective" rows="2" placeholder="e.g. Answer ALL questions. Shade the correct option on your answer sheet." class="w-full border-gray-300 rounded-lg text-sm">{{ $openExam->instructions_objective }}</textarea>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Section B — Theory instructions</label>
+                                <textarea name="instructions_theory" rows="2" placeholder="e.g. Answer ANY FOUR questions. Each carries equal marks." class="w-full border-gray-300 rounded-lg text-sm">{{ $openExam->instructions_theory }}</textarea>
+                            </div>
+                            <p class="text-[11px] text-gray-400">Leave blank to use the default instruction for each section.</p>
+                            <button class="bg-indigo-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-700">Save instructions</button>
+                        </form>
+                    </div>
+                    @endunless
+
                     {{-- CSV upload --}}
                     <div class="bg-gray-50 border rounded-xl p-4">
                         <div class="flex items-center justify-between mb-2">

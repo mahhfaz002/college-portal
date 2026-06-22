@@ -18,25 +18,25 @@ class ExamPaperController extends Controller
         return Subject::pluck('id');
     }
 
-    /** Approved set must be in this college (and actually approved). */
+    /** Paper must be in this college and at least submitted by the lecturer. */
     private function assertExportable(Exam $exam): void
     {
         abort_unless(
-            $exam->status === 'approved' && Subject::whereKey($exam->subject_id)->exists(),
-            404, 'No approved paper found.'
+            in_array($exam->status, ['submitted', 'approved'], true) && Subject::whereKey($exam->subject_id)->exists(),
+            404, 'No submitted paper found.'
         );
     }
 
     public function index()
     {
         $exams = Exam::whereIn('subject_id', $this->collegeSubjectIds())
-            ->where('status', 'approved')
+            ->whereIn('status', ['submitted', 'approved'])
             ->with('subject.program', 'examCycle')
             ->withCount([
                 'questions as objective_count' => fn ($q) => $q->where('type', 'objective'),
                 'questions as theory_count' => fn ($q) => $q->where('type', 'theory'),
             ])
-            ->latest('reviewed_at')->get();
+            ->latest('submitted_at')->get();
 
         return view('exams.papers', compact('exams'));
     }

@@ -35,15 +35,21 @@
             <p><strong>{{ optional($exam->subject)->course_code }} — {{ optional($exam->subject)->name }}</strong></p>
         </div>
 
+        @php $examLevel = $exam->level ?: optional($exam->subject)->level; @endphp
         <div class="meta">
             <span>Programme: {{ optional(optional($exam->subject)->program)->name ?? '—' }}</span>
-            <span>Level: {{ optional($exam->subject)->level ? 'L'.$exam->subject->level : '—' }}</span>
+            <span>Level: {{ $examLevel ? (is_numeric($examLevel) ? 'L'.$examLevel : $examLevel) : '—' }}</span>
             <span>Semester: {{ optional($exam->subject)->semester ?? '—' }}</span>
+        </div>
+        <div class="meta">
+            <span>Term: {{ $exam->term ?: '—' }} {{ $exam->session ? '('.$exam->session.')' : '' }}</span>
+            <span>Duration: {{ $exam->duration_minutes ? $exam->duration_minutes.' minutes' : '—' }}</span>
+            <span>Total marks: {{ method_exists($exam,'totalMarks') ? $exam->totalMarks() : $exam->questions->sum('marks') }}</span>
         </div>
 
         @if($objectives->count())
             <h2 class="section">Section A — Objective Questions</h2>
-            <p class="instr">Answer ALL questions. Choose the correct option.</p>
+            <p class="instr">{{ $exam->instructions_objective ?: 'Answer ALL questions. Choose the correct option.' }}</p>
             <ol>
                 @foreach($objectives as $q)
                     <li class="q">
@@ -61,7 +67,7 @@
 
         @if($theory->count())
             <h2 class="section">Section B — Theory Questions</h2>
-            <p class="instr">Answer the questions as instructed.</p>
+            <p class="instr">{{ $exam->instructions_theory ?: 'Answer the questions as instructed.' }}</p>
             <ol>
                 @foreach($theory as $q)
                     <li class="q">{{ $q->question_text }}</li>
