@@ -16,7 +16,8 @@
                 <div class="flex flex-wrap justify-between items-center gap-4">
                     <div class="text-sm space-y-1">
                         <p><span class="text-gray-400">Course:</span> <strong>{{ $exam->subject->name ?? '—' }}</strong></p>
-                        <p><span class="text-gray-400">Programmes:</span> {{ implode(', ', $exam->class_arms) }}</p>
+                        <p><span class="text-gray-400">Programme:</span> {{ optional(optional($exam->subject)->program)->name ?? '—' }}</p>
+                        <p><span class="text-gray-400">Level:</span> {{ $exam->level ? (is_numeric($exam->level) ? 'Level '.$exam->level : $exam->level) : (optional($exam->subject)->level ? 'Level '.$exam->subject->level : '—') }} · <span class="text-gray-400">Term:</span> {{ $exam->term ?: '—' }} {{ $exam->session ? '('.$exam->session.')' : '' }}</p>
                         <p><span class="text-gray-400">Questions:</span> {{ $exam->questions->count() }} · <span class="text-gray-400">Total marks:</span> {{ $exam->totalMarks() }}</p>
                         <p><span class="text-gray-400">Status:</span> <span class="uppercase font-bold">{{ $exam->status }}</span></p>
                     </div>

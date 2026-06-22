@@ -107,20 +107,35 @@ class HodController extends Controller
         return view('hod.exam_reviews', compact('exams', 'openExam', 'department', 'cycle'));
     }
 
-    /** Approve a submitted question set → forwards to the Exam Officer; HOD loses access. */
-    public function approveExam(\App\Models\Exam $exam)
+    /**
+     * Approve a submitted question set. The HOD may schedule WHEN it is released
+     * to the Exam Officer (e.g. the day before the exam) so the paper can't leak
+     * early; leaving it blank releases it immediately.
+     */
+    public function approveExam(Request $request, \App\Models\Exam $exam)
     {
         $this->authorizeExamDept($exam);
         abort_unless($exam->status === 'submitted', 403, 'Only submitted question sets can be approved.');
+
+        $data = $request->validate([
+            'release_at' => 'nullable|date',
+        ]);
+
+        $releaseAt = !empty($data['release_at']) ? \Illuminate\Support\Carbon::parse($data['release_at']) : null;
 
         $exam->update([
             'status'      => 'approved',
             'reviewed_by' => auth()->id(),
             'reviewed_at' => now(),
+            'release_at'  => $releaseAt,
             'hod_feedback'=> null,
         ]);
 
-        return redirect()->route('hod.exam-reviews')->with('success', 'Questions approved and forwarded to the Exam Officer.');
+        $msg = $releaseAt && $releaseAt->isFuture()
+            ? 'Questions approved. They will be released to the Exam Officer on '.$releaseAt->format('D, d M Y H:i').'.'
+            : 'Questions approved and released to the Exam Officer.';
+
+        return redirect()->route('hod.exam-reviews')->with('success', $msg);
     }
 
     /** Query/reject a submitted set back to the lecturer with reasons. */

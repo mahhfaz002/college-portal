@@ -376,6 +376,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::get('/exams/{exam}/questions', [ExamWorkController::class, 'questions'])->name('exams.questions');
         Route::post('/exams/{exam}/questions', [ExamWorkController::class, 'storeQuestion'])->name('exams.questions.store');
         Route::post('/exams/{exam}/theory', [ExamWorkController::class, 'storeTheory'])->name('exams.theory.store');
+        Route::post('/exams/{exam}/instructions', [ExamWorkController::class, 'storeInstructions'])->name('exams.instructions.store');
         Route::post('/exams/{exam}/questions/import', [ExamWorkController::class, 'importCsv'])->name('exams.questions.import');
         Route::post('/exams/{exam}/submit', [ExamWorkController::class, 'submitToOfficer'])->name('exams.submit');
         Route::delete('/exam-questions/{question}', [ExamWorkController::class, 'deleteQuestion'])->name('exams.questions.delete');

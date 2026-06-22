@@ -18,12 +18,15 @@ class ExamPaperController extends Controller
         return Subject::pluck('id');
     }
 
-    /** Approved set must be in this college (and actually approved). */
+    /**
+     * The paper is exportable only once the HOD has approved it AND its scheduled
+     * release time (if any) has arrived — so it never reaches the officer early.
+     */
     private function assertExportable(Exam $exam): void
     {
         abort_unless(
-            $exam->status === 'approved' && Subject::whereKey($exam->subject_id)->exists(),
-            404, 'No approved paper found.'
+            $exam->isReleasedToOfficer() && Subject::whereKey($exam->subject_id)->exists(),
+            404, 'No released paper found.'
         );
     }
 
@@ -31,6 +34,7 @@ class ExamPaperController extends Controller
     {
         $exams = Exam::whereIn('subject_id', $this->collegeSubjectIds())
             ->where('status', 'approved')
+            ->where(fn ($q) => $q->whereNull('release_at')->orWhere('release_at', '<=', now()))
             ->with('subject.program', 'examCycle')
             ->withCount([
                 'questions as objective_count' => fn ($q) => $q->where('type', 'objective'),

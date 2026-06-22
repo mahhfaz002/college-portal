@@ -96,10 +96,16 @@
 
                     {{-- Decision --}}
                     <div class="border-t pt-4 space-y-3">
-                        <div class="flex items-center justify-between gap-2">
+                        <div class="flex flex-wrap items-end justify-between gap-3">
                             <button @click="showQuery = !showQuery" class="bg-amber-500 text-white px-5 py-2 rounded-lg font-bold hover:bg-amber-600 text-sm">Query / Return</button>
-                            <form method="POST" action="{{ route('hod.exam-reviews.approve', $openExam) }}" onsubmit="return confirm('Approve and forward to the Exam Officer? You will no longer be able to view these.')">
+                            <form method="POST" action="{{ route('hod.exam-reviews.approve', $openExam) }}" class="flex flex-wrap items-end gap-2"
+                                  onsubmit="return confirm('Approve this question set? You will no longer be able to view it. The Exam Officer can access it only at the release time you set (or immediately if left blank).')">
                                 @csrf
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Release to officer at <span class="text-gray-400 normal-case font-normal">(optional)</span></label>
+                                    <input type="datetime-local" name="release_at" class="border-gray-300 rounded-lg text-sm">
+                                    <p class="text-[11px] text-gray-400 mt-0.5 max-w-xs">Leave blank to release now. Schedule it (e.g. the day before the exam) to prevent early leakage.</p>
+                                </div>
                                 <button class="bg-emerald-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-emerald-700 text-sm">Approve</button>
                             </form>
                         </div>

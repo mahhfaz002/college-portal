@@ -31,16 +31,22 @@
                     <input type="number" name="duration_minutes" value="60" class="w-full border-gray-300 rounded-md shadow-sm" required>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Eligible Classes</label>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-1 max-h-40 overflow-y-auto border rounded-md p-2">
-                        @forelse($classes as $class)
-                            <label class="flex items-center gap-2 text-sm py-1">
-                                <input type="checkbox" name="class_arms[]" value="{{ $class }}" class="rounded"> {{ $class }}
-                            </label>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Level</label>
+                    <select name="level" class="w-full border-gray-300 rounded-md shadow-sm" required>
+                        <option value="">Select level…</option>
+                        @forelse($levels as $lvl)
+                            <option value="{{ $lvl }}" @selected(old('level')==$lvl)>{{ is_numeric($lvl) ? 'Level '.$lvl : $lvl }}</option>
                         @empty
-                            <p class="text-xs text-gray-400">No classes.</p>
+                            @foreach(['100','200','300','400'] as $lvl)
+                                <option value="{{ $lvl }}">Level {{ $lvl }}</option>
+                            @endforeach
                         @endforelse
-                    </div>
+                    </select>
+                </div>
+                <div class="bg-gray-50 border rounded-lg p-3 text-xs text-gray-600">
+                    Set for the current college term:
+                    <span class="font-bold text-gray-800">{{ $term ?: '—' }}</span>
+                    @if($session) · Session <span class="font-bold text-gray-800">{{ $session }}</span>@endif.
                 </div>
                 <div class="flex justify-between items-center pt-3 border-t">
                     <a href="{{ route('exams.index') }}" class="text-gray-500 font-bold text-sm">← Cancel</a>

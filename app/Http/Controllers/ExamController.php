@@ -27,9 +27,15 @@ class ExamController extends Controller
 
     public function create()
     {
+        // College levels in use (e.g. 100, 200, ND I…), drawn from the courses.
+        $levels = Subject::query()->whereNotNull('level')->distinct()
+            ->orderBy('level')->pluck('level')->filter()->values();
+
         return view('exams.create', [
             'subjects' => Subject::orderBy('name')->get(),
-            'classes'  => SchoolClass::orderBy('name')->pluck('name'),
+            'levels'   => $levels,
+            'term'     => setting('current_term', ''),
+            'session'  => setting('current_session', ''),
         ]);
     }
 
@@ -39,8 +45,7 @@ class ExamController extends Controller
             'subject_id'       => 'required|exists:subjects,id',
             'title'            => 'required|string|max:255',
             'duration_minutes' => 'required|integer|min:5',
-            'class_arms'       => 'required|array|min:1',
-            'class_arms.*'     => 'string',
+            'level'            => 'required|string|max:20',
         ]);
 
         $exam = Exam::create([
@@ -48,7 +53,8 @@ class ExamController extends Controller
             'title'            => $data['title'],
             'term'             => setting('current_term', ''),
             'session'          => setting('current_session', ''),
-            'class_arms'       => $data['class_arms'],
+            'level'            => $data['level'],
+            'class_arms'       => [],
             'duration_minutes' => $data['duration_minutes'],
             'status'           => 'draft',
             'created_by'       => auth()->id(),
@@ -64,8 +70,13 @@ class ExamController extends Controller
     {
         $exam->load('subject', 'questions');
 
-        $students = Student::whereIn('class_arm', $exam->class_arms)
-            ->orderBy('class_arm')->orderBy('full_name')->get();
+        // The exam's cohort = students of the course's programme at the exam level
+        // (college terms), not legacy "class arms".
+        $level = $exam->level ?: optional($exam->subject)->level;
+        $students = Student::query()
+            ->when(optional($exam->subject)->program_id, fn ($q, $pid) => $q->where('program_id', $pid))
+            ->when($level, fn ($q, $lvl) => $q->where('level', $lvl))
+            ->orderBy('full_name')->get();
 
         $overrides = ExamEligibility::where('exam_id', $exam->id)->get()->keyBy('student_id');
 
