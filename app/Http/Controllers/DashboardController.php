@@ -270,8 +270,9 @@ class DashboardController extends Controller
                 ->with('subject', 'teacher')->orderBy('period_no')->get();
         }
         // Online payment orders / invoices assigned to this student (Phase 4).
+        // Cancelled ones are shown too (greyed, with a Delete button).
         $invoices = \App\Models\Invoice::where('student_id', $student->id)
-            ->where('status', '!=', 'cancelled')->latest()->get();
+            ->latest()->get();
 
         return view('dashboards.student', compact('student', 'scores', 'payments', 'announcements', 'todayLessons', 'invoices'));
     }
@@ -301,7 +302,6 @@ class DashboardController extends Controller
         $user = auth()->user();
         $applicant = \App\Models\Applicant::where('user_id', $user->id)->first();
         $invoices = \App\Models\Invoice::where('applicant_id', optional($applicant)->id)
-            ->where('status', '!=', 'cancelled')
             ->latest()->get();
 
         return view('dashboards.applicant', compact('applicant', 'invoices'));
