@@ -15,24 +15,33 @@ use Illuminate\Support\Facades\Hash;
  * bursar, mis, academic secretary); the college's Registrar then creates the
  * rest of the staff. No sample colleges, staff or students are seeded.
  *
- * Super-admin login (change after first login):
- *   superadmin@mahhfaz.edu.ng / password
+ * Super-admin login:
+ *   superadmin@mahhfaz.com / password   (change the password on first login)
+ *
+ * IMPORTANT: this seeder is CREATE-ONLY. If a super-admin already exists it
+ * does nothing — so re-running seeds (e.g. on every deploy) can NEVER reset the
+ * super-admin's username or password back to the default. Once the password is
+ * changed on the dashboard, that change is permanent. This is deliberate: with
+ * colleges about to onboard, a default/weak super-admin credential must not be
+ * silently restored by a deploy.
  */
 class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        User::updateOrCreate(
-            ['email' => 'superadmin@mahhfaz.edu.ng'],
-            [
-                'name'                 => 'Platform Super Admin',
-                'password'             => Hash::make('password'),
-                'role'                 => 'superadmin',
-                'college_id'           => null,
-                'platform_fee_paid'    => true,
-                'must_change_password' => false,
-                'email_verified_at'    => now(),
-            ]
-        );
+        if (User::withoutGlobalScopes()->where('role', 'superadmin')->exists()) {
+            return;
+        }
+
+        User::create([
+            'name'                 => 'Mafindi Mustapha Hussaini',
+            'email'                => 'superadmin@mahhfaz.com',
+            'password'             => Hash::make('password'),
+            'role'                 => 'superadmin',
+            'college_id'           => null,
+            'platform_fee_paid'    => true,
+            'must_change_password' => true,   // force a strong password on first login
+            'email_verified_at'    => now(),
+        ]);
     }
 }
