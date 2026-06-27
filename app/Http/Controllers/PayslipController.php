@@ -54,14 +54,15 @@ class PayslipController extends Controller
     public function store(Request $request, User $user)
     {
         $data = $request->validate([
-            'month'              => 'required|string',
-            'basic_salary'       => 'required|numeric|min:0',
-            'allowances'         => 'nullable|numeric|min:0',
-            'tax'                => 'nullable|numeric|min:0',
-            'deduction_nature'   => 'nullable|array',
-            'deduction_nature.*' => 'nullable|string|max:255',
-            'deduction_amount'   => 'nullable|array',
-            'deduction_amount.*' => 'nullable|numeric|min:0',
+            'month'                => 'required|string',
+            'basic_salary'         => 'required|numeric|min:0',
+            'allowances'           => 'nullable|numeric|min:0',
+            'tax'                  => 'nullable|numeric|min:0|max:100',           // percentage of gross
+            'contributory_savings' => 'nullable|numeric|min:0|max:100',           // percentage of gross
+            'deduction_nature'     => 'nullable|array',
+            'deduction_nature.*'   => 'nullable|string|max:255',
+            'deduction_amount'     => 'nullable|array',
+            'deduction_amount.*'   => 'nullable|numeric|min:0',
         ]);
 
         $deductions = [];
@@ -77,13 +78,14 @@ class PayslipController extends Controller
         abort_if(in_array($slip->status, ['provost_review', 'provost_forwarded', 'proprietor_review', 'approved', 'paid'], true), 403, 'This payslip is locked.');
 
         $slip->fill([
-            'basic_salary' => $data['basic_salary'],
-            'allowances'   => $data['allowances'] ?? 0,
-            'tax'          => $data['tax'] ?? 0,
-            'deductions'   => $deductions,
-            'status'       => 'draft',
-            'flag_comment' => null,
-            'created_by'   => auth()->id(),
+            'basic_salary'         => $data['basic_salary'],
+            'allowances'           => $data['allowances'] ?? 0,
+            'tax'                  => $data['tax'] ?? 0,
+            'contributory_savings' => $data['contributory_savings'] ?? 10,
+            'deductions'           => $deductions,
+            'status'               => 'draft',
+            'flag_comment'         => null,
+            'created_by'           => auth()->id(),
         ]);
         $slip->recomputeNet();
         $slip->save();
@@ -124,6 +126,26 @@ class PayslipController extends Controller
     {
         $payslip->load('staff');
         return view('hr.payslip', compact('payslip'));
+    }
+
+    /**
+     * Read-only payslip detail for the Provost and Proprietor — every earning
+     * and deduction exactly as the Bursar entered it, with no edit controls.
+     * (GET only; the review actions remain query / forward / approve.)
+     */
+    public function viewSlip(Payslip $payslip)
+    {
+        abort_unless(auth()->user()->hasRole('provost', 'proprietor', 'bursar'), 403);
+        $payslip->load('staff');
+
+        // Where "Back" should return to, per the viewer's review queue.
+        $back = match (auth()->user()->role) {
+            'provost'    => route('payroll.review', ['month' => $payslip->month]),
+            'proprietor' => route('payroll.approval', ['month' => $payslip->month]),
+            default      => route('payroll.index', ['month' => $payslip->month]),
+        };
+
+        return view('hr.payslip_view', compact('payslip', 'back'));
     }
 
     /** Downloadable payslip PDF (bursar only). */

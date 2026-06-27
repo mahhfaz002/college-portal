@@ -106,9 +106,17 @@
                             <p class="text-gray-800">{{ $college->settlement_account_name ?? '—' }}<br><span class="text-xs text-gray-500">{{ $college->settlement_account_number }} {{ $college->settlement_bank ? '· bank '.$college->settlement_bank : '' }}</span></p></div>
                         <div><p class="text-[10px] uppercase font-bold text-gray-400">Commission Earned</p>
                             <p class="font-bold text-emerald-600">{{ money($commissionEarned) }}</p></div>
-                        <div><p class="text-[10px] uppercase font-bold text-gray-400">Last Settlement</p>
-                            <p class="text-gray-800">{{ $lastSettlement ? \Illuminate\Support\Carbon::parse($lastSettlement)->format('d M Y') : '—' }}</p></div>
+                        <div><p class="text-[10px] uppercase font-bold text-gray-400">Last Settlement
+                            @if(!is_null($settlement ?? null))<span class="text-emerald-500">· live</span>@endif</p>
+                            <p class="text-gray-800">{{ $lastSettlement ? \Illuminate\Support\Carbon::parse($lastSettlement)->format('d M Y') : '—' }}</p>
+                            @if(!empty($settlement['last_amount']))
+                                <p class="text-xs text-gray-500">{{ money($settlement['last_amount']) }} · {{ ucfirst($settlement['last_status'] ?? 'settled') }}</p>
+                            @endif
+                        </div>
                     </div>
+                    @if(is_null($settlement ?? null) && $college->paystack_subaccount_code)
+                        <p class="mt-2 text-[11px] text-amber-600">Live settlement data is unavailable from Paystack right now — showing the last recorded value.</p>
+                    @endif
 
                     <form method="POST" action="{{ route('platform.colleges.settlement', $college) }}" class="border-t pt-4 grid sm:grid-cols-2 gap-3">
                         @csrf

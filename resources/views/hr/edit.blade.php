@@ -16,7 +16,7 @@
                 @csrf
                 <input type="hidden" name="month" value="{{ $month }}">
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Basic Salary</label>
                         <input type="number" step="0.01" name="basic_salary" value="{{ old('basic_salary', $slip->basic_salary) }}" class="w-full border-gray-300 rounded-md" required>
@@ -26,8 +26,13 @@
                         <input type="number" step="0.01" name="allowances" value="{{ old('allowances', $slip->allowances) }}" class="w-full border-gray-300 rounded-md">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tax</label>
-                        <input type="number" step="0.01" name="tax" value="{{ old('tax', $slip->tax) }}" class="w-full border-gray-300 rounded-md">
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tax (% of gross)</label>
+                        <input type="number" step="0.01" min="0" max="100" name="tax" value="{{ old('tax', $slip->tax ?? 0) }}" class="w-full border-gray-300 rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Contributory Savings (% of gross)</label>
+                        <input type="number" step="0.01" min="0" max="100" name="contributory_savings" value="{{ old('contributory_savings', $slip->contributory_savings ?? 10) }}" class="w-full border-gray-300 rounded-md">
+                        <p class="text-[10px] text-gray-400 mt-1">Mandatory for all staff. Default 10% — adjustable.</p>
                     </div>
                 </div>
 
@@ -51,7 +56,7 @@
                     <button type="button" onclick="addDeduction()" class="mt-2 text-xs font-bold text-indigo-600">+ Add deduction</button>
                 </div>
 
-                <p class="text-xs text-gray-400">Net salary = Basic + Allowances − Deductions − Tax (calculated on save).</p>
+                <p class="text-xs text-gray-400">Net salary = Basic + Allowances − Deductions − Tax(%) − Contributory Savings(%) (calculated on save).</p>
 
                 <div class="flex justify-between items-center pt-3 border-t">
                     <a href="{{ route('payroll.index', ['month' => $month]) }}" class="text-gray-500 font-bold text-sm">← Cancel</a>

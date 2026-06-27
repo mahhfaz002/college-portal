@@ -33,6 +33,7 @@
                                 </span>
                             </td>
                             <td class="p-3 text-right whitespace-nowrap">
+                                <a href="{{ route('payroll.view', $slip) }}" class="text-indigo-600 text-xs font-bold hover:underline mr-1">View</a>
                                 @if($slip->status === 'proprietor_review')
                                     <form method="POST" action="{{ route('payroll.proprietor.approve', $slip) }}" class="inline" onsubmit="return confirm('Give final approval? This locks the payslip permanently.')">@csrf
                                         <button class="bg-green-600 text-white text-xs px-3 py-1.5 rounded font-bold hover:bg-green-700">Approve</button>

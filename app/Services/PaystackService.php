@@ -422,6 +422,56 @@ class PaystackService
         return $data;
     }
 
+    /**
+     * Pull settlement records from Paystack for a college's subaccount (or the
+     * whole platform account when no subaccount). Returns a normalized summary
+     * of the most recent settlement plus the raw recent list, so the platform
+     * panel shows real settlement data, not just our locally-derived guess.
+     * Cached 5 minutes to avoid hammering the API on every page load.
+     *
+     * @return array{last_at: ?string, last_amount: float, last_status: ?string, count: int, recent: array}|null
+     */
+    public function fetchSettlements(College $college): ?array
+    {
+        $secret = $this->masterSecret();
+        if (empty($secret)) {
+            return null;
+        }
+
+        $cacheKey = 'paystack_settlements_' . ($college->paystack_subaccount_code ?: 'platform_' . $college->id);
+
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addMinutes(5), function () use ($secret, $college) {
+            $query = ['perPage' => 20];
+            if ($college->paystack_subaccount_code) {
+                $query['subaccount'] = $college->paystack_subaccount_code;
+            }
+
+            try {
+                $resp = Http::withToken($secret)->acceptJson()
+                    ->get($this->endpoint('/settlement'), $query);
+            } catch (\Throwable $e) {
+                \Log::warning('Paystack settlements fetch failed', ['college' => $college->id, 'error' => $e->getMessage()]);
+                return null;
+            }
+
+            if (!$resp->ok() || !$resp->json('status')) {
+                return null;
+            }
+
+            $rows = $resp->json('data') ?: [];
+            $latest = $rows[0] ?? null;
+
+            return [
+                'last_at'     => $latest['settlement_date'] ?? $latest['updatedAt'] ?? $latest['createdAt'] ?? null,
+                // Paystack returns kobo; convert to naira.
+                'last_amount' => isset($latest['total_amount']) ? ((float) $latest['total_amount']) / 100 : 0.0,
+                'last_status' => $latest['status'] ?? null,
+                'count'       => count($rows),
+                'recent'      => array_slice($rows, 0, 5),
+            ];
+        });
+    }
+
     /** List of banks for the settlement-account dropdown (cached 1 day). */
     public function banks(string $country = 'nigeria'): array
     {
