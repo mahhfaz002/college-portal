@@ -122,26 +122,38 @@ class PlatformController extends Controller
             ->with('success', "“{$college->name}” registered. Now create its leadership accounts below.");
     }
 
-    public function show(College $college)
+    public function show(Request $request, College $college)
     {
         $students   = Student::where('college_id', $college->id)->count();
         $staff      = User::where('college_id', $college->id)->whereNotIn('role', ['student', 'applicant'])->count();
         $applicants = Applicant::where('college_id', $college->id)->count();
-        $paid       = Invoice::where('college_id', $college->id)->where('status', 'paid');
-        $revenue    = (clone $paid)->sum('amount');
         $admins     = User::where('college_id', $college->id)->whereIn('role', self::ADMIN_ROLES)->orderBy('role')->get();
+
+        // Per-college revenue, filterable by timeframe (yesterday / 7d / 30d /
+        // year / custom). The figures below all derive from this college's
+        // settled invoices within the chosen window.
+        $revenueRange = \App\Support\RevenueRange::fromRequest($request);
+        $paid = \App\Support\RevenueRange::apply(
+            Invoice::where('college_id', $college->id)->where('status', 'paid'),
+            $revenueRange
+        );
+        $revenue = (clone $paid)->sum('amount');
 
         // Live settlement data straight from Paystack (best-effort). Falls back to
         // our locally-recorded settlement timestamp if the API is unavailable.
+        // (Independent of the revenue window — always the true latest settlement.)
         $settlement = app(\App\Services\PaystackService::class)->fetchSettlements($college);
         $lastSettlement = $settlement['last_at']
-            ?? (clone $paid)->whereNotNull('settlement_at')->max('settlement_at');
+            ?? Invoice::where('college_id', $college->id)->where('status', 'paid')
+                ->whereNotNull('settlement_at')->max('settlement_at');
 
         return view('platform.show', [
             'college' => $college, 'students' => $students, 'staff' => $staff,
             'applicants' => $applicants, 'revenue' => $revenue, 'admins' => $admins,
             'adminRoles' => self::ADMIN_ROLES,
-            // Payments & settlement
+            'revenueRange' => $revenueRange,
+            // Payments & settlement (commission/share follow the revenue window;
+            // last settlement is always the true latest, regardless of the filter).
             'banks'            => app(\App\Services\PaystackService::class)->banks(),
             'commissionEarned' => (float) (clone $paid)->sum('platform_commission'),
             'institutionShare' => (float) (clone $paid)->sum('institution_share'),
