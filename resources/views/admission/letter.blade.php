@@ -69,8 +69,13 @@
         <p class="body">Please accept my congratulations.</p>
 
         <div class="sign">
-            <p>Yours faithfully,<br><br>
-            ______________________________<br>
+            <p>Yours faithfully,</p>
+            @if(!empty($registrarSignature))
+                <img src="{{ $registrarSignature }}" alt="Registrar signature" style="height:60px;object-fit:contain;display:block;margin:6px 0;">
+            @else
+                <br><br>
+            @endif
+            <p style="margin:0;">______________________________<br>
             <strong>Registrar</strong><br>
             For: {{ $college->name ?? 'the College' }}</p>
         </div>
