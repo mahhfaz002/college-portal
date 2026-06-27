@@ -483,12 +483,18 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
     // ===== Phase 3 — admission → acceptance → registration → HOD approval =====
     $AW = \App\Http\Controllers\AdmissionWorkflowController::class;
 
-    // Registrar: review paid applications, offer/decline admission.
+    // Registrar: review paid applications, offer/decline admission, view credentials.
     Route::middleware('role:'.Permissions::middleware('manage_admissions'))->group(function () use ($AW) {
         Route::get('/admissions/review', [$AW, 'reviewPanel'])->name('admissions.review');
         Route::post('/admissions/{applicant}/offer', [$AW, 'offer'])->name('admissions.offer');
         Route::post('/admissions/{applicant}/decline', [$AW, 'decline'])->name('admissions.decline');
+        Route::get('/admissions/{applicant}/credentials', [\App\Http\Controllers\ApplicationCredentialController::class, 'show'])->name('admissions.credentials');
     });
+
+    // Applicant: submit application with documents (after payment, before review).
+    $AS = \App\Http\Controllers\ApplicationSubmissionController::class;
+    Route::get('/application/submit', [$AS, 'show'])->name('application.submit.show');
+    Route::post('/application/submit', [$AS, 'store'])->name('application.submit.store');
 
     // Applicant: accept / reject the offer, reapply, download letter & form.
     Route::post('/admission/accept', [$AW, 'accept'])->name('admission.accept');
@@ -505,6 +511,12 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
     Route::middleware('role:student')->group(function () {
         Route::get('/my/course-form', [\App\Http\Controllers\CourseFormController::class, 'show'])->name('student.course-form');
         Route::get('/my/course-form/pdf', [\App\Http\Controllers\CourseFormController::class, 'pdf'])->name('student.course-form.pdf');
+
+        // Course registration: add/drop with credit unit tracking.
+        $CR = \App\Http\Controllers\CourseRegistrationController::class;
+        Route::get('/my/course-registration', [$CR, 'index'])->name('course-registration.index');
+        Route::post('/my/course-registration/add', [$CR, 'add'])->name('course-registration.add');
+        Route::post('/my/course-registration/drop', [$CR, 'drop'])->name('course-registration.drop');
     });
 
     // HOD / Assistant HOD: review and approve registrations.

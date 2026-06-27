@@ -29,6 +29,9 @@
                                         <p class="font-bold text-gray-800">{{ $a->full_name }}</p>
                                         <p class="text-xs text-gray-500">{{ $a->email }} · {{ $a->phone }}</p>
                                         @if($a->admission_number)<p class="text-xs text-indigo-600 font-semibold">{{ $a->admission_number }}</p>@endif
+                                        @if($a->documents_submitted_at)
+                                            <a href="{{ route('admissions.credentials', $a) }}" class="inline-block mt-1 text-xs font-bold text-indigo-600 hover:underline">View Credentials</a>
+                                        @endif
                                     </td>
                                     <td class="px-4 py-4 text-gray-600">
                                         <p>1. {{ $a->firstChoice->name ?? '—' }}</p>
@@ -36,6 +39,7 @@
                                     </td>
                                     <td class="px-4 py-4">
                                         @php $map = [
+                                            'awaiting_documents'=>['Awaiting documents','bg-amber-100 text-amber-700'],
                                             'submitted'=>['Awaiting decision','bg-blue-100 text-blue-700'],
                                             'admitted'=>['Offered','bg-amber-100 text-amber-700'],
                                             'accepted'=>['Accepted','bg-emerald-100 text-emerald-700'],

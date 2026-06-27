@@ -318,7 +318,7 @@ class GatewayPaymentController extends Controller
     {
         $applicant->update([
             'payment_status'     => 'paid',
-            'application_status' => 'submitted',
+            'application_status' => 'awaiting_documents',
             'status'             => 'pending',
         ]);
 
