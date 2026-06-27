@@ -247,6 +247,20 @@ class GatewayPaymentController extends Controller
             return;
         }
 
+        // Result viewing fee: unlock results for the student+semester.
+        if ($invoice->purpose === 'result_viewing' && $invoice->student_id) {
+            $desc = $invoice->description ?? '';
+            preg_match('/—\s*(.+),\s*(\d{4}\/\d{4})/', $desc, $m);
+            $term = $m[1] ?? setting('current_term', 'First Semester');
+            $session = $m[2] ?? setting('current_session', '2025/2026');
+
+            \App\Models\ResultAccessPayment::firstOrCreate(
+                ['student_id' => $invoice->student_id, 'term' => $term, 'session' => $session],
+                ['college_id' => $invoice->college_id, 'invoice_id' => $invoice->id, 'paid_at' => now()]
+            );
+            return;
+        }
+
         $applicant = $invoice->applicant_id ? Applicant::withoutGlobalScopes()->find($invoice->applicant_id) : null;
         if (!$applicant) {
             return;
@@ -293,6 +307,11 @@ class GatewayPaymentController extends Controller
         if ($invoice->purpose === 'registration_fee' && $applicant) {
             return redirect()->route('dashboard')->with('success',
                 'Registration fee paid. Your student dashboard is unlocked — please upload your documents to complete registration.');
+        }
+
+        if ($invoice->purpose === 'result_viewing' && Auth::check()) {
+            return redirect()->route('results.student.index')
+                ->with('success', 'Result viewing fee paid. You can now view your results.');
         }
 
         if ($invoice->purpose === 'change_of_course' && Auth::check()) {
