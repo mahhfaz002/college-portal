@@ -19,7 +19,7 @@ use Illuminate\Support\Str;
 class PaystackService
 {
     /** Flat portal convenience fee charged on every online transaction (Naira). */
-    public const CONVENIENCE_FEE = 1000;
+    public const CONVENIENCE_FEE = 500;
 
     /**
      * Reserved / non-routable top-level domains Paystack rejects outright with
