@@ -34,7 +34,10 @@ class ChangeOfCourseController extends Controller
         $requests = ChangeOfCourseRequest::with(['requestedProgram', 'currentProgram'])
             ->where('student_id', $student->id)->latest()->get();
 
-        return view('change_of_course.index', compact('student', 'programs', 'requests'));
+        // The live fee the Bursar configured (falls back to the model default).
+        $fee = (float) setting('change_of_course_fee', ChangeOfCourseRequest::FEE);
+
+        return view('change_of_course.index', compact('student', 'programs', 'requests', 'fee'));
     }
 
     /** Submit the application → raise the fee invoice → gateway checkout. */
@@ -54,13 +57,28 @@ class ChangeOfCourseController extends Controller
         $program = Program::findOrFail($data['requested_program_id']);
         abort_unless((int) $program->college_id === (int) $student->college_id, 422);
 
-        // One open application at a time.
-        $open = ChangeOfCourseRequest::where('student_id', $student->id)
-            ->whereNotIn('status', ['approved', 'rejected'])->first();
-        if ($open) {
+        // Only ONE application may be in progress at a time — but an unpaid
+        // ('pending_payment') application doesn't count: the student never
+        // committed to it. Block only when there's a PAID application still
+        // moving through review/decision.
+        $inProgress = ChangeOfCourseRequest::where('student_id', $student->id)
+            ->whereIn('status', ['under_review', 'recommended', 'not_recommended'])->first();
+        if ($inProgress) {
             return redirect()->route('change-of-course.index')
-                ->with('error', 'You already have a change-of-course application in progress.');
+                ->with('error', 'You already have a change-of-course application under review. Please wait for a decision before applying again.');
         }
+
+        // Discard any earlier unpaid attempt (and void its invoice) so the
+        // student starts cleanly with the current fee — no orphaned "Pay" buttons.
+        ChangeOfCourseRequest::where('student_id', $student->id)
+            ->where('status', 'pending_payment')->get()
+            ->each(function ($stale) {
+                if ($stale->invoice_id) {
+                    Invoice::where('id', $stale->invoice_id)->where('status', 'pending')
+                        ->update(['status' => 'cancelled']);
+                }
+                $stale->delete();
+            });
 
         $cocr = ChangeOfCourseRequest::create([
             'college_id'           => $student->college_id,

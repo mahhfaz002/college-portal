@@ -54,23 +54,24 @@
                 </table>
             </div>
 
-            {{-- Payment history --}}
+            {{-- Payment history — every settled payment (online + offline) with a receipt --}}
             <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
                 <div class="px-6 py-4 border-b font-bold text-gray-700">Payment History</div>
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 text-xs uppercase text-gray-500">
-                        <tr><th class="text-left px-6 py-2">Date</th><th class="text-left px-6 py-2">Method</th><th class="text-right px-6 py-2">Amount</th><th class="text-right px-6 py-2">Receipt</th></tr>
+                        <tr><th class="text-left px-6 py-2">Date</th><th class="text-left px-6 py-2">Description</th><th class="text-left px-6 py-2">Method</th><th class="text-right px-6 py-2">Amount</th><th class="text-right px-6 py-2">Receipt</th></tr>
                     </thead>
                     <tbody class="divide-y">
-                        @forelse($payments as $p)
+                        @forelse($history as $h)
                             <tr>
-                                <td class="px-6 py-3">{{ $p->created_at->format('d M, Y') }}</td>
-                                <td class="px-6 py-3 uppercase text-xs font-bold text-gray-500">{{ $p->payment_method }}</td>
-                                <td class="px-6 py-3 text-right font-bold text-green-600">₦{{ number_format($p->amount, 2) }}</td>
-                                <td class="px-6 py-3 text-right"><a href="{{ route('payments.receipt', $p) }}" target="_blank" class="text-indigo-600 font-semibold hover:underline">Receipt</a></td>
+                                <td class="px-6 py-3 whitespace-nowrap">{{ \Illuminate\Support\Carbon::parse($h['date'])->format('d M, Y') }}</td>
+                                <td class="px-6 py-3 text-gray-700">{{ $h['description'] }}</td>
+                                <td class="px-6 py-3 uppercase text-xs font-bold text-gray-500">{{ $h['method'] }}</td>
+                                <td class="px-6 py-3 text-right font-bold text-green-600">₦{{ number_format($h['amount'], 2) }}</td>
+                                <td class="px-6 py-3 text-right"><a href="{{ $h['receipt_url'] }}" target="_blank" class="text-indigo-600 font-semibold hover:underline">Receipt</a></td>
                             </tr>
                         @empty
-                            <tr><td colspan="4" class="px-6 py-6 text-center text-gray-400">No payments recorded yet.</td></tr>
+                            <tr><td colspan="5" class="px-6 py-6 text-center text-gray-400">No payments recorded yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
