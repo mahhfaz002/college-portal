@@ -44,6 +44,9 @@
                 </a>
             </div>
 
+            {{-- ===== QUICK ACCESS (college modules) ===== --}}
+            @include('oversight.partials.quick-access')
+
             {{-- ===== FINANCE BANNER (moved up) ===== --}}
             <div class="rounded-2xl bg-gradient-to-r from-gray-900 to-indigo-900 p-6 shadow-lg">
                 <div class="flex flex-wrap items-center justify-between gap-3 mb-4">

@@ -162,6 +162,11 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::get('/students/{student}/id-card', [StudentController::class, 'idCard'])->name('students.id-card');
     });
 
+    // Oversight fee breakdown — Proprietor & Provost only (read-only).
+    Route::middleware('role:proprietor,provost')->group(function () {
+        Route::get('/oversight/fees', [\App\Http\Controllers\OversightController::class, 'fees'])->name('oversight.fees');
+    });
+
     // Writes — MIS only (proprietor is blocked globally by readonly).
     Route::middleware('role:'.Permissions::middleware('manage_students'))->group(function () {
         Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');

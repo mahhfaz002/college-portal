@@ -50,7 +50,8 @@ class ApplyResultsTableTest extends TestCase
         $stored = collect($applicant->olevel_results);
 
         $this->assertCount(5, $stored);
-        $english = $stored->firstWhere('subject', 'ENGLISH LANGUAGE');
+        // Subjects are stored title-cased now (first letter of each word), not ALL CAPS.
+        $english = $stored->firstWhere('subject', 'English Language');
         $this->assertSame('NABTEB', $english['exam_type']);
         $this->assertSame('2024', (string) $english['exam_year']);
         $this->assertSame('EX0000', $english['exam_number']);

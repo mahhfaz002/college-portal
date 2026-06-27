@@ -1,15 +1,8 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Proprietor Dashboard <span class="text-brand">· Global Overview</span>
-            </h2>
-            @if(in_array(auth()->user()->role, ['proprietor', 'mis']))
-            <a href="{{ route('superadmin.switchboard') }}" class="text-xs font-bold bg-gray-800 text-white px-4 py-2 rounded-lg uppercase hover:bg-gray-900 transition shadow-sm">
-                ⚙️ Master Switchboard
-            </a>
-            @endif
-        </div>
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            Proprietor Dashboard <span class="text-brand">· Global Overview</span>
+        </h2>
     </x-slot>
 
     <div class="py-10">
@@ -42,6 +35,9 @@
                 <h3 class="font-bold text-gray-800">Payroll Final Approval</h3>
                 <p class="text-sm text-gray-500 mt-1">Give final approval on payslips forwarded by the Provost, or query them back.</p>
             </a>
+
+            {{-- ===== QUICK ACCESS (college modules) ===== --}}
+            @include('oversight.partials.quick-access')
 
             {{-- ===== FINANCE BANNER ===== --}}
             <div class="rounded-2xl bg-gradient-to-r from-gray-900 to-indigo-900 p-6 shadow-lg">
