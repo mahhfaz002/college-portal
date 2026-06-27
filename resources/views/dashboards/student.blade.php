@@ -38,6 +38,25 @@
                 </div>
             @endif
 
+            {{-- Disciplinary/welfare case resolutions forwarded to the student. --}}
+            @if(isset($studentCases) && $studentCases->count())
+            <div class="mb-6 bg-white rounded-xl shadow-sm border border-red-200 overflow-hidden">
+                <div class="px-6 py-3 bg-red-50 border-b"><h3 class="font-bold text-red-800">Disciplinary / Welfare Notices</h3></div>
+                <div class="divide-y">
+                    @foreach($studentCases as $case)
+                    <div class="px-6 py-4">
+                        <p class="font-bold text-gray-800 text-sm">{{ ucfirst($case->category) }} Case</p>
+                        <p class="text-sm text-gray-600 mt-1"><strong>Matter:</strong> {{ $case->description }}</p>
+                        @if($case->final_resolution)
+                            <p class="text-sm text-gray-700 mt-2 p-3 bg-gray-50 rounded border"><strong>Resolution:</strong> {{ $case->final_resolution }}</p>
+                        @endif
+                        <a href="{{ route('student.case.print', $case) }}" target="_blank" class="inline-block mt-2 text-xs font-bold text-indigo-600 hover:underline">Print Copy</a>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
             {{-- Course registration: add/drop courses --}}
             <div class="mb-6 p-4 rounded-lg border bg-emerald-50 border-emerald-200 text-emerald-900 flex flex-wrap items-center justify-between gap-3">
                 <div>

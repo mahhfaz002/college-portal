@@ -33,6 +33,14 @@
                     <div class="text-3xl mb-2">🧑‍💼</div><h3 class="font-bold text-gray-800">Manage Staff</h3>
                     <p class="text-sm text-gray-500 mt-1">Create, assign department &amp; role, edit, delete.</p>
                 </a>
+                <a href="{{ route('cases.registrar.index') }}" class="bg-white rounded-2xl shadow-sm border p-6 hover:shadow-md transition">
+                    <div class="text-3xl mb-2">⚖️</div><h3 class="font-bold text-gray-800">Student Affairs Cases</h3>
+                    <p class="text-sm text-gray-500 mt-1">Review cases, resolve or forward to Provost.</p>
+                </a>
+                <a href="{{ route('semester.control') }}" class="bg-white rounded-2xl shadow-sm border p-6 hover:shadow-md transition">
+                    <div class="text-3xl mb-2">📅</div><h3 class="font-bold text-gray-800">Semester Control</h3>
+                    <p class="text-sm text-gray-500 mt-1">End semester, set break &amp; countdown, transition.</p>
+                </a>
             </div>
         </div>
     </div>

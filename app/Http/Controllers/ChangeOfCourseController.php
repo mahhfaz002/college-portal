@@ -72,6 +72,10 @@ class ChangeOfCourseController extends Controller
             'status'               => 'pending_payment',
         ]);
 
+        // Fee is set by the Bursar under the Fees menu (falls back to the model
+        // default if the Bursar hasn't configured it yet).
+        $fee = (float) setting('change_of_course_fee', ChangeOfCourseRequest::FEE);
+
         $invoice = Invoice::create([
             'college_id'  => $student->college_id,
             'student_id'  => $student->id,
@@ -79,7 +83,7 @@ class ChangeOfCourseController extends Controller
             'program_id'  => $program->id,
             'purpose'     => 'change_of_course',
             'description' => 'Change-of-course application fee — '.$program->name,
-            'amount'      => ChangeOfCourseRequest::FEE,
+            'amount'      => $fee,
             'payer_email' => $student->email,
             'status'      => 'pending',
             'reference'   => PaystackService::reference('COC', $student->college_id),

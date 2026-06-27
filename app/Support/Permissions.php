@@ -39,9 +39,10 @@ class Permissions
         // Everyone else (incl. MIS, lecturers, students) sees the published one.
         'manage_timetable'     => ['academic_secretary'],
 
-        // Payroll — Bursar runs it; MIS reviews/approves.
+        // Payroll — Bursar runs it; Provost reviews, Proprietor gives final approval.
         'manage_payroll'       => ['bursar'],
-        'review_payroll'       => ['mis'],
+        'review_payroll'       => ['provost'],
+        'approve_payroll'      => ['proprietor'],
 
         // Fees / payments — Bursar only. (Proprietor & Provost don't see payment orders.)
         'manage_fees'          => ['bursar'],

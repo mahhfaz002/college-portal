@@ -15,21 +15,21 @@
             @if(session('success'))<div class="p-4 bg-green-100 border border-green-300 text-green-800 rounded-lg text-sm">{{ session('success') }}</div>@endif
             @if(session('error'))<div class="p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg text-sm">{{ session('error') }}</div>@endif
 
-            @if($counts['flagged'] > 0)
+            @if($counts['queried'] > 0)
             <div class="p-4 bg-red-50 border border-red-300 text-red-800 rounded-lg text-sm font-bold">
-                ⚠️ {{ $counts['flagged'] }} payslip(s) were flagged by Management — edit and resubmit them below.
+                {{ $counts['queried'] }} payslip(s) were queried — edit and resubmit them below.
             </div>
             @endif
 
             <div class="flex flex-wrap gap-3 items-center justify-between bg-white p-4 rounded-xl border">
                 <div class="text-sm text-gray-600">
                     Month <strong>{{ \Illuminate\Support\Carbon::parse($month.'-01')->format('F Y') }}</strong> —
-                    draft {{ $counts['draft'] }} · submitted {{ $counts['submitted'] }} · flagged {{ $counts['flagged'] }} · approved {{ $counts['approved'] }} · paid {{ $counts['paid'] }}
+                    draft {{ $counts['draft'] }} · in review {{ $counts['in_review'] }} · queried {{ $counts['queried'] }} · approved {{ $counts['approved'] }} · paid {{ $counts['paid'] }}
                 </div>
-                @if($counts['draft'] + $counts['flagged'] > 0)
-                <form method="POST" action="{{ route('payroll.submit') }}" onsubmit="return confirm('Submit all draft/flagged payslips for this month to Management for approval?')">
+                @if($counts['draft'] + $counts['queried'] > 0)
+                <form method="POST" action="{{ route('payroll.submit') }}" onsubmit="return confirm('Submit all draft/queried payslips for this month to the Provost for review?')">
                     @csrf <input type="hidden" name="month" value="{{ $month }}">
-                    <button class="bg-indigo-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-indigo-700 text-sm">Submit to Management</button>
+                    <button class="bg-indigo-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-indigo-700 text-sm">Submit to Provost</button>
                 </form>
                 @endif
             </div>
@@ -71,12 +71,12 @@
                             <td class="p-3 text-gray-500 text-xs">{{ $r['dept'] ?? 'Others' }} <span class="text-gray-300">· {{ $r['section'] }}</span></td>
                             <td class="p-3 text-right font-bold">{{ $slip ? money($slip->net_salary) : '—' }}</td>
                             <td class="p-3">
-                                @php $badge = ['none'=>'bg-gray-100 text-gray-500','draft'=>'bg-gray-100 text-gray-600','submitted'=>'bg-blue-100 text-blue-700','flagged'=>'bg-red-100 text-red-700','approved'=>'bg-green-100 text-green-700','paid'=>'bg-emerald-100 text-emerald-700'][$status]; @endphp
-                                <span class="text-[10px] uppercase font-bold px-2 py-1 rounded {{ $badge }}">{{ $status === 'none' ? 'not set' : $status }}</span>
+                                @php $badge = ['none'=>'bg-gray-100 text-gray-500','draft'=>'bg-gray-100 text-gray-600','provost_review'=>'bg-blue-100 text-blue-700','provost_forwarded'=>'bg-blue-100 text-blue-700','proprietor_review'=>'bg-purple-100 text-purple-700','queried'=>'bg-red-100 text-red-700','approved'=>'bg-green-100 text-green-700','paid'=>'bg-emerald-100 text-emerald-700'][$status] ?? 'bg-gray-100 text-gray-500'; @endphp
+                                <span class="text-[10px] uppercase font-bold px-2 py-1 rounded {{ $badge }}">{{ $status === 'none' ? 'not set' : str_replace('_',' ',$status) }}</span>
                             </td>
                             <td class="p-3 text-xs text-red-600">{{ $slip->flag_comment ?? '' }}</td>
                             <td class="p-3 text-right">
-                                @if(in_array($status, ['none','draft','flagged']))
+                                @if(in_array($status, ['none','draft','queried']))
                                     <a href="{{ route('payroll.edit', [$r['staff'], 'month' => $month]) }}" class="bg-gray-600 text-white text-xs px-3 py-1.5 rounded font-bold hover:bg-gray-700">{{ $status==='none' ? 'Create' : 'Edit' }}</a>
                                 @elseif($status === 'approved')
                                     <form method="POST" action="{{ route('payroll.pay', $slip) }}" class="inline" onsubmit="return confirm('Initiate salary payment to {{ $r['staff']->name }}?')">@csrf

@@ -52,6 +52,11 @@ class AnnouncementController extends Controller
             $data['target_class'] = null;
         }
 
+        // Student Affairs may only target students (never staff/all).
+        if (auth()->user()->role === 'student_affairs' && !in_array($data['audience'], ['students', 'class'], true)) {
+            return back()->with('error', 'Student Affairs announcements can only target students.');
+        }
+
         Announcement::create($data);
         ActivityLog::record('Posted announcement: ' . $data['title'], 'announcement.create');
 

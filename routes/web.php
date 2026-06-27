@@ -270,7 +270,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
 
     // --- Announcements / Communications (everyone can read) ---
     Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
-    Route::middleware(['role:proprietor,mis'])->group(function () {
+    Route::middleware(['role:mis,registrar,student_affairs'])->group(function () {
         Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
         Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy');
     });
@@ -321,11 +321,50 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::post('/term/clear-assignments', [TermController::class, 'clearAssignments'])->name('term.clear-assignments');
     });
 
+    // Registrar: semester control (end semester, break countdown, transition).
+    Route::middleware('role:registrar')->group(function () {
+        Route::get('/semester-control', [TermController::class, 'semesterControl'])->name('semester.control');
+        Route::post('/semester-control/end', [TermController::class, 'endSemester'])->name('semester.end');
+        Route::post('/semester-control/transition', [TermController::class, 'transition'])->name('semester.transition');
+    });
+
     // --- Student Affairs ---
-    Route::middleware('role:student_affairs,registrar,proprietor')->group(function () {
-        Route::post('/affairs/cases', [\App\Http\Controllers\StudentAffairsController::class, 'store'])->name('affairs.cases.store');
-        Route::post('/affairs/cases/{case}/resolve', [\App\Http\Controllers\StudentAffairsController::class, 'resolve'])->name('affairs.cases.resolve');
-        Route::delete('/affairs/cases/{case}', [\App\Http\Controllers\StudentAffairsController::class, 'destroy'])->name('affairs.cases.destroy');
+    Route::middleware('role:student_affairs')->group(function () {
+        $SA = \App\Http\Controllers\StudentAffairsController::class;
+        Route::post('/affairs/cases', [$SA, 'store'])->name('affairs.cases.store');
+        Route::post('/affairs/cases/{case}/resolve', [$SA, 'resolve'])->name('affairs.cases.resolve');
+        Route::post('/affairs/cases/{case}/submit', [$SA, 'submitToRegistrar'])->name('affairs.cases.submit');
+        Route::delete('/affairs/cases/{case}', [$SA, 'destroy'])->name('affairs.cases.destroy');
+
+        // Student Affairs physical-files register.
+        Route::post('/affairs/register', [$SA, 'registerStudent'])->name('affairs.register.store');
+        Route::put('/affairs/register/{entry}', [$SA, 'editRegister'])->name('affairs.register.edit');
+        Route::delete('/affairs/register/{entry}', [$SA, 'destroyRegister'])->name('affairs.register.destroy');
+    });
+
+    // Case escalation: notify student (Student Affairs + Registrar).
+    Route::middleware('role:student_affairs,registrar')->group(function () {
+        Route::post('/affairs/cases/{case}/notify', [\App\Http\Controllers\CaseReviewController::class, 'notifyStudent'])->name('affairs.cases.notify');
+    });
+
+    // Registrar: review escalated cases, resolve or forward to Provost.
+    Route::middleware('role:registrar')->group(function () {
+        $CR = \App\Http\Controllers\CaseReviewController::class;
+        Route::get('/registrar/cases', [$CR, 'registrarCases'])->name('cases.registrar.index');
+        Route::post('/registrar/cases/{case}/resolve', [$CR, 'registrarResolve'])->name('cases.registrar.resolve');
+        Route::post('/registrar/cases/{case}/forward', [$CR, 'forwardToProvost'])->name('cases.registrar.forward');
+    });
+
+    // Provost: final case resolution.
+    Route::middleware('role:provost')->group(function () {
+        $CR = \App\Http\Controllers\CaseReviewController::class;
+        Route::get('/provost/cases', [$CR, 'provostCases'])->name('cases.provost.index');
+        Route::post('/provost/cases/{case}/resolve', [$CR, 'provostResolve'])->name('cases.provost.resolve');
+    });
+
+    // Student: printable copy of a resolved case forwarded to them.
+    Route::middleware('role:student')->group(function () {
+        Route::get('/my/case/{case}/print', [\App\Http\Controllers\CaseReviewController::class, 'printForStudent'])->name('student.case.print');
     });
 
     // --- Office Secretary (correspondence register) ---
@@ -412,11 +451,24 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::post('/payroll/{payslip}/pay', [PayslipController::class, 'pay'])->name('payroll.pay');
         Route::get('/payroll/{payslip}/slip', [PayslipController::class, 'show'])->name('payroll.slip');
         Route::get('/payroll/{payslip}/slip/pdf', [PayslipController::class, 'downloadSlip'])->name('payroll.slip.pdf');
+
+        // Bursar: configurable fees (change-of-course fee).
+        Route::get('/fees/settings', [\App\Http\Controllers\BursarFeeController::class, 'index'])->name('fees.settings');
+        Route::put('/fees/settings', [\App\Http\Controllers\BursarFeeController::class, 'update'])->name('fees.settings.update');
     });
+    // Provost: reviews payroll, forwards to Proprietor or queries back to Bursar.
     Route::middleware('role:'.Permissions::middleware('review_payroll'))->group(function () {
-        Route::get('/payroll-review', [PayslipController::class, 'review'])->name('payroll.review');
-        Route::post('/payroll/{payslip}/approve', [PayslipController::class, 'approve'])->name('payroll.approve');
-        Route::post('/payroll/{payslip}/flag', [PayslipController::class, 'flag'])->name('payroll.flag');
+        Route::get('/payroll-review', [PayslipController::class, 'provostReview'])->name('payroll.review');
+        Route::post('/payroll/{payslip}/forward', [PayslipController::class, 'provostForward'])->name('payroll.provost.forward');
+        Route::post('/payroll/{payslip}/provost-query', [PayslipController::class, 'provostQuery'])->name('payroll.provost.query');
+        Route::post('/payroll/{payslip}/relay', [PayslipController::class, 'provostRelayToBursar'])->name('payroll.provost.relay');
+    });
+
+    // Proprietor: final approval or query back to Provost.
+    Route::middleware('role:'.Permissions::middleware('approve_payroll'))->group(function () {
+        Route::get('/payroll-approval', [PayslipController::class, 'proprietorReview'])->name('payroll.approval');
+        Route::post('/payroll/{payslip}/approve', [PayslipController::class, 'proprietorApprove'])->name('payroll.proprietor.approve');
+        Route::post('/payroll/{payslip}/proprietor-query', [PayslipController::class, 'proprietorQuery'])->name('payroll.proprietor.query');
     });
 
     // --- Management-only modules: Transport, Alumni ---

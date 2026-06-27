@@ -28,6 +28,18 @@
                 </div>
             </div>
 
+            {{-- ===== GOVERNANCE ACTIONS ===== --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <a href="{{ route('payroll.review') }}" class="bg-white p-6 rounded-2xl shadow-sm border hover:shadow-md transition">
+                    <h3 class="font-bold text-gray-800">Payroll Review</h3>
+                    <p class="text-sm text-gray-500 mt-1">Review submitted payslips; forward to Proprietor or query back to Bursar.</p>
+                </a>
+                <a href="{{ route('cases.provost.index') }}" class="bg-white p-6 rounded-2xl shadow-sm border hover:shadow-md transition">
+                    <h3 class="font-bold text-gray-800">Student Affairs Cases</h3>
+                    <p class="text-sm text-gray-500 mt-1">Give final resolution on escalated disciplinary cases.</p>
+                </a>
+            </div>
+
             {{-- ===== FINANCE BANNER (moved up) ===== --}}
             <div class="rounded-2xl bg-gradient-to-r from-gray-900 to-indigo-900 p-6 shadow-lg">
                 <div class="flex items-center gap-2 mb-4">

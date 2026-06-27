@@ -16,6 +16,9 @@
                         Payroll
                     </a>
                 @endif
+                <a href="{{ route('fees.settings') }}" class="bg-gray-800 text-white px-4 py-2 rounded-lg font-bold hover:bg-gray-900 transition shadow-sm">
+                    Fee Settings
+                </a>
             </div>
         </div>
     </x-slot>
