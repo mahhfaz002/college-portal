@@ -15,6 +15,12 @@
                 Live — refreshes automatically every 15s
             </div>
 
+            {{-- Revenue timeframe filter --}}
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h3 class="font-bold text-gray-700">Platform Revenue <span class="text-xs font-normal text-gray-400">· {{ $revenueRange['label'] }}</span></h3>
+                @include('partials.revenue-filter')
+            </div>
+
             {{-- KPI cards --}}
             <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
                 @php $cards = [
@@ -22,7 +28,7 @@
                     ['Students', 'totalStudents', $totalStudents, 'emerald'],
                     ['Staff', 'totalStaff', $totalStaff, 'blue'],
                     ['Applicants', 'totalApplicants', $totalApplicants, 'amber'],
-                    ['Revenue (₦)', 'totalRevenue', $totalRevenue, 'green'],
+                    ['Revenue (₦) · '.$revenueRange['label'], 'totalRevenue', $totalRevenue, 'green'],
                 ]; @endphp
                 @foreach($cards as [$label,$key,$val,$color])
                     <div class="bg-white rounded-xl border p-5 border-t-4 border-{{ $color }}-500">
@@ -75,7 +81,12 @@
                 },
                 async poll(){
                     const tick = async () => {
-                        try { const r = await fetch('{{ route('platform.stats') }}'); this.vals = await r.json(); } catch(e){}
+                        try {
+                            // Carry the current timeframe filter into the live refresh
+                            // so revenue doesn't reset to all-time on each poll.
+                            const r = await fetch('{{ route('platform.stats') }}' + window.location.search);
+                            this.vals = await r.json();
+                        } catch(e){}
                     };
                     await tick();
                     setInterval(tick, 15000);

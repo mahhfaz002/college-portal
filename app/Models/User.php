@@ -47,6 +47,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'university',
         'class_of_degree',
         'address',
+        'signature_path',
     ];
 
     public function departmentModel()

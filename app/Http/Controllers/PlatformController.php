@@ -19,13 +19,13 @@ class PlatformController extends Controller
 {
     public function dashboard(Request $request)
     {
-        return view('platform.dashboard', $this->stats());
+        return view('platform.dashboard', $this->stats($request));
     }
 
-    /** JSON for the dashboard's live auto-refresh. */
-    public function liveStats()
+    /** JSON for the dashboard's live auto-refresh. Honors the revenue timeframe. */
+    public function liveStats(Request $request)
     {
-        $s = $this->stats();
+        $s = $this->stats($request);
         return response()->json([
             'colleges' => $s['totalColleges'],
             'students' => $s['totalStudents'],
@@ -35,16 +35,23 @@ class PlatformController extends Controller
         ]);
     }
 
-    private function stats(): array
+    private function stats(?Request $request = null): array
     {
         $colleges = College::orderBy('name')->get();
+
+        // Revenue timeframe filter (yesterday / 7d / 30d / year / custom). When
+        // there's no request (e.g. liveStats JSON) it falls back to all-time.
+        $revenueRange = $request
+            ? \App\Support\RevenueRange::fromRequest($request)
+            : \App\Support\RevenueRange::fromRequest(new Request());
 
         // Per-college aggregates (single grouped query each — unscoped for super-admin).
         $studentsByCollege  = Student::selectRaw('college_id, COUNT(*) c')->groupBy('college_id')->pluck('c', 'college_id');
         $staffByCollege     = User::whereNotIn('role', ['student', 'applicant', 'superadmin'])
             ->selectRaw('college_id, COUNT(*) c')->groupBy('college_id')->pluck('c', 'college_id');
-        $revenueByCollege   = Invoice::where('status', 'paid')
-            ->selectRaw('college_id, SUM(amount) s')->groupBy('college_id')->pluck('s', 'college_id');
+        $revenueByCollege   = \App\Support\RevenueRange::apply(
+                Invoice::where('status', 'paid'), $revenueRange
+            )->selectRaw('college_id, SUM(amount) s')->groupBy('college_id')->pluck('s', 'college_id');
 
         $rows = $colleges->map(fn ($c) => [
             'college'  => $c,
@@ -56,12 +63,15 @@ class PlatformController extends Controller
         return [
             'colleges'        => $colleges,
             'rows'            => $rows,
+            'revenueRange'    => $revenueRange,
             'totalColleges'   => $colleges->count(),
             'activeColleges'  => $colleges->where('is_active', true)->count(),
             'totalStudents'   => (int) Student::count(),
             'totalStaff'      => (int) User::whereNotIn('role', ['student', 'applicant', 'superadmin'])->count(),
             'totalApplicants' => (int) Applicant::count(),
-            'totalRevenue'    => (float) Invoice::where('status', 'paid')->sum('amount'),
+            'totalRevenue'    => (float) \App\Support\RevenueRange::apply(
+                Invoice::where('status', 'paid'), $revenueRange
+            )->sum('amount'),
             'recentColleges'  => $colleges->sortByDesc('created_at')->take(5)->values(),
         ];
     }

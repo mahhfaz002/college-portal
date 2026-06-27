@@ -64,8 +64,12 @@ class DashboardController extends Controller
         $studentCount = Student::count();
         $staffCount   = \App\Models\User::whereNotIn('role', ['student', 'applicant', 'superadmin'])->count();
 
-        // Finance on the Phase-4 Invoice engine (college-scoped) — real money.
-        $totalCollected   = \App\Models\Invoice::where('status', 'paid')->sum('amount');
+        // Finance on the Phase-4 Invoice engine (college-scoped) — real money,
+        // filterable by timeframe (yesterday / 7d / 30d / year / custom).
+        $revenueRange = \App\Support\RevenueRange::fromRequest($request);
+        $totalCollected = (float) \App\Support\RevenueRange::apply(
+            \App\Models\Invoice::where('status', 'paid'), $revenueRange
+        )->sum('amount');
         // Student headcount per department (college structure, not legacy classes).
         $deptBreakdown = Student::select('department_id', DB::raw('COUNT(*) as total'))
             ->groupBy('department_id')
@@ -90,7 +94,8 @@ class DashboardController extends Controller
             'totalCollected',
             'deptBreakdown',
             'topStudents',
-            'recentPayments'
+            'recentPayments',
+            'revenueRange'
         ));
     }
 
@@ -104,7 +109,10 @@ class DashboardController extends Controller
         $studentCount = Student::count();
         $staffCount   = \App\Models\User::whereNotIn('role', ['student', 'applicant', 'superadmin'])->count();
 
-        $totalCollected   = \App\Models\Invoice::where('status', 'paid')->sum('amount');
+        $revenueRange = \App\Support\RevenueRange::fromRequest($request);
+        $totalCollected = (float) \App\Support\RevenueRange::apply(
+            \App\Models\Invoice::where('status', 'paid'), $revenueRange
+        )->sum('amount');
         // 20 most recently registered students.
         $recentStudents = Student::with('program')->latest()->take(20)->get();
 
@@ -118,7 +126,7 @@ class DashboardController extends Controller
 
         return view('dashboards.provost', compact(
             'studentCount', 'staffCount', 'totalCollected',
-            'recentStudents', 'topStudents', 'recentPayments'
+            'recentStudents', 'topStudents', 'recentPayments', 'revenueRange'
         ));
     }
 
@@ -226,8 +234,14 @@ class DashboardController extends Controller
         // Only SETTLED money is reported. Pending/unpaid invoices (including
         // abandoned or cancelled checkouts) are deliberately excluded so they
         // can never inflate the figures or be mistaken for genuinely owed fees.
-        $totalCollected = \App\Models\Invoice::where('status', 'paid')->sum('amount');
-        $paymentsCount  = \App\Models\Invoice::where('status', 'paid')->count();
+        // Filterable by timeframe (yesterday / 7d / 30d / year / custom).
+        $revenueRange = \App\Support\RevenueRange::fromRequest($request);
+        $totalCollected = (float) \App\Support\RevenueRange::apply(
+            \App\Models\Invoice::where('status', 'paid'), $revenueRange
+        )->sum('amount');
+        $paymentsCount  = (int) \App\Support\RevenueRange::apply(
+            \App\Models\Invoice::where('status', 'paid'), $revenueRange
+        )->count();
 
         // Most recent settled invoices.
         $recentPayments = \App\Models\Invoice::where('status', 'paid')
@@ -244,7 +258,7 @@ class DashboardController extends Controller
             ->latest()->take(6)->get();
 
         return view('dashboards.accountant', compact(
-            'totalCollected', 'paymentsCount', 'recentPayments', 'orders'
+            'totalCollected', 'paymentsCount', 'recentPayments', 'orders', 'revenueRange'
         ));
     }
 
