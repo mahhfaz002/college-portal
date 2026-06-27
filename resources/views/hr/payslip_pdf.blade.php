@@ -15,10 +15,11 @@
 </style>
 </head>
 <body>
+    @php $college = \App\Models\College::withoutGlobalScopes()->find($payslip->college_id); @endphp
     <div class="head">
-        <h1>{{ setting('school_name', 'School') }}</h1>
-        <p style="margin:2px 0;">{{ setting('school_address') }}</p>
-        <p style="margin:2px 0;">{{ setting('school_phone') }} | {{ setting('school_email') }}</p>
+        <h1>{{ $college->name ?? setting('school_name', 'College') }}</h1>
+        <p style="margin:2px 0;">{{ $college->address ?? setting('school_address') }}</p>
+        <p style="margin:2px 0;">{{ $college->phone ?? setting('school_phone') }} | {{ $college->email ?? setting('school_email') }}</p>
     </div>
     <div class="title">STAFF PAYSLIP — {{ \Illuminate\Support\Carbon::parse($payslip->month.'-01')->format('F Y') }}</div>
 
@@ -40,10 +41,11 @@
         @forelse($payslip->deductions ?? [] as $d)
             <tr><td>{{ $d['nature'] ?? '' }}</td><td class="right">{{ $cur }}{{ number_format($d['amount'] ?? 0,2) }}</td></tr>
         @empty
-            <tr><td colspan="2" style="text-align:center; color:#888;">No deductions</td></tr>
+            <tr><td colspan="2" style="text-align:center; color:#888;">No itemised deductions</td></tr>
         @endforelse
-        <tr><td>Tax</td><td class="right">{{ $cur }}{{ number_format($payslip->tax,2) }}</td></tr>
-        <tr><td class="right"><strong>Total Deductions</strong></td><td class="right">{{ $cur }}{{ number_format($payslip->totalDeductions() + $payslip->tax,2) }}</td></tr>
+        <tr><td>Tax ({{ rtrim(rtrim(number_format($payslip->tax,2),'0'),'.') }}%)</td><td class="right">{{ $cur }}{{ number_format($payslip->taxAmount(),2) }}</td></tr>
+        <tr><td>Contributory Savings ({{ rtrim(rtrim(number_format($payslip->contributory_savings,2),'0'),'.') }}%)</td><td class="right">{{ $cur }}{{ number_format($payslip->savingsAmount(),2) }}</td></tr>
+        <tr><td class="right"><strong>Total Deductions</strong></td><td class="right">{{ $cur }}{{ number_format($payslip->totalDeductions() + $payslip->taxAmount() + $payslip->savingsAmount(),2) }}</td></tr>
     </table>
     <table>
         <tr><td class="right"><strong>NET SALARY</strong></td><td class="right net">{{ $cur }}{{ number_format($payslip->net_salary,2) }}</td></tr>

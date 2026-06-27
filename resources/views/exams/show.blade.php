@@ -22,22 +22,30 @@
                         <p><span class="text-gray-400">Status:</span> <span class="uppercase font-bold">{{ $exam->status }}</span></p>
                     </div>
                     @can('manage_exams')
-                    <div class="flex flex-wrap gap-2">
-                        @if($exam->status === 'draft')
-                        <form action="{{ route('exams.release', $exam) }}" method="POST" class="flex items-end gap-2">
-                            @csrf
-                            <div>
-                                <label class="block text-[10px] font-bold text-gray-500 uppercase">Access Password</label>
-                                <input type="text" name="access_password" class="border-gray-300 rounded text-sm" placeholder="set password" required>
-                            </div>
-                            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 text-sm">Release Exam</button>
-                        </form>
-                        @elseif($exam->status === 'released')
-                        <span class="text-xs bg-blue-50 text-blue-700 px-3 py-2 rounded">🔑 Password: <strong>{{ $exam->access_password }}</strong></span>
-                        <form action="{{ route('exams.close', $exam) }}" method="POST">@csrf
-                            <button class="bg-yellow-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-yellow-700 text-sm">Close & Send for Grading</button>
-                        </form>
+                    <div class="flex flex-wrap gap-2 items-center">
+                        {{-- Offline conduct: download the CBT objectives (CSV) and the
+                             paper-based theory section (Word). Available once the HOD
+                             has approved the paper. --}}
+                        @if(in_array($exam->status, ['approved','released','grading']))
+                            @if($exam->questions->where('type','objective')->count())
+                                <a href="{{ route('exams.papers.csv', $exam) }}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700 text-sm">Download CBT (CSV)</a>
+                            @endif
+                            @if($exam->questions->where('type','theory')->count())
+                                <a href="{{ route('exams.papers.theory', $exam) }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 text-sm">Download Theory (Word)</a>
+                            @endif
+                            <a href="{{ route('exams.papers.print', $exam) }}" target="_blank" class="bg-gray-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-gray-700 text-sm">Print Paper</a>
                         @endif
+
+                        @if($exam->status === 'approved')
+                            <form action="{{ route('exams.release', $exam) }}" method="POST">@csrf
+                                <button class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 text-sm">Open for Grading</button>
+                            </form>
+                        @elseif($exam->status === 'released')
+                            <form action="{{ route('exams.close', $exam) }}" method="POST">@csrf
+                                <button class="bg-yellow-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-yellow-700 text-sm">Close &amp; Send for Grading</button>
+                            </form>
+                        @endif
+
                         <a href="{{ route('exams.compile', $exam) }}" class="bg-gray-700 text-white px-4 py-2 rounded-lg font-bold hover:bg-gray-800 text-sm">Compile Results</a>
                     </div>
                     @endcan

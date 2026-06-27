@@ -34,6 +34,7 @@
                             </td>
                             <td class="p-3 text-xs text-red-600">{{ $slip->proprietor_status === 'queried' ? $slip->proprietor_comment : '' }}</td>
                             <td class="p-3 text-right whitespace-nowrap">
+                                <a href="{{ route('payroll.view', $slip) }}" class="text-indigo-600 text-xs font-bold hover:underline mr-1">View</a>
                                 @if($slip->status === 'provost_review')
                                     <form method="POST" action="{{ route('payroll.provost.forward', $slip) }}" class="inline" onsubmit="return confirm('Forward this payslip to the Proprietor?')">@csrf
                                         <button class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded font-bold hover:bg-emerald-700">Forward to Proprietor</button>

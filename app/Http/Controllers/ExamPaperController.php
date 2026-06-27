@@ -24,8 +24,15 @@ class ExamPaperController extends Controller
      */
     private function assertExportable(Exam $exam): void
     {
+        // Exportable once the HOD has approved the paper and any scheduled release
+        // time has passed — and it STAYS exportable through the grading lifecycle
+        // (released / grading) so the officer can still download for offline
+        // conduct after opening it for grading.
+        $approvedAndDue = in_array($exam->status, ['approved', 'released', 'grading'], true)
+            && ($exam->release_at === null || $exam->release_at->lessThanOrEqualTo(now()));
+
         abort_unless(
-            $exam->isReleasedToOfficer() && Subject::whereKey($exam->subject_id)->exists(),
+            $approvedAndDue && Subject::whereKey($exam->subject_id)->exists(),
             404, 'No released paper found.'
         );
     }
@@ -33,7 +40,7 @@ class ExamPaperController extends Controller
     public function index()
     {
         $exams = Exam::whereIn('subject_id', $this->collegeSubjectIds())
-            ->where('status', 'approved')
+            ->whereIn('status', ['approved', 'released', 'grading'])
             ->where(fn ($q) => $q->whereNull('release_at')->orWhere('release_at', '<=', now()))
             ->with('subject.program', 'examCycle')
             ->withCount([
@@ -80,6 +87,33 @@ class ExamPaperController extends Controller
 
         return response($csv, 200, [
             'Content-Type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="'.$name.'"',
+        ]);
+    }
+
+    /**
+     * Word document of the THEORY (paper-based) section, for offline printing.
+     * Generated as an HTML document served with a Word MIME type + .doc filename,
+     * which Word opens natively — no extra library required.
+     */
+    public function theoryDoc(Exam $exam)
+    {
+        $this->assertExportable($exam);
+
+        $exam->load([
+            'subject.program', 'subject.department',
+            'questions' => fn ($q) => $q->where('type', 'theory')->orderBy('theory_number')->orderBy('id'),
+        ]);
+
+        $html = view('exams.paper_theory_doc', [
+            'exam'    => $exam,
+            'college' => current_college(),
+        ])->render();
+
+        $name = 'theory_'.Str::slug(optional($exam->subject)->course_code ?: ('exam-'.$exam->id)).'.doc';
+
+        return response($html, 200, [
+            'Content-Type'        => 'application/msword',
             'Content-Disposition' => 'attachment; filename="'.$name.'"',
         ]);
     }

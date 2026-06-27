@@ -31,13 +31,11 @@ class GatewayPaymentController extends Controller
             return $this->afterPaid($invoice);
         }
 
-        $breakdown = $this->applySurcharges($invoice);
-
-        $college = $invoice->college_id
-            ? \App\Models\College::withoutGlobalScopes()->find($invoice->college_id)
-            : current_college();
-
-        return view('payments.checkout', compact('invoice', 'breakdown', 'college'));
+        // No more invoice-review screen — every "Pay" button goes STRAIGHT to
+        // Paystack. The ₦500 portal convenience fee (and the gateway fee) are
+        // applied inside initialize() via applySurcharges()/chargeable(), so the
+        // payer still bears them; they just aren't shown on a separate page.
+        return $this->initialize($invoice);
     }
 
     /**

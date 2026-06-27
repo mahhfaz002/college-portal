@@ -415,6 +415,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::get('/exam-papers', [\App\Http\Controllers\ExamPaperController::class, 'index'])->name('exams.papers');
         Route::get('/exam-papers/{exam}/print', [\App\Http\Controllers\ExamPaperController::class, 'print'])->name('exams.papers.print');
         Route::get('/exam-papers/{exam}/csv', [\App\Http\Controllers\ExamPaperController::class, 'csv'])->name('exams.papers.csv');
+        Route::get('/exam-papers/{exam}/theory', [\App\Http\Controllers\ExamPaperController::class, 'theoryDoc'])->name('exams.papers.theory');
     });
 
     // -- Teacher: author questions + grade --
@@ -479,6 +480,11 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::get('/payroll-approval', [PayslipController::class, 'proprietorReview'])->name('payroll.approval');
         Route::post('/payroll/{payslip}/approve', [PayslipController::class, 'proprietorApprove'])->name('payroll.proprietor.approve');
         Route::post('/payroll/{payslip}/proprietor-query', [PayslipController::class, 'proprietorQuery'])->name('payroll.proprietor.query');
+    });
+
+    // Read-only payslip detail for the Bursar, Provost and Proprietor (GET only).
+    Route::middleware('role:bursar,provost,proprietor')->group(function () {
+        Route::get('/payroll/{payslip}/view', [PayslipController::class, 'viewSlip'])->name('payroll.view');
     });
 
     // --- Management-only modules: Transport, Alumni ---
@@ -549,6 +555,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
     Route::middleware('role:'.Permissions::middleware('manage_admissions'))->group(function () use ($AW) {
         Route::get('/admissions/review', [$AW, 'reviewPanel'])->name('admissions.review');
         Route::post('/admissions/{applicant}/offer', [$AW, 'offer'])->name('admissions.offer');
+        Route::post('/admissions/{applicant}/change', [$AW, 'changeAdmission'])->name('admissions.change');
         Route::post('/admissions/{applicant}/decline', [$AW, 'decline'])->name('admissions.decline');
         Route::get('/admissions/{applicant}/credentials', [\App\Http\Controllers\ApplicationCredentialController::class, 'show'])->name('admissions.credentials');
     });
