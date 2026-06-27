@@ -121,8 +121,23 @@
                 <x-responsive-nav-link :href="route('notifications.index')" :active="request()->routeIs('notifications.*')">{{ __('Notifications') }}</x-responsive-nav-link>
             @endif
 
-            {{-- Capability-driven staff menu (each link shows only for roles that can use it) --}}
-            @if($isStaff)
+            {{-- ===== Oversight roles (Proprietor / Provost) — curated college menu =====
+                 A fixed, college-shaped menu instead of the capability-driven one, so
+                 these two roles get EXACTLY: Students, Departments, Fee Breakdown, Staff,
+                 Library, Inventory (payroll approval stays on the dashboard). No
+                 Applications / Transport / Alumni. --}}
+            @if(in_array($role, ['proprietor', 'provost']))
+                <x-responsive-nav-link :href="route('students.index')" :active="request()->routeIs('students.*')">{{ __('Students') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('departments.browse')" :active="request()->routeIs('departments.browse')">{{ __('Departments') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('oversight.fees')" :active="request()->routeIs('oversight.fees')">{{ __('Fee Breakdown') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('staff.index')" :active="request()->routeIs('staff.*')">{{ __('Staff') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('library.index')" :active="request()->routeIs('library.*')">{{ __('Library') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">{{ __('Inventory') }}</x-responsive-nav-link>
+            @endif
+
+            {{-- Capability-driven staff menu (each link shows only for roles that can use it).
+                 Oversight roles are handled by the curated block above and skip this one. --}}
+            @if($isStaff && !in_array($role, ['proprietor', 'provost']))
                 @can('view_students')
                     <x-responsive-nav-link :href="route('students.index')" :active="request()->routeIs('students.*')">{{ __('Students') }}</x-responsive-nav-link>
                 @endcan

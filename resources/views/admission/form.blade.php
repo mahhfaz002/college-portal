@@ -5,6 +5,12 @@
     <h1 class="text-3xl font-bold text-slate-900 mb-2">Online Admission Application</h1>
     <p class="text-gray-600 mb-6">{{ $college->name ?? 'Our College' }}</p>
 
+    @if (session('error'))
+        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm">
+            {{ session('error') }}
+        </div>
+    @endif
+
     @if ($errors->any())
         <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
             <p class="font-bold mb-1">Please correct the following:</p>
@@ -15,9 +21,10 @@
     @endif
 
     <div class="bg-brand-soft p-5 rounded-lg mb-8 border border-slate-200 text-sm text-slate-700">
-        Complete all sections, choose your first and second program of interest, upload your passport photograph,
+        Complete all sections and choose your first and second program of interest,
         then proceed to pay the <span class="font-bold">application fee</span> online. After successful payment an
-        applicant account is created for you to track your admission.
+        applicant account is created for you, where you will upload your passport photograph and credentials to
+        complete your application.
     </div>
 
     @if($programs->isEmpty())
@@ -25,7 +32,7 @@
             Applications are not open yet — no programs have been published. Please check back soon.
         </div>
     @else
-    <form method="POST" action="{{ route('admission.submit') }}" enctype="multipart/form-data" class="space-y-8"
+    <form method="POST" action="{{ route('admission.submit') }}" class="space-y-8"
           x-data="{ fee: '' }">
         @csrf
         <input type="hidden" name="college_id" value="{{ $college->id }}">
@@ -158,7 +165,7 @@
                                 <td class="px-3 py-2 text-gray-400">{{ $j+1 }}</td>
                                 <td class="px-3 py-2">
                                     <input name="results[{{ $j }}][subject]" value="{{ $rowOld($j,'subject') }}" placeholder="Type subject" autocomplete="off"
-                                           class="border-gray-300 rounded-lg text-sm py-1 w-full" style="text-transform:uppercase">
+                                           class="border-gray-300 rounded-lg text-sm py-1 w-full" style="text-transform:capitalize">
                                 </td>
                                 <td class="px-3 py-2">
                                     <select name="results[{{ $j }}][grade]" class="border-gray-300 rounded-lg text-sm py-1">
@@ -191,15 +198,8 @@
             </div>
         </section>
 
-        {{-- Section D --}}
-        <section class="bg-white rounded-xl shadow-sm border p-6">
-            <h2 class="text-lg font-bold text-gray-800 mb-4">Section D — Passport Photograph</h2>
-            <input name="passport" type="file" accept="image/*" required class="block w-full text-sm text-gray-600">
-            <p class="text-xs text-gray-500 mt-1">Recent passport photograph (JPG/PNG, max 2MB).</p>
-        </section>
-
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-brand-soft border border-slate-200 rounded-xl p-5">
-            <p class="text-sm text-slate-600">You will be redirected to pay the application fee securely after submitting.</p>
+            <p class="text-sm text-slate-600">You will be redirected to pay the application fee securely after submitting. Your passport photograph and credentials are uploaded from your applicant account after payment.</p>
             <button class="btn-brand px-8 py-3 rounded-full shadow whitespace-nowrap">
                 Submit &amp; Pay Application Fee
             </button>

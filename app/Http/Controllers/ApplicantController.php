@@ -66,8 +66,6 @@ class ApplicantController extends Controller
             'results.*.exam_type'  => 'nullable|in:WAEC,NECO,NABTEB',
             'results.*.exam_year'  => 'nullable|digits:4',
             'results.*.exam_number'=> 'nullable|string|max:60',
-            // Section D — passport
-            'passport'             => 'required|file|mimes:jpg,jpeg,png|max:2048',
         ]);
 
         // STRICT tenancy: bind the application to the college that owns THIS
@@ -81,7 +79,10 @@ class ApplicantController extends Controller
         // exam body, year and examination number PER subject (combined sittings).
         $results = collect($validated['results'] ?? [])
             ->map(fn ($r) => [
-                'subject'     => strtoupper(trim($r['subject'] ?? '')),
+                // Title-case each word ("computer science" → "Computer Science"),
+                // not ALL CAPS — the form auto-capitalises the first letter of
+                // every word and the stored value matches.
+                'subject'     => ucwords(strtolower(trim($r['subject'] ?? ''))),
                 'grade'       => $r['grade'] ?? null,
                 'exam_type'   => $r['exam_type'] ?? null,
                 'exam_year'   => $r['exam_year'] ?? null,
@@ -101,54 +102,73 @@ class ApplicantController extends Controller
         // Guard: chosen program must belong to the chosen college.
         abort_unless((int) $program->college_id === (int) $validated['college_id'], 422, 'Program does not belong to the selected college.');
 
-        $pp = $request->file('passport');
-        $passport = 'data:'.$pp->getMimeType().';base64,'.base64_encode(file_get_contents($pp->getRealPath()));
+        // The passport photograph is no longer collected on this public form — it
+        // is uploaded (with JAMB/SSCE) from the applicant account after the
+        // application fee is paid (see ApplicationSubmissionController). Keeping
+        // it off the public form keeps this POST small so it can never be
+        // truncated past PHP's upload limits (the cause of the silent reload).
+        $passport = null;
 
-        $applicant = Applicant::create([
-            'college_id'   => $validated['college_id'],
-            'first_name'   => $validated['first_name'],
-            'surname'      => $validated['surname'],
-            'other_name'   => $validated['other_name'] ?? null,
-            'full_name'    => trim($validated['surname'].' '.$validated['first_name'].' '.($validated['other_name'] ?? '')),
-            'address'      => $validated['address'],
-            'phone'        => $validated['phone'],
-            'email'        => $validated['email'],
-            'date_of_birth'=> $validated['date_of_birth'],
-            'gender'       => $validated['gender'],
-            'first_choice_program_id'  => $validated['first_choice_program_id'],
-            'second_choice_program_id' => $validated['second_choice_program_id'] ?? null,
-            'guardian_name'         => $validated['guardian_name'],
-            'guardian_relationship' => $validated['guardian_relationship'],
-            'guardian_phone'        => $validated['guardian_phone'],
-            'guardian_email'        => $validated['guardian_email'] ?? null,
-            'guardian_address'      => $validated['guardian_address'] ?? null,
-            'guardian_occupation'   => $validated['guardian_occupation'] ?? null,
-            'exam_type'      => $primaryExamType,
-            'exam_year'      => $primaryExamYear,
-            'olevel_results' => $results,
-            'passport'     => $passport,
-            'status'       => 'pending',
-            'application_status' => 'pending_payment',
-            'payment_status'     => 'unpaid',
-            // legacy not-null columns kept satisfied
-            'parent_name'  => $validated['guardian_name'],
-            'parent_phone' => $validated['guardian_phone'],
-            'parent_email' => $validated['guardian_email'] ?? $validated['email'],
-            'desired_class'=> $program->name,
-        ]);
+        // Create the applicant and its application-fee invoice atomically: if the
+        // invoice can't be raised we must not leave an orphaned applicant behind
+        // (which would also burn the unique email). On any failure the applicant
+        // is returned to the form with their input intact and a clear message,
+        // never a blank reload or a 500.
+        try {
+            $invoice = \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $program, $results, $primaryExamType, $primaryExamYear, $passport) {
+                $applicant = Applicant::create([
+                    'college_id'   => $validated['college_id'],
+                    'first_name'   => $validated['first_name'],
+                    'surname'      => $validated['surname'],
+                    'other_name'   => $validated['other_name'] ?? null,
+                    'full_name'    => trim($validated['surname'].' '.$validated['first_name'].' '.($validated['other_name'] ?? '')),
+                    'address'      => $validated['address'],
+                    'phone'        => $validated['phone'],
+                    'email'        => $validated['email'],
+                    'date_of_birth'=> $validated['date_of_birth'],
+                    'gender'       => $validated['gender'],
+                    'first_choice_program_id'  => $validated['first_choice_program_id'],
+                    'second_choice_program_id' => $validated['second_choice_program_id'] ?? null,
+                    'guardian_name'         => $validated['guardian_name'],
+                    'guardian_relationship' => $validated['guardian_relationship'],
+                    'guardian_phone'        => $validated['guardian_phone'],
+                    'guardian_email'        => $validated['guardian_email'] ?? null,
+                    'guardian_address'      => $validated['guardian_address'] ?? null,
+                    'guardian_occupation'   => $validated['guardian_occupation'] ?? null,
+                    'exam_type'      => $primaryExamType,
+                    'exam_year'      => $primaryExamYear,
+                    'olevel_results' => $results,
+                    'passport'     => $passport,
+                    'status'       => 'pending',
+                    'application_status' => 'pending_payment',
+                    'payment_status'     => 'unpaid',
+                    // legacy not-null columns kept satisfied
+                    'parent_name'  => $validated['guardian_name'],
+                    'parent_phone' => $validated['guardian_phone'],
+                    'parent_email' => $validated['guardian_email'] ?? $validated['email'],
+                    'desired_class'=> $program->name,
+                ]);
 
-        // Raise the application-fee invoice and head to the gateway.
-        $invoice = \App\Models\Invoice::create([
-            'college_id'  => $validated['college_id'],
-            'applicant_id'=> $applicant->id,
-            'program_id'  => $program->id,
-            'purpose'     => 'application_fee',
-            'description' => 'Application fee — '.$program->name,
-            'amount'      => $program->application_fee,
-            'payer_email' => $applicant->email,
-            'status'      => 'pending',
-            'reference'   => \App\Services\PaystackService::reference('APP'),
-        ]);
+                // Raise the application-fee invoice and head to the gateway.
+                return \App\Models\Invoice::create([
+                    'college_id'  => $validated['college_id'],
+                    'applicant_id'=> $applicant->id,
+                    'program_id'  => $program->id,
+                    'purpose'     => 'application_fee',
+                    'description' => 'Application fee — '.$program->name,
+                    'amount'      => max(0, (float) $program->application_fee),
+                    'payer_email' => $applicant->email,
+                    'status'      => 'pending',
+                    'reference'   => \App\Services\PaystackService::reference('APP', (int) $validated['college_id']),
+                ]);
+            });
+        } catch (\Throwable $e) {
+            \Log::error('Application submission failed', ['email' => $validated['email'] ?? null, 'error' => $e->getMessage()]);
+
+            return back()->withInput()->with('error',
+                'We could not start your application just now. Please try again in a moment. '
+                .'If this keeps happening, contact the college admissions office.');
+        }
 
         return redirect()->route('payments.checkout', ['invoice' => $invoice->id]);
     }

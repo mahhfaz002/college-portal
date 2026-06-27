@@ -27,9 +27,19 @@ class RoleAccessTest extends TestCase
     {
         // Settings is now MIS-only, so it is no longer part of proprietor oversight.
         $p = $this->userWithRole('proprietor');
-        foreach (['/dashboard', '/students', '/staff', '/announcements'] as $path) {
+        foreach (['/dashboard', '/students', '/staff', '/announcements', '/oversight/fees', '/departments/browse'] as $path) {
             $this->actingAs($p)->get($path)->assertOk();
         }
+    }
+
+    public function test_fee_breakdown_is_oversight_only(): void
+    {
+        // Proprietor & Provost can open the fee breakdown.
+        foreach (['proprietor', 'provost'] as $role) {
+            $this->actingAs($this->userWithRole($role))->get('/oversight/fees')->assertOk();
+        }
+        // A non-oversight role (bursar) cannot.
+        $this->actingAs($this->userWithRole('bursar'))->get('/oversight/fees')->assertForbidden();
     }
 
     // ---- Proprietor: cannot CHANGE anything (read-only oversight) ----
