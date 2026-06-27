@@ -38,13 +38,22 @@
                 </div>
             @endif
 
+            {{-- Course registration: add/drop courses --}}
+            <div class="mb-6 p-4 rounded-lg border bg-emerald-50 border-emerald-200 text-emerald-900 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <p class="font-bold">Course Registration</p>
+                    <p class="text-xs opacity-80">Register, add, or drop courses for the current semester. Carryover courses are auto-registered.</p>
+                </div>
+                <a href="{{ route('course-registration.index') }}" class="bg-emerald-600 text-white px-5 py-2 rounded-full font-bold hover:bg-emerald-700 text-sm">Register Courses &rarr;</a>
+            </div>
+
             {{-- Change of course: apply and track progress. --}}
             <div class="mb-6 p-4 rounded-lg border bg-indigo-50 border-indigo-200 text-indigo-900 flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <p class="font-bold">Want to change your course of study?</p>
                     <p class="text-xs opacity-80">Apply for a change of course and track your application's progress here.</p>
                 </div>
-                <a href="{{ route('change-of-course.index') }}" class="bg-indigo-600 text-white px-5 py-2 rounded-full font-bold hover:bg-indigo-700 text-sm">Change of Course →</a>
+                <a href="{{ route('change-of-course.index') }}" class="bg-indigo-600 text-white px-5 py-2 rounded-full font-bold hover:bg-indigo-700 text-sm">Change of Course &rarr;</a>
             </div>
 
 

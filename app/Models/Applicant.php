@@ -26,11 +26,13 @@ class Applicant extends Model
         'application_status', 'payment_status',
         'admitted_program_id', 'admission_response',
         'exam_type', 'exam_year', 'olevel_results',
+        'documents_submitted_at',
     ];
 
     protected $casts = [
-        'date_of_birth'  => 'date',
-        'olevel_results' => 'array',
+        'date_of_birth'         => 'date',
+        'olevel_results'        => 'array',
+        'documents_submitted_at' => 'datetime',
     ];
 
     public function age(): ?int
