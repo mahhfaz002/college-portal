@@ -58,4 +58,39 @@ class ApplyResultsTableTest extends TestCase
         // Headline columns fall back to the first graded row.
         $this->assertSame('NABTEB', $applicant->exam_type);
     }
+
+    /**
+     * Re-applying with an email that already has an account is rejected with a
+     * clear, named error (the silent "back to the form" the live site showed).
+     */
+    public function test_duplicate_email_is_rejected_with_a_clear_error(): void
+    {
+        $this->seed();
+        $this->bootCollege(['domain' => 'localhost']);
+        $dept = Department::create(['name' => 'Health', 'acronym' => 'HS', 'section' => 'UG']);
+        $program = Program::create(['name' => 'Nursing', 'acronym' => 'NUR', 'department_id' => $dept->id, 'application_fee' => 1000]);
+
+        // An account already exists with this email (e.g. a prior paid applicant).
+        \App\Models\User::factory()->role('applicant')->create(['email' => 'taken@gmail.com']);
+
+        $results = [];
+        foreach (['English Language', 'Mathematics', 'Physics', 'Chemistry', 'Biology'] as $i => $s) {
+            $results[$i] = ['subject' => $s, 'grade' => 'B2', 'exam_type' => 'WAEC', 'exam_year' => '2024', 'exam_number' => 'EX'.$i];
+        }
+
+        $response = $this->from('/apply')->post('/apply', [
+            'college_id' => $this->college->id,
+            'first_name' => 'Aisha', 'surname' => 'Bello', 'address' => '1 Rd', 'phone' => '080',
+            'email' => 'taken@gmail.com', 'date_of_birth' => '2005-01-01', 'gender' => 'Female',
+            'first_choice_program_id' => $program->id,
+            'guardian_name' => 'Bello', 'guardian_relationship' => 'Father', 'guardian_phone' => '081',
+            'results' => $results,
+        ]);
+
+        // Bounced back to the form (302) with a named email error — not a 500,
+        // not a silent reload, and no applicant/invoice created.
+        $response->assertRedirect('/apply');
+        $response->assertSessionHasErrors('email');
+        $this->assertDatabaseMissing('applicants', ['email' => 'taken@gmail.com']);
+    }
 }

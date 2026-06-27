@@ -6,18 +6,39 @@
     <p class="text-gray-600 mb-6">{{ $college->name ?? 'Our College' }}</p>
 
     @if (session('error'))
-        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm">
+        <div id="apply-alert" class="bg-red-50 border-2 border-red-300 text-red-800 px-5 py-4 rounded-xl mb-6 text-sm shadow-sm">
             {{ session('error') }}
         </div>
     @endif
 
     @if ($errors->any())
-        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-            <p class="font-bold mb-1">Please correct the following:</p>
-            <ul class="list-disc list-inside text-sm">
+        <div id="apply-alert" class="bg-red-50 border-2 border-red-400 text-red-800 px-5 py-4 rounded-xl mb-6 shadow-sm">
+            <p class="font-black text-base mb-2 flex items-center gap-2">
+                <span class="text-xl">⚠️</span> Your application was not submitted — please fix the points below:
+            </p>
+            <ul class="list-disc list-inside text-sm space-y-1">
                 @foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach
             </ul>
+            @if ($errors->has('email'))
+                <div class="mt-3 pt-3 border-t border-red-200 text-sm">
+                    Already have an applicant account?
+                    <a href="{{ route('login') }}" class="font-bold underline hover:text-red-900">Log in here</a>
+                    to continue your admission, or enter a different email address above.
+                </div>
+            @endif
         </div>
+
+        {{-- Bring the error into view: after a failed submit the page would
+             otherwise look like it just "refreshed" with no explanation. --}}
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var box = document.getElementById('apply-alert');
+                if (box) {
+                    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    box.classList.add('ring-4', 'ring-red-200');
+                }
+            });
+        </script>
     @endif
 
     <div class="bg-brand-soft p-5 rounded-lg mb-8 border border-slate-200 text-sm text-slate-700">

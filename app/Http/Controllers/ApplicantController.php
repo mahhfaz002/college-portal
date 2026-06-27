@@ -38,7 +38,7 @@ class ApplicantController extends Controller
      */
     public function submit(Request $request)
     {
-        $validated = $request->validate([
+        $rules = [
             'college_id'    => 'required|exists:colleges,id',
             // Section A — applicant bio
             'first_name'    => 'required|string|max:100',
@@ -66,7 +66,36 @@ class ApplicantController extends Controller
             'results.*.exam_type'  => 'nullable|in:WAEC,NECO,NABTEB',
             'results.*.exam_year'  => 'nullable|digits:4',
             'results.*.exam_number'=> 'nullable|string|max:60',
-        ]);
+        ];
+
+        $messages = [
+            // A returning applicant whose fee is already paid has an account —
+            // they must log in, not re-apply. Make that explicit.
+            'email.unique'              => 'An account already exists with this email address. If you have applied before, please log in instead — or use a different email to start a new application.',
+            'second_choice_program_id.different' => 'Your second-choice programme must be different from your first choice.',
+            'date_of_birth.before'      => 'Your date of birth must be a date in the past.',
+        ];
+
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), $rules, $messages);
+
+        if ($validator->fails()) {
+            // DIAGNOSTIC: record exactly which rule rejected the submission so a
+            // silent "back to the form" can be traced to a precise field. The
+            // applicant also sees these errors loudly on the form itself.
+            \Log::warning('Apply form rejected at validation', [
+                'host'               => $request->getHost(),
+                'email'              => $request->input('email'),
+                'email_already_user' => \App\Models\User::withoutGlobalScopes()->where('email', $request->input('email'))->exists(),
+                'first_choice'       => $request->input('first_choice_program_id'),
+                'second_choice'      => $request->input('second_choice_program_id'),
+                'dob'                => $request->input('date_of_birth'),
+                'errors'             => $validator->errors()->toArray(),
+            ]);
+
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $validated = $validator->validated();
 
         // STRICT tenancy: bind the application to the college that owns THIS
         // domain, ignoring any college_id supplied by a tampered form. The
