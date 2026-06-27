@@ -83,10 +83,17 @@ class GatewayPaymentController extends Controller
         try {
             $url = $this->paystack->initialize($invoice, route('payments.callback'));
         } catch (\Throwable $e) {
-            // Keep the payer in the payment flow with a clear reason rather than
-            // silently dumping them on the landing page.
-            return redirect()->route('payments.checkout', $invoice)
-                ->with('error', $e->getMessage());
+            // Show a clear, self-contained error page with a user-initiated
+            // "Try again" button. Critically, we must NOT redirect back to
+            // checkout() here — checkout() now goes STRAIGHT to initialize(),
+            // so redirecting there on failure would loop forever. Reporting the
+            // error on its own page breaks that cycle.
+            \Log::warning('Payment initialize failed', [
+                'invoice' => $invoice->id, 'purpose' => $invoice->purpose, 'error' => $e->getMessage(),
+            ]);
+
+            return response()
+                ->view('payments.error', ['invoice' => $invoice, 'message' => $e->getMessage()], 503);
         }
 
         return redirect()->away($url);
