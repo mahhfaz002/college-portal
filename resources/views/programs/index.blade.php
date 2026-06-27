@@ -28,9 +28,9 @@
                     <input name="acronym" placeholder="Acronym (e.g. ND-SLT)" class="border-gray-300 rounded-lg">
                     <input name="level_system" placeholder="Level label (e.g. ND / HND)" class="border-gray-300 rounded-lg">
                     <select name="program_type" required class="border-gray-300 rounded-lg" title="Programme type">
-                        <option value="UG">UG (Undergraduate)</option>
-                        <option value="DIP">DIP (Diploma)</option>
-                        <option value="CERT">CERT (Certificate)</option>
+                        @foreach(\App\Support\Sections::ALL as $code)
+                            <option value="{{ $code }}">{{ \App\Support\Sections::label($code) }}</option>
+                        @endforeach
                     </select>
                     <input name="levels" type="number" min="1" max="8" value="2" placeholder="No. of levels" class="border-gray-300 rounded-lg" title="How many levels in this programme">
                     <input name="duration_years" type="number" min="1" max="7" value="2" placeholder="Duration (yrs)" class="border-gray-300 rounded-lg">

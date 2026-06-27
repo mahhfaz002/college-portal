@@ -159,7 +159,7 @@
                 <div class="reveal group rounded-2xl border border-slate-100 bg-slate-50/60 p-6 hover:bg-white hover:shadow-lg hover:border-slate-200 transition">
                     <div class="flex items-center justify-between">
                         <span class="text-[11px] font-bold uppercase tracking-wide brand">{{ $p->department->name ?? 'Department' }}</span>
-                        @if($p->program_type)<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-900 text-white">{{ $p->program_type }}</span>@endif
+                        @if($p->program_type)<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-900 text-white">{{ \App\Support\Sections::label($p->program_type) }}</span>@endif
                     </div>
                     <h3 class="font-bold text-slate-900 mt-2 leading-snug">{{ $p->name }}</h3>
                     <div class="flex flex-wrap gap-2 mt-4 text-[11px]">

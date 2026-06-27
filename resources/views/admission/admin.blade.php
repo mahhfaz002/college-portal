@@ -38,7 +38,7 @@
                                         <div>
                                             <p class="font-bold text-gray-800">{{ $applicant->full_name }}</p>
                                             <p class="text-xs text-gray-400">{{ $applicant->gender }} · {{ $applicant->age() !== null ? $applicant->age().' yrs' : 'DOB '.$applicant->date_of_birth }}</p>
-                                            @if($applicant->section)<p class="text-[10px] font-bold text-indigo-700">{{ $applicant->section }}</p>@endif
+                                            @if($applicant->section)<p class="text-[10px] font-bold text-indigo-700">{{ \App\Support\Sections::label($applicant->section) }}</p>@endif
                                             @if($applicant->admission_number)<p class="text-xs font-mono text-green-700">{{ $applicant->admission_number }}</p>@endif
                                         </div>
                                     </div>

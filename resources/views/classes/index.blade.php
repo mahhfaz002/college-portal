@@ -20,7 +20,7 @@
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Section</label>
                         <select name="section" class="w-full border-gray-300 rounded-md shadow-sm" required>
                             <option value="">Select…</option>
-                            @foreach($sections as $s)<option value="{{ $s }}">{{ $s }}</option>@endforeach
+                            @foreach($sections as $s)<option value="{{ $s }}">{{ \App\Support\Sections::label($s) }}</option>@endforeach
                         </select>
                     </div>
                     <button class="bg-indigo-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-indigo-700 text-sm h-10">Add Class</button>
@@ -40,7 +40,7 @@
                         @forelse($classes as $c)
                         <tr class="border-b hover:bg-gray-50">
                             <td class="p-3 font-bold">{{ $c->name }}</td>
-                            <td class="p-3 text-gray-500">{{ $c->section ?? '—' }}</td>
+                            <td class="p-3 text-gray-500">{{ \App\Support\Sections::label($c->section) }}</td>
                             <td class="p-3">{{ $c->student_count }}</td>
                             <td class="p-3">{{ $c->teachers_count }}</td>
                             <td class="p-3">

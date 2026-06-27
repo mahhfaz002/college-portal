@@ -31,18 +31,20 @@ class DepartmentController extends Controller
                     ->orderBy('level')->orderBy('course_code')
                     ->get(['id', 'name', 'course_code', 'course_unit', 'level']);
                 return [
-                    'id'      => $p->id,
-                    'name'    => $p->name,
-                    'type'    => $p->program_type ?? 'UG',
-                    'courses' => $courses,
+                    'id'         => $p->id,
+                    'name'       => $p->name,
+                    'type'       => $p->program_type ?? 'UG',
+                    'type_label' => \App\Support\Sections::label($p->program_type ?? 'UG'),
+                    'courses'    => $courses,
                 ];
             });
             return [
-                'id'       => $d->id,
-                'name'     => $d->name,
-                'acronym'  => $d->acronym,
-                'section'  => $d->section,
-                'programs' => $programs,
+                'id'            => $d->id,
+                'name'          => $d->name,
+                'acronym'       => $d->acronym,
+                'section'       => $d->section,
+                'section_label' => \App\Support\Sections::label($d->section),
+                'programs'      => $programs,
             ];
         });
 

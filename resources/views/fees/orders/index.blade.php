@@ -36,7 +36,7 @@
                                 <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Section</label>
                                 <select name="section" x-model="section" @change="deptId='';programId='';level=''" class="w-full border-gray-300 rounded-lg text-sm">
                                     <option value="">All sections</option>
-                                    @foreach($sections as $s)<option value="{{ $s }}">{{ $s }}</option>@endforeach
+                                    @foreach($sections as $s)<option value="{{ $s }}">{{ \App\Support\Sections::label($s) }}</option>@endforeach
                                 </select>
                             </div>
                             <div>

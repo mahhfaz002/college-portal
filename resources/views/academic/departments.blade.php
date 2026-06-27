@@ -24,7 +24,7 @@
                                 class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50">
                             <div>
                                 <span class="font-bold text-gray-800" x-text="d.name"></span>
-                                <span class="ml-2 text-xs text-gray-400" x-text="(d.acronym||'') + (d.section ? ' · '+d.section : '')"></span>
+                                <span class="ml-2 text-xs text-gray-400" x-text="(d.acronym||'') + (d.section_label ? ' · '+d.section_label : '')"></span>
                             </div>
                             <span class="text-xs text-gray-500"><span x-text="d.programs.length"></span> course(s) of study</span>
                         </button>
@@ -37,7 +37,7 @@
                                 <div class="px-6 py-4 border-b last:border-0">
                                     <div class="flex items-center gap-2 mb-2">
                                         <span class="font-semibold text-gray-700" x-text="p.name"></span>
-                                        <span class="text-[10px] uppercase font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded" x-text="p.type"></span>
+                                        <span class="text-[10px] uppercase font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded" x-text="p.type_label"></span>
                                         <span class="text-xs text-gray-400" x-text="p.courses.length + ' course(s)'"></span>
                                     </div>
                                     <table class="w-full text-sm" x-show="p.courses.length">
