@@ -110,24 +110,20 @@ class ExamController extends Controller
     }
 
     /**
-     * Release the exam: requires questions + an access password.
+     * Open the exam for grading. Online exam-taking (and its access password)
+     * was retired — exams are now conducted offline from the downloaded CBT/theory
+     * papers, so this simply unlocks the course lecturer's grading once questions
+     * exist. No password.
      */
     public function release(Request $request, Exam $exam)
     {
-        $data = $request->validate([
-            'access_password' => 'required|string|min:4|max:50',
-        ]);
-
         if ($exam->questions()->count() === 0) {
-            return back()->with('error', 'Cannot release: no questions have been authored yet.');
+            return back()->with('error', 'Cannot open for grading: no questions have been authored yet.');
         }
 
-        $exam->update([
-            'access_password' => $data['access_password'],
-            'status' => 'released',
-        ]);
+        $exam->update(['status' => 'released']);
 
-        return back()->with('success', 'Exam released. Students can now take it with the access password.');
+        return back()->with('success', 'Exam opened for grading. The course lecturer can now enter scores.');
     }
 
     public function close(Exam $exam)

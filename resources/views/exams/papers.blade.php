@@ -32,7 +32,12 @@
                                 <td class="px-6 py-3 text-gray-600 text-xs">{{ $ex->objective_count }} obj · {{ $ex->theory_count }} theory</td>
                                 <td class="px-6 py-3 text-right whitespace-nowrap">
                                     <a href="{{ route('exams.papers.print', $ex) }}" target="_blank" class="bg-gray-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-800">Print</a>
-                                    <a href="{{ route('exams.papers.csv', $ex) }}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-700">CSV (objectives)</a>
+                                    @if($ex->objective_count)
+                                        <a href="{{ route('exams.papers.csv', $ex) }}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-700">CBT (CSV)</a>
+                                    @endif
+                                    @if($ex->theory_count)
+                                        <a href="{{ route('exams.papers.theory', $ex) }}" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-700">Theory (Word)</a>
+                                    @endif
                                 </td>
                             </tr>
                         @empty

@@ -80,10 +80,8 @@ class ExamWorkflowTest extends TestCase
             'correct_option' => 'a', 'marks' => 5, 'type' => 'objective', 'created_by' => $this->lecturer->id,
         ]);
 
-        // Officer releases.
-        $this->actingAs($this->officer)->post("/exams/{$exam->id}/release", [
-            'access_password' => 'open123',
-        ])->assertRedirect();
+        // Officer opens the exam for grading (no access password — online taking retired).
+        $this->actingAs($this->officer)->post("/exams/{$exam->id}/release")->assertRedirect();
         $this->assertSame('released', $exam->fresh()->status);
 
         // Course lecturer grades (CA 30 + exam 5 = 35) -> forwarded to officer.
@@ -105,7 +103,7 @@ class ExamWorkflowTest extends TestCase
     {
         $exam = $this->createExam('Empty');
 
-        $this->actingAs($this->officer)->post("/exams/{$exam->id}/release", ['access_password' => 'pw12'])
+        $this->actingAs($this->officer)->post("/exams/{$exam->id}/release")
             ->assertRedirect();
         $this->assertSame('draft', $exam->fresh()->status); // blocked, still draft
     }

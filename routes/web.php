@@ -415,6 +415,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::get('/exam-papers', [\App\Http\Controllers\ExamPaperController::class, 'index'])->name('exams.papers');
         Route::get('/exam-papers/{exam}/print', [\App\Http\Controllers\ExamPaperController::class, 'print'])->name('exams.papers.print');
         Route::get('/exam-papers/{exam}/csv', [\App\Http\Controllers\ExamPaperController::class, 'csv'])->name('exams.papers.csv');
+        Route::get('/exam-papers/{exam}/theory', [\App\Http\Controllers\ExamPaperController::class, 'theoryDoc'])->name('exams.papers.theory');
     });
 
     // -- Teacher: author questions + grade --
