@@ -133,6 +133,16 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // --- E-signature (Registrar + Provost) ---
+    Route::middleware('role:registrar,provost')->group(function () {
+        $SIG = \App\Http\Controllers\SignatureController::class;
+        Route::get('/profile/signature', [$SIG, 'edit'])->name('signature.edit');
+        Route::post('/profile/signature', [$SIG, 'update'])->name('signature.update');
+        Route::delete('/profile/signature', [$SIG, 'destroy'])->name('signature.destroy');
+    });
+    // Stream a signature image (same-college staff / owner — authorised in controller).
+    Route::get('/signatures/{user}', [\App\Http\Controllers\SignatureController::class, 'show'])->name('signature.show');
+
     // --- Student Management ---
     // Viewing student records is for STAFF only (the 'student' role is absent
     // from view_students) — prevents a pupil from opening another pupil's
@@ -575,6 +585,9 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::get('/my/course-registration', [$CR, 'index'])->name('course-registration.index');
         Route::post('/my/course-registration/add', [$CR, 'add'])->name('course-registration.add');
         Route::post('/my/course-registration/drop', [$CR, 'drop'])->name('course-registration.drop');
+
+        // Dedicated Fees page (sidebar link target).
+        Route::get('/my/fees', [\App\Http\Controllers\StudentFinanceController::class, 'index'])->name('student.fees');
     });
 
     // --- Result Lifecycle ---

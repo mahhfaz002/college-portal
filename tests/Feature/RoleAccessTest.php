@@ -60,6 +60,24 @@ class RoleAccessTest extends TestCase
         ])->assertSessionHasNoErrors();
     }
 
+    // ---- Oversight roles: student list + payment history only, no academic report ----
+
+    public function test_proprietor_can_view_student_payment_history(): void
+    {
+        $this->actingAs($this->userWithRole('proprietor'))
+            ->get('/students/'.$this->student->id)
+            ->assertOk();
+    }
+
+    public function test_oversight_roles_cannot_view_end_of_term_report(): void
+    {
+        foreach (['proprietor', 'provost'] as $role) {
+            $this->actingAs($this->userWithRole($role))
+                ->get('/students/'.$this->student->id.'/report-card')
+                ->assertForbidden();
+        }
+    }
+
     // ---- Cross-role write isolation ----
 
     public function test_lecturer_cannot_take_payments(): void

@@ -32,7 +32,7 @@
                     <h3 class="text-4xl font-black text-gray-900">{{ number_format($staffCount) }}</h3>
                 </div>
                 <div class="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-emerald-500">
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Fees Collected</p>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Fees Collected <span class="normal-case text-gray-300">({{ $revenueRange['label'] }})</span></p>
                     <h3 class="text-3xl font-black text-emerald-600">{{ money($totalCollected) }}</h3>
                 </div>
             </div>
@@ -45,13 +45,16 @@
 
             {{-- ===== FINANCE BANNER ===== --}}
             <div class="rounded-2xl bg-gradient-to-r from-gray-900 to-indigo-900 p-6 shadow-lg">
-                <div class="flex items-center gap-2 mb-4">
-                    <span class="text-2xl">💰</span>
-                    <h3 class="text-lg font-black uppercase tracking-wide text-white">Finance Overview</h3>
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">💰</span>
+                        <h3 class="text-lg font-black uppercase tracking-wide text-white">Finance Overview</h3>
+                    </div>
+                    @include('partials.revenue-filter', ['dark' => true])
                 </div>
                 <div class="grid grid-cols-1 gap-6">
                     <div class="bg-white/10 backdrop-blur p-6 rounded-xl border-l-8 border-emerald-400">
-                        <p class="text-sm font-black uppercase text-emerald-200">Total Collected</p>
+                        <p class="text-sm font-black uppercase text-emerald-200">Total Collected <span class="text-emerald-200/60">({{ $revenueRange['label'] }})</span></p>
                         <h3 class="text-3xl font-black text-white">{{ money($totalCollected) }}</h3>
                     </div>
                 </div>

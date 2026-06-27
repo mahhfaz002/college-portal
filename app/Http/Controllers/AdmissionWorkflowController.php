@@ -223,7 +223,37 @@ class AdmissionWorkflowController extends Controller
         $college = College::withoutGlobalScopes()->find($applicant->college_id);
         $program = $applicant->admittedProgram;
 
-        return view('admission.letter', compact('applicant', 'college', 'program'));
+        // Embed the college Registrar's saved e-signature (as a data URI so it
+        // renders in the browser print view and any PDF without an auth round-trip).
+        $registrarSignature = $this->registrarSignatureDataUri($applicant->college_id);
+
+        return view('admission.letter', compact('applicant', 'college', 'program', 'registrarSignature'));
+    }
+
+    /** Base64 data URI of the college Registrar's signature PNG, or null. */
+    private function registrarSignatureDataUri(int $collegeId): ?string
+    {
+        $registrar = \App\Models\User::withoutGlobalScopes()
+            ->where('college_id', $collegeId)
+            ->where('role', 'registrar')
+            ->whereNotNull('signature_path')
+            ->first();
+
+        if (!$registrar) {
+            return null;
+        }
+
+        $disk = config('filesystems.documents', 'local');
+        try {
+            if (\Illuminate\Support\Facades\Storage::disk($disk)->exists($registrar->signature_path)) {
+                $bytes = \Illuminate\Support\Facades\Storage::disk($disk)->get($registrar->signature_path);
+                return 'data:image/png;base64,'.base64_encode($bytes);
+            }
+        } catch (\Throwable $e) {
+            // Non-fatal: fall back to the printed signature line.
+        }
+
+        return null;
     }
 
     /** Blank admission acceptance form to print, sign and re-upload. */

@@ -81,12 +81,37 @@ class StudentController extends Controller
     }
 
     /**
-     * Show the Statement of Account (Payment History).
+     * Show the Statement of Account (Payment History). Merges the legacy manual
+     * `payments` table with settled online `invoices` (Paystack) so the full
+     * payment history for the student shows — college-scoped automatically.
      */
     public function show(Student $student)
     {
-        $payments = $student->payments()->latest()->get();
-        return view('students.show', compact('student', 'payments'));
+        $manual = $student->payments()->latest()->get()->map(fn ($p) => [
+            'date'        => $p->created_at,
+            'method'      => $p->payment_method ?? 'manual',
+            'description' => $p->description ?: 'Fees payment',
+            'amount'      => (float) $p->amount,
+            'receipt'     => route('payments.receipt', $p->id),
+        ]);
+
+        $online = \App\Models\Invoice::where('student_id', $student->id)
+            ->where('status', 'paid')
+            ->latest('paid_at')->get()->map(fn ($inv) => [
+                'date'        => $inv->paid_at ?? $inv->updated_at,
+                'method'      => 'paystack',
+                'description' => $inv->description ?: ucfirst(str_replace('_', ' ', $inv->purpose ?? 'payment')),
+                'amount'      => (float) $inv->amount,
+                'receipt'     => route('invoices.receipt', $inv->id),
+            ]);
+
+        $payments = $manual->concat($online)
+            ->sortByDesc('date')
+            ->values();
+
+        $totalPaid = $payments->sum('amount');
+
+        return view('students.show', compact('student', 'payments', 'totalPaid'));
     }
 
     /**
@@ -141,6 +166,11 @@ class StudentController extends Controller
      */
     public function reportCard(Student $student, Request $request)
     {
+        // Oversight roles (proprietor / provost) may view the student LIST and
+        // payment history only — never a student's academic end-of-term report.
+        abort_if(auth()->user()->hasRole('proprietor', 'provost'), 403,
+            'Oversight roles can view the student list and payment history only.');
+
         $term = $request->query('term', '1st Term');
         $session = $request->query('session', '2025/2026');
 

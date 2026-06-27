@@ -41,6 +41,10 @@
                     <div class="text-3xl mb-2">📅</div><h3 class="font-bold text-gray-800">Semester Control</h3>
                     <p class="text-sm text-gray-500 mt-1">End semester, set break &amp; countdown, transition.</p>
                 </a>
+                <a href="{{ route('signature.edit') }}" class="bg-white rounded-2xl shadow-sm border p-6 hover:shadow-md transition">
+                    <div class="text-3xl mb-2">✍️</div><h3 class="font-bold text-gray-800">My E-Signature</h3>
+                    <p class="text-sm text-gray-500 mt-1">Upload or draw your signature — used on admission letters.</p>
+                </a>
             </div>
         </div>
     </div>

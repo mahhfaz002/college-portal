@@ -28,13 +28,17 @@
 
             {{-- Headline collection figures — SETTLED money only (pending/unpaid
                  invoices are excluded so cancelled checkouts can't inflate totals). --}}
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h3 class="font-bold text-gray-700">Finance Overview <span class="text-xs font-normal text-gray-400">· {{ $revenueRange['label'] }}</span></h3>
+                @include('partials.revenue-filter')
+            </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-brand">
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Collected</p>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Collected <span class="normal-case text-gray-300">({{ $revenueRange['label'] }})</span></p>
                     <h3 class="text-3xl font-black text-gray-900">{{ money($totalCollected) }}</h3>
                 </div>
                 <div class="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-emerald-500">
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Payments Received</p>
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Payments Received <span class="normal-case text-gray-300">({{ $revenueRange['label'] }})</span></p>
                     <h3 class="text-3xl font-black text-emerald-600">{{ number_format($paymentsCount) }}</h3>
                 </div>
             </div>

@@ -54,14 +54,14 @@
                     <tbody>
                         @forelse($payments as $payment)
                             <tr class="border-b hover:bg-gray-50">
-                                <td class="p-3">{{ $payment->created_at->format('d M, Y') }}</td>
-                                <td class="p-3">{{ $payment->payment_method }}</td>
-                                <td class="p-3 text-gray-500 italic text-sm">{{ $payment->description ?? 'No description' }}</td>
-                                <td class="p-3 text-right font-bold text-green-600">₦{{ number_format($payment->amount, 2) }}</td>
+                                <td class="p-3">{{ \Illuminate\Support\Carbon::parse($payment['date'])->format('d M, Y') }}</td>
+                                <td class="p-3 uppercase text-xs font-bold text-gray-500">{{ $payment['method'] }}</td>
+                                <td class="p-3 text-gray-500 italic text-sm">{{ $payment['description'] }}</td>
+                                <td class="p-3 text-right font-bold text-green-600">₦{{ number_format($payment['amount'], 2) }}</td>
                                 <td class="p-3 text-center">
-                                    <a href="{{ route('payments.receipt', $payment->id) }}"
+                                    <a href="{{ $payment['receipt'] }}" target="_blank"
                                        style="background-color: #f3f4f6; border: 1px solid #d1d5db; padding: 4px 12px; border-radius: 4px; text-decoration: none; font-size: 11px; color: black; font-weight: bold;">
-                                        🖨️ View Receipt
+                                        View Receipt
                                     </a>
                                 </td>
                             </tr>
@@ -71,15 +71,27 @@
                             </tr>
                         @endforelse
                     </tbody>
+                    @if($payments->isNotEmpty())
+                    <tfoot>
+                        <tr class="bg-gray-50">
+                            <td colspan="3" class="p-3 font-bold text-gray-700">Total Paid</td>
+                            <td class="p-3 text-right font-black text-green-700">₦{{ number_format($totalPaid, 2) }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                    @endif
                 </table>
 
                 <div class="mt-8 flex justify-between items-center border-t pt-6">
                     <a href="{{ route('students.index') }}" class="text-blue-600 font-bold underline">← Back to Student List</a>
 
+                    {{-- Oversight roles (proprietor/provost) cannot view academic reports. --}}
+                    @unless(auth()->user()->hasRole('proprietor', 'provost'))
                     <a href="{{ route('students.report', $student->id) }}"
                        style="background-color: #4338ca; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; transition: background 0.2s;">
                         📜 View End-of-Term Report
                     </a>
+                    @endunless
                 </div>
             </div>
         </div>

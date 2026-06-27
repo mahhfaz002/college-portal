@@ -1,4 +1,10 @@
-@php $examCycle = auth()->check() ? \App\Models\ExamCycle::active() : null; @endphp
+@php
+    // College-scoped only: the super-admin (no college) and any user without a
+    // college must never see another college's exam countdown.
+    $examCycle = (auth()->check() && auth()->user()->role !== 'superadmin' && auth()->user()->college_id)
+        ? \App\Models\ExamCycle::active()
+        : null;
+@endphp
 @if($examCycle)
     @php $isLecturer = auth()->user()->role === 'lecturer'; @endphp
     <div class="bg-gradient-to-r from-gray-900 to-indigo-900 text-white"

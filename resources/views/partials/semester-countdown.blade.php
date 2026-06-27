@@ -1,7 +1,10 @@
 @php
-    $semesterStatus = auth()->check() ? setting('semester_status', 'active') : 'active';
-    $nextSemesterStart = setting('next_semester_start');
-    $nextSessionStart = setting('next_session_start');
+    // College-scoped only: the super-admin (no college) and any user without a
+    // college must never see a specific college's semester-break countdown.
+    $showSemesterCountdown = auth()->check() && auth()->user()->role !== 'superadmin' && auth()->user()->college_id;
+    $semesterStatus = $showSemesterCountdown ? setting('semester_status', 'active') : 'active';
+    $nextSemesterStart = $showSemesterCountdown ? setting('next_semester_start') : null;
+    $nextSessionStart = $showSemesterCountdown ? setting('next_session_start') : null;
 @endphp
 @if($semesterStatus === 'break' && $nextSemesterStart)
     <div class="bg-gradient-to-r from-amber-700 to-orange-700 text-white"

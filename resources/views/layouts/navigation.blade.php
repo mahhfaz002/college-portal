@@ -115,8 +115,8 @@
                 <x-responsive-nav-link :href="route('student.course-form')" :active="request()->routeIs('student.course-form*')">{{ __('Course Form') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('timetable.index')" :active="request()->routeIs('timetable.*')">{{ __('Timetable') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('library.index')" :active="request()->routeIs('library.*')">{{ __('Library') }}</x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('dashboard').'#results'">{{ __('Results') }}</x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('dashboard').'#fees'">{{ __('Fees') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('results.student.index')" :active="request()->routeIs('results.student.*')">{{ __('Results') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('student.fees')" :active="request()->routeIs('student.fees')">{{ __('Fees') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('change-of-course.index')" :active="request()->routeIs('change-of-course.*')">{{ __('Change of Course') }}</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('notifications.index')" :active="request()->routeIs('notifications.*')">{{ __('Notifications') }}</x-responsive-nav-link>
             @endif
