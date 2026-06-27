@@ -17,8 +17,15 @@ class InvoiceController extends Controller
         abort_unless($invoice->isPaid(), 404);
 
         $user = auth()->user();
-        $owns = $invoice->user_id === $user->id
-            || ($invoice->applicant_id && optional($invoice->applicant)->user_id === $user->id);
+        // Ownership: the invoice's own user, the applicant behind it, OR the
+        // student it belongs to (matched by email, exactly as the student's own
+        // Fees page resolves their record). The student match is what lets a
+        // learner download the receipt for a fee a bursar raised against them —
+        // while still blocking any OTHER student, since the email must match.
+        $owns = ($invoice->user_id && $invoice->user_id === $user->id)
+            || ($invoice->applicant_id && optional($invoice->applicant)->user_id === $user->id)
+            || ($invoice->student_id && optional($invoice->student)->email
+                && optional($invoice->student)->email === $user->email);
         $isStaff = $user->canManage('view_fees') || $user->hasRole('registrar', 'bursar', 'proprietor');
 
         abort_unless($owns || $isStaff, 403);

@@ -10,15 +10,18 @@
             @if(session('error'))<div class="p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg text-sm">{{ session('error') }}</div>@endif
             @if($errors->any())<div class="p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg text-sm"><ul class="list-disc ml-5">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
 
-            @php $open = $requests->firstWhere(fn ($r) => ! in_array($r->status, ['approved', 'rejected'])); @endphp
+            {{-- A PAID application still under review blocks a new one; an unpaid
+                 attempt does not — the form stays available so the student can
+                 (re)apply and pay. --}}
+            @php $inReview = $requests->firstWhere(fn ($r) => in_array($r->status, ['under_review', 'recommended', 'not_recommended'])); @endphp
 
-            {{-- Application form (only when there is no application in progress) --}}
-            @unless($open)
+            {{-- Application form --}}
+            @unless($inReview)
             <div class="bg-white p-6 rounded-2xl shadow-sm border">
                 <h3 class="font-bold text-gray-800 mb-1">Apply for a Change of Course</h3>
                 <p class="text-sm text-gray-500 mb-4">
                     You are currently on <b>{{ optional($student->program)->name ?? $student->class_arm }}</b>.
-                    A non-refundable application fee of <b>{{ money(\App\Models\ChangeOfCourseRequest::FEE) }}</b>
+                    A non-refundable application fee of <b>{{ money($fee) }}</b>
                     applies. After payment, the Academic Secretary reviews your request and the Registrar makes the final decision.
                 </p>
                 <form method="POST" action="{{ route('change-of-course.store') }}" class="space-y-4">
@@ -28,16 +31,17 @@
                         <select name="requested_program_id" required class="w-full border-gray-300 rounded-lg text-sm">
                             <option value="">— Select the course you want —</option>
                             @foreach($programs as $p)
-                                <option value="{{ $p->id }}">{{ $p->name }}@if($p->department) — {{ $p->department->name }}@endif</option>
+                                <option value="{{ $p->id }}" @selected(old('requested_program_id')==$p->id)>{{ $p->name }}@if($p->department) — {{ $p->department->name }}@endif</option>
                             @endforeach
                         </select>
+                        <p class="text-xs text-gray-400 mt-1">Choose the course of study (and department) you want to move to.</p>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Reason for the change</label>
                         <textarea name="reason" rows="4" required class="w-full border-gray-300 rounded-lg text-sm" placeholder="Explain why you are applying to change your course of study.">{{ old('reason') }}</textarea>
                     </div>
                     <button class="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-bold hover:bg-indigo-700">
-                        Submit &amp; Pay {{ money(\App\Models\ChangeOfCourseRequest::FEE) }}
+                        Submit &amp; Pay {{ money($fee) }}
                     </button>
                 </form>
             </div>
