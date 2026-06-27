@@ -57,13 +57,22 @@
             </div>
             @endif
 
+            {{-- Course registration: add/drop courses --}}
+            <div class="mb-6 p-4 rounded-lg border bg-emerald-50 border-emerald-200 text-emerald-900 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <p class="font-bold">Course Registration</p>
+                    <p class="text-xs opacity-80">Register, add, or drop courses for the current semester. Carryover courses are auto-registered.</p>
+                </div>
+                <a href="{{ route('course-registration.index') }}" class="bg-emerald-600 text-white px-5 py-2 rounded-full font-bold hover:bg-emerald-700 text-sm">Register Courses &rarr;</a>
+            </div>
+
             {{-- Change of course: apply and track progress. --}}
             <div class="mb-6 p-4 rounded-lg border bg-indigo-50 border-indigo-200 text-indigo-900 flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <p class="font-bold">Want to change your course of study?</p>
                     <p class="text-xs opacity-80">Apply for a change of course and track your application's progress here.</p>
                 </div>
-                <a href="{{ route('change-of-course.index') }}" class="bg-indigo-600 text-white px-5 py-2 rounded-full font-bold hover:bg-indigo-700 text-sm">Change of Course →</a>
+                <a href="{{ route('change-of-course.index') }}" class="bg-indigo-600 text-white px-5 py-2 rounded-full font-bold hover:bg-indigo-700 text-sm">Change of Course &rarr;</a>
             </div>
 
 
@@ -129,50 +138,20 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div id="results" class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     <div class="px-6 py-4 bg-gray-50 border-b flex justify-between items-center">
-                        <h3 class="font-bold text-gray-700">Semester Results — {{ setting('current_term','First Semester') }} {{ setting('current_session','2025/2026') }}</h3>
-                        <a href="{{ route('reports.download', $student->id) }}" class="flex items-center text-xs text-blue-600 font-bold hover:text-blue-900 transition">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                            Download Statement of Result
+                        <h3 class="font-bold text-gray-700">Semester Results</h3>
+                        <a href="{{ route('results.student.index') }}" class="text-sm text-indigo-600 font-bold hover:underline">View All Results &rarr;</a>
+                    </div>
+                    <div class="p-6 text-center">
+                        <a href="{{ route('results.student.index') }}" class="inline-flex items-center gap-3 px-6 py-4 bg-indigo-50 border border-indigo-200 rounded-xl hover:bg-indigo-100 transition">
+                            <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <div class="text-left">
+                                <p class="font-bold text-indigo-900">My Results</p>
+                                <p class="text-xs text-indigo-600">View results by semester, pay to access transmitted results</p>
+                            </div>
                         </a>
                     </div>
-                    <table class="w-full text-left">
-                        <thead class="bg-gray-100">
-                            <tr class="text-xs uppercase text-gray-500">
-                                <th class="px-6 py-3">Course</th>
-                                <th class="px-6 py-3 text-center">CA (40)</th>
-                                <th class="px-6 py-3 text-center">Exam (60)</th>
-                                <th class="px-6 py-3 text-center">Total</th>
-                                <th class="px-6 py-3 text-center">Grade</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            @forelse($scores as $score)
-                            @php
-                                $total = $score->total ?? ($score->ca_score + $score->exam_score);
-                                $grade = $score->grade ?? grade_for($total)['grade'];
-                            @endphp
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 text-sm font-bold text-gray-800">{{ $score->subject->name ?? '—' }}</td>
-                                <td class="px-6 py-4 text-sm text-center text-gray-600">{{ $score->ca_score }}</td>
-                                <td class="px-6 py-4 text-sm text-center text-gray-600">{{ $score->exam_score }}</td>
-                                <td class="px-6 py-4 text-sm text-center font-black text-blue-600">{{ $total }}</td>
-                                <td class="px-6 py-4 text-center">
-                                    <span class="px-3 py-1 text-xs font-black rounded-full
-                                        {{ $grade == 'A' ? 'bg-green-100 text-green-700' : '' }}
-                                        {{ $grade == 'B' ? 'bg-blue-100 text-blue-700' : '' }}
-                                        {{ $grade == 'C' ? 'bg-yellow-100 text-yellow-700' : '' }}
-                                        {{ in_array($grade,['F','E']) ? 'bg-red-100 text-red-700' : '' }}">
-                                        {{ $grade }}
-                                    </span>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="5" class="p-8 text-center text-gray-400 italic text-sm">No results published for this term yet.</td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
                 </div>
 
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

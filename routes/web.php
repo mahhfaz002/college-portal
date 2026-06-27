@@ -535,12 +535,18 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
     // ===== Phase 3 — admission → acceptance → registration → HOD approval =====
     $AW = \App\Http\Controllers\AdmissionWorkflowController::class;
 
-    // Registrar: review paid applications, offer/decline admission.
+    // Registrar: review paid applications, offer/decline admission, view credentials.
     Route::middleware('role:'.Permissions::middleware('manage_admissions'))->group(function () use ($AW) {
         Route::get('/admissions/review', [$AW, 'reviewPanel'])->name('admissions.review');
         Route::post('/admissions/{applicant}/offer', [$AW, 'offer'])->name('admissions.offer');
         Route::post('/admissions/{applicant}/decline', [$AW, 'decline'])->name('admissions.decline');
+        Route::get('/admissions/{applicant}/credentials', [\App\Http\Controllers\ApplicationCredentialController::class, 'show'])->name('admissions.credentials');
     });
+
+    // Applicant: submit application with documents (after payment, before review).
+    $AS = \App\Http\Controllers\ApplicationSubmissionController::class;
+    Route::get('/application/submit', [$AS, 'show'])->name('application.submit.show');
+    Route::post('/application/submit', [$AS, 'store'])->name('application.submit.store');
 
     // Applicant: accept / reject the offer, reapply, download letter & form.
     Route::post('/admission/accept', [$AW, 'accept'])->name('admission.accept');
@@ -557,6 +563,38 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
     Route::middleware('role:student')->group(function () {
         Route::get('/my/course-form', [\App\Http\Controllers\CourseFormController::class, 'show'])->name('student.course-form');
         Route::get('/my/course-form/pdf', [\App\Http\Controllers\CourseFormController::class, 'pdf'])->name('student.course-form.pdf');
+
+        // Course registration: add/drop with credit unit tracking.
+        $CR = \App\Http\Controllers\CourseRegistrationController::class;
+        Route::get('/my/course-registration', [$CR, 'index'])->name('course-registration.index');
+        Route::post('/my/course-registration/add', [$CR, 'add'])->name('course-registration.add');
+        Route::post('/my/course-registration/drop', [$CR, 'drop'])->name('course-registration.drop');
+    });
+
+    // --- Result Lifecycle ---
+
+    // Lecturer result submission (score entry + scanned copy upload).
+    Route::middleware('role:lecturer,hod,assistant_hod')->group(function () {
+        $RS = \App\Http\Controllers\ResultSubmissionController::class;
+        Route::get('/results/submit/{subject}', [$RS, 'create'])->name('results.submit.create');
+        Route::post('/results/submit/{subject}', [$RS, 'store'])->name('results.submit.store');
+    });
+
+    // Exam Officer: result management (view, edit, transmit).
+    Route::middleware('role:exam_officer')->group(function () {
+        $RT = \App\Http\Controllers\ResultTransmissionController::class;
+        Route::get('/results/officer', [$RT, 'index'])->name('results.officer.index');
+        Route::get('/results/officer/{subject}', [$RT, 'show'])->name('results.officer.show');
+        Route::post('/results/officer/{subject}/save', [$RT, 'save'])->name('results.officer.save');
+        Route::post('/results/officer/transmit', [$RT, 'transmit'])->name('results.officer.transmit');
+        Route::get('/results/officer/scan/{submission}', [$RT, 'scan'])->name('results.officer.scan');
+    });
+
+    // Student: pay-to-view results.
+    Route::middleware('role:student')->group(function () {
+        $RV = \App\Http\Controllers\ResultViewingController::class;
+        Route::get('/my/results', [$RV, 'index'])->name('results.student.index');
+        Route::post('/my/results/pay', [$RV, 'pay'])->name('results.student.pay');
     });
 
     // HOD / Assistant HOD: review and approve registrations.

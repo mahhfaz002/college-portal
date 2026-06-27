@@ -60,6 +60,9 @@ class Permissions
         'manage_exams'         => ['exam_officer', 'mis'],
         'view_exams'           => ['exam_officer', 'mis'],
         'enter_scores'         => ['lecturer', 'exam_officer'],
+        'submit_results'       => ['lecturer', 'hod', 'assistant_hod'],
+        'manage_results'       => ['exam_officer'],
+        'view_results'         => ['student'],
         'author_questions'     => ['lecturer'],
         // Online exam-taking removed from the platform (offline portal handles it).
         'take_exams'           => [],

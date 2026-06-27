@@ -30,6 +30,7 @@
                     @php
                         $status = $applicant->application_status;
                         $badge = match($status) {
+                            'awaiting_documents' => ['Complete Your Application', 'bg-amber-100 text-amber-700'],
                             'submitted' => ['Under Review', 'bg-blue-100 text-blue-700'],
                             'admitted'  => ['Admitted', 'bg-green-100 text-green-700'],
                             'rejected'  => ['Not Successful', 'bg-red-100 text-red-700'],
@@ -61,13 +62,28 @@
                     <div class="p-4 rounded-lg bg-gray-50">
                         <p class="text-gray-400 uppercase text-xs font-bold">Next Step</p>
                         <p class="font-semibold text-gray-700">
-                            @if($applicant->application_status==='submitted') Await admission decision
-                            @elseif($applicant->application_status==='admitted') Accept &amp; pay acceptance fee <span class="text-xs text-gray-400">(Phase 3)</span>
+                            @if($applicant->application_status==='awaiting_documents') Upload documents &amp; submit application
+                            @elseif($applicant->application_status==='submitted') Await admission decision
+                            @elseif($applicant->application_status==='admitted') Accept &amp; pay acceptance fee
                             @else Complete application payment @endif
                         </p>
                     </div>
                 </div>
             </div>
+
+            {{-- Submit Application: upload documents --}}
+            @if($applicant->application_status === 'awaiting_documents')
+                <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-6">
+                    <h3 class="font-bold text-indigo-900 text-lg mb-1">Complete Your Application</h3>
+                    <p class="text-sm text-indigo-800 mb-4">
+                        Your application fee has been paid. To complete your application, you need to upload the required documents
+                        (JAMB result, SSCE certificate, and passport photograph) and submit for review.
+                    </p>
+                    <a href="{{ route('application.submit.show') }}" class="inline-block bg-indigo-600 text-white px-6 py-2.5 rounded-full font-bold hover:bg-indigo-700">
+                        Submit Application &rarr;
+                    </a>
+                </div>
+            @endif
 
             {{-- Admission offer: accept / reject --}}
             @if($applicant->application_status === 'admitted')
