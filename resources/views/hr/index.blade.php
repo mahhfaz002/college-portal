@@ -40,7 +40,7 @@
                     <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Section</label>
                     <select x-model="fSection" @change="fDept=''" class="border-gray-300 rounded-md text-sm">
                         <option value="">All sections</option>
-                        @foreach($sections as $s)<option value="{{ $s }}">{{ $s }}</option>@endforeach
+                        @foreach($sections as $s)<option value="{{ $s }}">{{ \App\Support\Sections::label($s) }}</option>@endforeach
                     </select>
                 </div>
                 <div>
@@ -68,7 +68,7 @@
                             x-show="(!fSection || fSection==='{{ $r['section'] }}') && (!fDept || fDept==='{{ $r['dept'] ?? 'Others' }}')">
                             <td class="p-3 font-bold">{{ $r['staff']->name }}</td>
                             <td class="p-3 text-gray-500 uppercase text-[11px]">{{ str_replace('_',' ',$r['staff']->role) }}</td>
-                            <td class="p-3 text-gray-500 text-xs">{{ $r['dept'] ?? 'Others' }} <span class="text-gray-300">· {{ $r['section'] }}</span></td>
+                            <td class="p-3 text-gray-500 text-xs">{{ $r['dept'] ?? 'Others' }} <span class="text-gray-300">· {{ \App\Support\Sections::label($r['section']) }}</span></td>
                             <td class="p-3 text-right font-bold">{{ $slip ? money($slip->net_salary) : '—' }}</td>
                             <td class="p-3">
                                 @php $badge = ['none'=>'bg-gray-100 text-gray-500','draft'=>'bg-gray-100 text-gray-600','provost_review'=>'bg-blue-100 text-blue-700','provost_forwarded'=>'bg-blue-100 text-blue-700','proprietor_review'=>'bg-purple-100 text-purple-700','queried'=>'bg-red-100 text-red-700','approved'=>'bg-green-100 text-green-700','paid'=>'bg-emerald-100 text-emerald-700'][$status] ?? 'bg-gray-100 text-gray-500'; @endphp

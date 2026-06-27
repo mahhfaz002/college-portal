@@ -15,7 +15,7 @@
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Programme</label>
                         <select x-model="type" @change="deptId='';programId='';level='';selected=[]" class="w-full border-gray-300 rounded-lg text-sm">
-                            <option value="">All types</option><option value="UG">UG</option><option value="DIP">DIP</option><option value="CERT">CERT</option>
+                            <option value="">All types</option>@foreach(\App\Support\Sections::ALL as $code)<option value="{{ $code }}">{{ \App\Support\Sections::label($code) }}</option>@endforeach
                         </select>
                     </div>
                     <div>

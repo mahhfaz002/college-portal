@@ -70,7 +70,7 @@
                             <option value="">— Select your course of study —</option>
                             @foreach($programs as $p)
                                 <option value="{{ $p->id }}" @selected(old('program_id') == $p->id)>
-                                    {{ $p->name }}@if($p->department) — {{ $p->department->name }}@endif ({{ $p->program_type }})
+                                    {{ $p->name }}@if($p->department) — {{ $p->department->name }}@endif ({{ \App\Support\Sections::label($p->program_type) }})
                                 </option>
                             @endforeach
                         </select>

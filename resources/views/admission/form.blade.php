@@ -54,37 +54,62 @@
         </div>
     @else
     <form method="POST" action="{{ route('admission.submit') }}" class="space-y-8"
-          x-data="{ fee: '' }">
+          x-data="{
+              section: '{{ old('section', '') }}',
+              first: '{{ old('first_choice_program_id', '') }}',
+              second: '{{ old('second_choice_program_id', '') }}',
+              programs: {{ Illuminate\Support\Js::from($programs->map(fn ($p) => [
+                  'id'      => $p->id,
+                  'name'    => $p->name,
+                  'dept'    => optional($p->department)->name,
+                  'section' => optional($p->department)->section,
+                  'fee'     => (float) $p->application_fee,
+              ])->values()) }},
+              shown() { return this.section ? this.programs.filter(p => p.section === this.section) : []; },
+              feeFor(id) { const p = this.programs.find(x => String(x.id) === String(id)); return p ? p.fee : 0; }
+          }">
         @csrf
         <input type="hidden" name="college_id" value="{{ $college->id }}">
 
         {{-- Program choices --}}
         <section class="bg-white rounded-xl shadow-sm border p-6">
             <h2 class="text-lg font-bold text-gray-800 mb-4">Programs of Interest</h2>
-            <div class="grid md:grid-cols-2 gap-4">
+
+            {{-- Section first — Undergraduate / Diploma / Certificate — then the
+                 courses load from that section only. --}}
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-600 mb-1">Section *</label>
+                <select name="section" x-model="section" @change="first=''; second=''" required
+                        class="w-full md:w-1/2 border-gray-300 rounded-lg">
+                    <option value="">— Select section —</option>
+                    @foreach(\App\Support\Sections::ALL as $code)
+                        <option value="{{ $code }}">{{ \App\Support\Sections::label($code) }}</option>
+                    @endforeach
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Choose a section to load its courses below.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-4" x-show="section" x-cloak>
                 <div>
                     <label class="block text-sm font-semibold text-gray-600 mb-1">First Choice *</label>
-                    <select name="first_choice_program_id" required class="w-full border-gray-300 rounded-lg"
-                            @change="fee = $event.target.selectedOptions[0].dataset.fee">
-                        <option value="">— Select program —</option>
-                        @foreach($programs as $p)
-                            <option value="{{ $p->id }}" data-fee="{{ $p->application_fee }}" @selected(old('first_choice_program_id')==$p->id)>
-                                {{ $p->name }} ({{ $p->department->name ?? '' }})
-                            </option>
-                        @endforeach
+                    <select name="first_choice_program_id" x-model="first" :required="section !== ''"
+                            class="w-full border-gray-300 rounded-lg">
+                        <option value="">— Select course —</option>
+                        <template x-for="p in shown()" :key="p.id">
+                            <option :value="p.id" x-text="p.name + (p.dept ? ' (' + p.dept + ')' : '')"></option>
+                        </template>
                     </select>
-                    <p class="text-xs text-gray-500 mt-1" x-show="fee">Application fee: ₦<span x-text="Number(fee).toLocaleString()"></span></p>
+                    <p class="text-xs text-gray-500 mt-1" x-show="first">Application fee: ₦<span x-text="Number(feeFor(first)).toLocaleString()"></span></p>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-600 mb-1">Second Choice</label>
-                    <select name="second_choice_program_id" class="w-full border-gray-300 rounded-lg">
+                    <select name="second_choice_program_id" x-model="second" class="w-full border-gray-300 rounded-lg">
                         <option value="">— Optional —</option>
-                        @foreach($programs as $p)
-                            <option value="{{ $p->id }}" @selected(old('second_choice_program_id')==$p->id)>
-                                {{ $p->name }} ({{ $p->department->name ?? '' }})
-                            </option>
-                        @endforeach
+                        <template x-for="p in shown()" :key="'s'+p.id">
+                            <option :value="p.id" x-text="p.name + (p.dept ? ' (' + p.dept + ')' : '')"></option>
+                        </template>
                     </select>
+                    <p class="text-xs text-gray-400 mt-1">You may pick the same course as your first choice to show strong interest.</p>
                 </div>
             </div>
         </section>

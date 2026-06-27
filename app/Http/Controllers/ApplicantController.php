@@ -51,7 +51,9 @@ class ApplicantController extends Controller
             'gender'        => 'required|string|max:20',
             // Program choices
             'first_choice_program_id'  => 'required|exists:programs,id',
-            'second_choice_program_id' => 'nullable|exists:programs,id|different:first_choice_program_id',
+            // Second choice may equal the first — an applicant can list the same
+            // course twice to signal strong interest.
+            'second_choice_program_id' => 'nullable|exists:programs,id',
             // Section B — parent / guardian
             'guardian_name'         => 'required|string|max:255',
             'guardian_relationship' => 'required|string|max:100',
@@ -72,7 +74,6 @@ class ApplicantController extends Controller
             // A returning applicant whose fee is already paid has an account —
             // they must log in, not re-apply. Make that explicit.
             'email.unique'              => 'An account already exists with this email address. If you have applied before, please log in instead — or use a different email to start a new application.',
-            'second_choice_program_id.different' => 'Your second-choice programme must be different from your first choice.',
             'date_of_birth.before'      => 'Your date of birth must be a date in the past.',
         ];
 

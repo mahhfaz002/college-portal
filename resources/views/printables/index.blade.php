@@ -14,7 +14,7 @@
                     <div class="grid md:grid-cols-5 gap-3">
                         <select x-model="s.section" @change="s.dept='';s.prog='';s.level=''" class="border-gray-300 rounded-lg text-sm">
                             <option value="">All sections</option>
-                            @foreach($sections as $sec)<option value="{{ $sec }}">{{ $sec }}</option>@endforeach
+                            @foreach($sections as $sec)<option value="{{ $sec }}">{{ \App\Support\Sections::label($sec) }}</option>@endforeach
                         </select>
                         <select x-model="s.dept" @change="s.prog='';s.level=''" class="border-gray-300 rounded-lg text-sm">
                             <option value="">All departments</option>
@@ -54,7 +54,7 @@
                     <div class="grid md:grid-cols-3 gap-3">
                         <select x-model="f.section" @change="f.dept=''" class="border-gray-300 rounded-lg text-sm">
                             <option value="">All sections</option>
-                            @foreach($sections as $sec)<option value="{{ $sec }}">{{ $sec }}</option>@endforeach
+                            @foreach($sections as $sec)<option value="{{ $sec }}">{{ \App\Support\Sections::label($sec) }}</option>@endforeach
                         </select>
                         <select x-model="f.dept" class="border-gray-300 rounded-lg text-sm">
                             <option value="">All departments</option>
