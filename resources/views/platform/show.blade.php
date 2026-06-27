@@ -9,11 +9,17 @@
             @if($errors->any())<div class="p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg text-sm"><ul class="list-disc list-inside">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
             <a href="{{ route('platform.colleges') }}" class="text-sm text-indigo-600 hover:underline">← All colleges</a>
 
+            {{-- Revenue timeframe filter for THIS college --}}
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h3 class="font-bold text-gray-700">Revenue <span class="text-xs font-normal text-gray-400">· {{ $revenueRange['label'] }}</span></h3>
+                @include('partials.revenue-filter')
+            </div>
+
             <div class="grid sm:grid-cols-4 gap-4">
                 <div class="bg-white rounded-xl border p-4"><p class="text-xs uppercase text-gray-400 font-bold">Students</p><p class="text-2xl font-black text-gray-800">{{ number_format($students) }}</p></div>
                 <div class="bg-white rounded-xl border p-4"><p class="text-xs uppercase text-gray-400 font-bold">Staff</p><p class="text-2xl font-black text-gray-800">{{ number_format($staff) }}</p></div>
                 <div class="bg-white rounded-xl border p-4"><p class="text-xs uppercase text-gray-400 font-bold">Applicants</p><p class="text-2xl font-black text-gray-800">{{ number_format($applicants) }}</p></div>
-                <div class="bg-white rounded-xl border p-4"><p class="text-xs uppercase text-gray-400 font-bold">Revenue</p><p class="text-2xl font-black text-emerald-600">{{ money($revenue) }}</p></div>
+                <div class="bg-white rounded-xl border p-4"><p class="text-xs uppercase text-gray-400 font-bold">Revenue <span class="normal-case text-gray-300">({{ $revenueRange['label'] }})</span></p><p class="text-2xl font-black text-emerald-600">{{ money($revenue) }}</p></div>
             </div>
 
             {{-- Registered students (CSV upload + list/search/edit) --}}
