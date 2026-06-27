@@ -52,7 +52,9 @@
                                         @if($a->admission_response)<p class="text-xs text-gray-400 mt-1">Applicant: {{ ucfirst($a->admission_response) }}</p>@endif
                                     </td>
                                     <td class="px-4 py-4">
+                                        @php $regPaid = in_array($a->id, $registeredIds ?? []); @endphp
                                         @if(in_array($a->application_status, ['submitted','offer_rejected']))
+                                            {{-- Not yet offered: offer / decline --}}
                                             <form method="POST" action="{{ route('admissions.offer', $a) }}" class="flex flex-wrap gap-2 items-center">
                                                 @csrf
                                                 <select name="program_id" required class="border-gray-300 rounded-lg text-xs py-1">
@@ -71,6 +73,31 @@
                                                 <input name="reason" placeholder="Reason (optional)" class="border-gray-300 rounded-lg text-xs py-1 w-40">
                                                 <button class="text-red-600 text-xs font-bold hover:underline">Decline</button>
                                             </form>
+                                        @elseif(in_array($a->application_status, ['admitted','accepted','registered']))
+                                            {{-- Already offered: no offer/reject; show status + change-admission --}}
+                                            <p class="text-xs font-bold text-emerald-700 mb-2">✓ Admission Offered</p>
+                                            @if($regPaid)
+                                                <button type="button"
+                                                        onclick="alert('This student has already paid the registration fee and is registered. The admission can no longer be changed — advise the student to apply for a Change of Course from their dashboard.');"
+                                                        class="bg-gray-300 text-gray-600 px-3 py-1 rounded-lg text-xs font-bold cursor-not-allowed">
+                                                    Change Admission
+                                                </button>
+                                                <p class="text-[10px] text-gray-400 mt-1">Locked — registration fee paid.</p>
+                                            @else
+                                                <form method="POST" action="{{ route('admissions.change', $a) }}" class="flex flex-wrap gap-2 items-center"
+                                                      onsubmit="return confirm('Change this student\'s admission to the selected programme?')">
+                                                    @csrf
+                                                    <select name="program_id" required class="border-gray-300 rounded-lg text-xs py-1">
+                                                        <option value="">Change to…</option>
+                                                        @foreach($programs as $p)
+                                                            <option value="{{ $p->id }}" @selected($a->admitted_program_id==$p->id)>
+                                                                {{ $p->name }} ({{ $p->department->acronym ?? '' }})
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    <button class="bg-amber-600 text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-amber-700">Change Admission</button>
+                                                </form>
+                                            @endif
                                         @else
                                             <span class="text-xs text-gray-400">—</span>
                                         @endif

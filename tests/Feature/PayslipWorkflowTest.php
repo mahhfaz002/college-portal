@@ -31,11 +31,13 @@ class PayslipWorkflowTest extends TestCase
 
     private function createSlip(): Payslip
     {
+        // tax and contributory savings are PERCENTAGES of gross earnings.
         $this->actingAs($this->bursar)->post('/payroll/'.$this->staffMember->id, [
             'month' => $this->month,
             'basic_salary' => 100000,
             'allowances' => 20000,
-            'tax' => 5000,
+            'tax' => 5,                       // 5% of 120000 gross = 6000
+            'contributory_savings' => 10,     // 10% of 120000 gross = 12000
             'deduction_nature' => ['Pension', 'Loan'],
             'deduction_amount' => [8000, 2000],
         ])->assertRedirect();
@@ -45,10 +47,10 @@ class PayslipWorkflowTest extends TestCase
 
     public function test_full_payslip_lifecycle(): void
     {
-        // Bursar creates -> net = 100000 + 20000 - 10000 - 5000 = 105000
+        // Bursar creates -> gross 120000 − deductions 10000 − tax 6000 − savings 12000 = 92000
         $slip = $this->createSlip();
         $this->assertSame('draft', $slip->status);
-        $this->assertEquals(105000, (float) $slip->net_salary);
+        $this->assertEquals(92000, (float) $slip->net_salary);
 
         // Submit -> provost_review
         $this->actingAs($this->bursar)->post('/payroll-submit', ['month' => $this->month])->assertRedirect();

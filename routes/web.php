@@ -471,6 +471,11 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::post('/payroll/{payslip}/proprietor-query', [PayslipController::class, 'proprietorQuery'])->name('payroll.proprietor.query');
     });
 
+    // Read-only payslip detail for the Bursar, Provost and Proprietor (GET only).
+    Route::middleware('role:bursar,provost,proprietor')->group(function () {
+        Route::get('/payroll/{payslip}/view', [PayslipController::class, 'viewSlip'])->name('payroll.view');
+    });
+
     // --- Management-only modules: Transport, Alumni ---
     // (HR/Payroll moved to the dedicated payslip workflow below — bursar + principal only.)
     Route::middleware(['role:proprietor,mis,bursar'])->group(function () {
@@ -539,6 +544,7 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
     Route::middleware('role:'.Permissions::middleware('manage_admissions'))->group(function () use ($AW) {
         Route::get('/admissions/review', [$AW, 'reviewPanel'])->name('admissions.review');
         Route::post('/admissions/{applicant}/offer', [$AW, 'offer'])->name('admissions.offer');
+        Route::post('/admissions/{applicant}/change', [$AW, 'changeAdmission'])->name('admissions.change');
         Route::post('/admissions/{applicant}/decline', [$AW, 'decline'])->name('admissions.decline');
         Route::get('/admissions/{applicant}/credentials', [\App\Http\Controllers\ApplicationCredentialController::class, 'show'])->name('admissions.credentials');
     });

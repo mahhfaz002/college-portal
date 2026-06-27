@@ -39,17 +39,36 @@ class AdmissionWorkflowController extends Controller
      | REGISTRAR — offer / decline admission
      |---------------------------------------------------------------------*/
 
-    /** Registrar admission review panel (paid applications). */
+    /**
+     * Registrar admission review panel. Only applicants who have paid the
+     * application fee AND completed their application (uploaded the required
+     * documents → status 'submitted', or anything downstream) are shown.
+     * Applicants still at 'awaiting_documents' / 'pending_payment' are hidden
+     * from the registrar and admission officer until they finish.
+     */
     public function reviewPanel()
     {
         $applicants = Applicant::with(['firstChoice.department', 'secondChoice', 'admittedProgram'])
             ->where('payment_status', 'paid')
+            ->whereIn('application_status', self::REVIEWABLE_STATUSES)
             ->latest()->get();
+
+        // Which of these applicants have already paid their registration fee —
+        // a paid registration locks the admission (no more "change admission").
+        $registeredIds = Invoice::whereIn('applicant_id', $applicants->pluck('id'))
+            ->where('purpose', 'registration_fee')
+            ->where('status', 'paid')
+            ->pluck('applicant_id')->all();
 
         $programs = Program::with('department')->orderBy('name')->get();
 
-        return view('admission.review', compact('applicants', 'programs'));
+        return view('admission.review', compact('applicants', 'programs', 'registeredIds'));
     }
+
+    /** Statuses a completed application can be in (visible to registrar/officer). */
+    public const REVIEWABLE_STATUSES = [
+        'submitted', 'admitted', 'accepted', 'registered', 'offer_rejected', 'rejected',
+    ];
 
     /** Offer admission into a chosen program (department derived from it). */
     public function offer(Request $request, Applicant $applicant)
@@ -71,6 +90,40 @@ class AdmissionWorkflowController extends Controller
         ActivityLog::record("Offered admission to {$applicant->full_name} ({$program->name})", 'admission.offer');
 
         return back()->with('success', "Admission offered to {$applicant->full_name} for {$program->name}.");
+    }
+
+    /**
+     * Change a previously offered admission to a different programme. Only
+     * possible while the student has NOT paid the registration fee; once paid,
+     * the admission is locked and the student must instead apply for a change
+     * of course from their own dashboard.
+     */
+    public function changeAdmission(Request $request, Applicant $applicant)
+    {
+        // Locked once the registration fee is settled.
+        if ($this->registrationPaid($applicant)) {
+            return back()->with('error',
+                "{$applicant->full_name} has already paid the registration fee and is registered. "
+                ."The admission can no longer be changed here — the student should apply for a Change of Course from their dashboard.");
+        }
+
+        abort_unless(in_array($applicant->application_status, ['admitted', 'accepted'], true), 403,
+            'Only an offered (not yet registered) admission can be changed.');
+
+        $data = $request->validate(['program_id' => 'required|exists:programs,id']);
+        $program = Program::findOrFail($data['program_id']);
+        abort_unless((int) $program->college_id === (int) $applicant->college_id, 422);
+
+        $applicant->update([
+            'admitted_program_id' => $program->id,
+            'application_status'  => 'admitted',
+            'status'              => 'admitted',
+            'admission_response'  => null,
+        ]);
+
+        ActivityLog::record("Changed admission for {$applicant->full_name} → {$program->name}", 'admission.change');
+
+        return back()->with('success', "Admission changed to {$program->name} for {$applicant->full_name}.");
     }
 
     /** Decline an application. */
@@ -298,6 +351,12 @@ class AdmissionWorkflowController extends Controller
     {
         return Invoice::where('applicant_id', $applicant->id)
             ->where('purpose', 'acceptance_fee')->where('status', 'paid')->exists();
+    }
+
+    private function registrationPaid(Applicant $applicant): bool
+    {
+        return Invoice::where('applicant_id', $applicant->id)
+            ->where('purpose', 'registration_fee')->where('status', 'paid')->exists();
     }
 
     private function authorizeHodDept(Student $student): void

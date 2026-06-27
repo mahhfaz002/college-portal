@@ -121,6 +121,12 @@ class PlatformController extends Controller
         $revenue    = (clone $paid)->sum('amount');
         $admins     = User::where('college_id', $college->id)->whereIn('role', self::ADMIN_ROLES)->orderBy('role')->get();
 
+        // Live settlement data straight from Paystack (best-effort). Falls back to
+        // our locally-recorded settlement timestamp if the API is unavailable.
+        $settlement = app(\App\Services\PaystackService::class)->fetchSettlements($college);
+        $lastSettlement = $settlement['last_at']
+            ?? (clone $paid)->whereNotNull('settlement_at')->max('settlement_at');
+
         return view('platform.show', [
             'college' => $college, 'students' => $students, 'staff' => $staff,
             'applicants' => $applicants, 'revenue' => $revenue, 'admins' => $admins,
@@ -129,7 +135,8 @@ class PlatformController extends Controller
             'banks'            => app(\App\Services\PaystackService::class)->banks(),
             'commissionEarned' => (float) (clone $paid)->sum('platform_commission'),
             'institutionShare' => (float) (clone $paid)->sum('institution_share'),
-            'lastSettlement'   => (clone $paid)->whereNotNull('settlement_at')->max('settlement_at'),
+            'lastSettlement'   => $lastSettlement,
+            'settlement'       => $settlement,   // null when Paystack is unreachable / not configured
             'recentTx'         => (clone $paid)->latest('paid_at')->take(8)->get(),
         ]);
     }
