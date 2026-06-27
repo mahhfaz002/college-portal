@@ -37,6 +37,12 @@
                 </div>
             </div>
 
+            {{-- ===== PAYROLL FINAL APPROVAL ===== --}}
+            <a href="{{ route('payroll.approval') }}" class="block bg-white p-6 rounded-2xl shadow-sm border hover:shadow-md transition">
+                <h3 class="font-bold text-gray-800">Payroll Final Approval</h3>
+                <p class="text-sm text-gray-500 mt-1">Give final approval on payslips forwarded by the Provost, or query them back.</p>
+            </a>
+
             {{-- ===== FINANCE BANNER ===== --}}
             <div class="rounded-2xl bg-gradient-to-r from-gray-900 to-indigo-900 p-6 shadow-lg">
                 <div class="flex items-center gap-2 mb-4">

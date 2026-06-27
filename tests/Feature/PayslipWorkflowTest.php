@@ -13,9 +13,10 @@ class PayslipWorkflowTest extends TestCase
     use RefreshDatabase, CreatesCollegeFixtures;
 
     private string $month = '2026-06';
-    private User $bursar;     // runs payroll (manage_payroll)
-    private User $reviewer;   // MIS reviews/approves (review_payroll)
-    private User $staffMember; // the payslip subject
+    private User $bursar;       // runs payroll (manage_payroll)
+    private User $provost;      // reviews & forwards (review_payroll)
+    private User $proprietor;   // final approval (approve_payroll)
+    private User $staffMember;  // the payslip subject
 
     protected function setUp(): void
     {
@@ -23,7 +24,8 @@ class PayslipWorkflowTest extends TestCase
         $this->seed();
         $this->bootCollege();
         $this->bursar = $this->userWithRole('bursar');
-        $this->reviewer = $this->userWithRole('mis');
+        $this->provost = $this->userWithRole('provost');
+        $this->proprietor = $this->userWithRole('proprietor');
         $this->staffMember = $this->userWithRole('lecturer');
     }
 
@@ -48,24 +50,28 @@ class PayslipWorkflowTest extends TestCase
         $this->assertSame('draft', $slip->status);
         $this->assertEquals(105000, (float) $slip->net_salary);
 
-        // Submit -> submitted
+        // Submit -> provost_review
         $this->actingAs($this->bursar)->post('/payroll-submit', ['month' => $this->month])->assertRedirect();
-        $this->assertSame('submitted', $slip->fresh()->status);
+        $this->assertSame('provost_review', $slip->fresh()->status);
 
-        // MIS flags with a comment -> flagged
-        $this->actingAs($this->reviewer)->post("/payroll/{$slip->id}/flag", [
-            'flag_comment' => 'Pension figure looks wrong.',
+        // Provost queries back to the Bursar -> queried
+        $this->actingAs($this->provost)->post("/payroll/{$slip->id}/provost-query", [
+            'comment' => 'Pension figure looks wrong.',
         ])->assertRedirect();
-        $this->assertSame('flagged', $slip->fresh()->status);
-        $this->assertSame('Pension figure looks wrong.', $slip->fresh()->flag_comment);
+        $this->assertSame('queried', $slip->fresh()->status);
+        $this->assertSame('Pension figure looks wrong.', $slip->fresh()->provost_comment);
 
-        // Bursar corrects (flagged is editable) & resubmits
-        $this->createSlip(); // overwrites -> draft, clears comment
+        // Bursar corrects (queried is editable) & resubmits
+        $this->createSlip();
         $this->assertSame('draft', $slip->fresh()->status);
         $this->actingAs($this->bursar)->post('/payroll-submit', ['month' => $this->month])->assertRedirect();
 
-        // MIS approves
-        $this->actingAs($this->reviewer)->post("/payroll/{$slip->id}/approve")->assertRedirect();
+        // Provost forwards to Proprietor -> proprietor_review
+        $this->actingAs($this->provost)->post("/payroll/{$slip->id}/forward")->assertRedirect();
+        $this->assertSame('proprietor_review', $slip->fresh()->status);
+
+        // Proprietor gives final approval -> approved
+        $this->actingAs($this->proprietor)->post("/payroll/{$slip->id}/approve")->assertRedirect();
         $this->assertSame('approved', $slip->fresh()->status);
 
         // Bursar initiates payment -> paid
@@ -76,19 +82,19 @@ class PayslipWorkflowTest extends TestCase
 
     public function test_reviewer_cannot_edit_amounts(): void
     {
-        // The MIS reviewer can approve but not author payslips (manage_payroll).
-        $this->actingAs($this->reviewer)->post('/payroll/'.$this->staffMember->id, [
+        // The Provost reviewer can review but not author payslips (manage_payroll).
+        $this->actingAs($this->provost)->post('/payroll/'.$this->staffMember->id, [
             'month' => $this->month, 'basic_salary' => 999,
         ])->assertForbidden();
 
         // ... and cannot access the bursar HR hub.
-        $this->actingAs($this->reviewer)->get('/payroll')->assertForbidden();
+        $this->actingAs($this->provost)->get('/payroll')->assertForbidden();
     }
 
     public function test_bursar_cannot_approve(): void
     {
         $slip = $this->createSlip();
-        $this->actingAs($this->bursar)->post("/payroll/{$slip->id}/approve")->assertForbidden();
+        $this->actingAs($this->bursar)->post("/payroll/{$slip->id}/forward")->assertForbidden();
         $this->actingAs($this->bursar)->get('/payroll-review')->assertForbidden();
     }
 

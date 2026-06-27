@@ -274,7 +274,13 @@ class DashboardController extends Controller
         $invoices = \App\Models\Invoice::where('student_id', $student->id)
             ->latest()->get();
 
-        return view('dashboards.student', compact('student', 'scores', 'payments', 'announcements', 'todayLessons', 'invoices'));
+        // Resolved disciplinary/welfare cases forwarded to this student.
+        $studentCases = \App\Models\StudentAffairsCase::where('student_id', $student->id)
+            ->where('status', 'forwarded_to_student')
+            ->whereNotNull('student_notified_at')
+            ->latest()->get();
+
+        return view('dashboards.student', compact('student', 'scores', 'payments', 'announcements', 'todayLessons', 'invoices', 'studentCases'));
     }
 
     /**

@@ -31,6 +31,9 @@
             <!-- Exam Mode countdown (shows on every dashboard when active) -->
             @include('partials.exam-countdown')
 
+            <!-- Semester break countdown (shows on every dashboard during a break) -->
+            @include('partials.semester-countdown')
+
             <!-- Page Content -->
             <main>
                 {{ $slot }}

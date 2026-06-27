@@ -29,6 +29,18 @@ class EnforceReadOnly
         'password.change.update',
         'password.confirm',
         'verification.send',
+
+        // Governance actions explicitly delegated to the Provost / Proprietor as
+        // part of the case-escalation and payroll-approval workflows. These are
+        // oversight decisions (resolve/approve/query), not data edits.
+        'payroll.provost.forward',
+        'payroll.provost.query',
+        'payroll.provost.relay',
+        'payroll.proprietor.approve',
+        'payroll.proprietor.query',
+        'cases.registrar.resolve',
+        'cases.registrar.forward',
+        'cases.provost.resolve',
     ];
 
     public function handle(Request $request, Closure $next): Response

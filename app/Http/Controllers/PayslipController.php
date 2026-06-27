@@ -34,8 +34,8 @@ class PayslipController extends Controller
             'departments' => \App\Models\Department::orderBy('name')->get(['id', 'name', 'section']),
             'counts' => [
                 'draft'     => $slips->where('status', 'draft')->count(),
-                'submitted' => $slips->where('status', 'submitted')->count(),
-                'flagged'   => $slips->where('status', 'flagged')->count(),
+                'in_review' => $slips->whereIn('status', ['provost_review', 'provost_forwarded', 'proprietor_review'])->count(),
+                'queried'   => $slips->where('status', 'queried')->count(),
                 'approved'  => $slips->where('status', 'approved')->count(),
                 'paid'      => $slips->where('status', 'paid')->count(),
             ],
@@ -73,8 +73,8 @@ class PayslipController extends Controller
         }
 
         $slip = Payslip::firstOrNew(['user_id' => $user->id, 'month' => $data['month']]);
-        // Locked once submitted/approved unless it was flagged back to the bursar.
-        abort_if(in_array($slip->status, ['submitted', 'approved', 'paid'], true), 403, 'This payslip is locked.');
+        // Locked once in any review/approval stage unless it was queried back to the bursar.
+        abort_if(in_array($slip->status, ['provost_review', 'provost_forwarded', 'proprietor_review', 'approved', 'paid'], true), 403, 'This payslip is locked.');
 
         $slip->fill([
             'basic_salary' => $data['basic_salary'],
@@ -92,16 +92,22 @@ class PayslipController extends Controller
             ->with('success', "Payslip saved for {$user->name} (net ".money($slip->net_salary).").");
     }
 
-    /** Bursar submits all draft/flagged payslips for the month to the principal. */
+    /** Bursar submits all draft/queried payslips for the month to the Provost. */
     public function submit(Request $request)
     {
         $month = $request->input('month', now()->format('Y-m'));
 
         $count = Payslip::where('month', $month)
-            ->whereIn('status', ['draft', 'flagged'])
-            ->update(['status' => 'submitted', 'submitted_at' => now(), 'flag_comment' => null]);
+            ->whereIn('status', ['draft', 'flagged', 'queried'])
+            ->update([
+                'status'          => 'provost_review',
+                'submitted_at'    => now(),
+                'flag_comment'    => null,
+                'provost_status'  => 'pending',
+                'provost_comment' => null,
+            ]);
 
-        return back()->with('success', "{$count} payslip(s) submitted to the Provost for approval.");
+        return back()->with('success', "{$count} payslip(s) submitted to the Provost for review.");
     }
 
     /** Bursar initiates payment on an approved payslip. */
@@ -128,33 +134,102 @@ class PayslipController extends Controller
         return $pdf->download('Payslip_'.\Illuminate\Support\Str::slug($payslip->staff->name ?? 'staff').'_'.$payslip->month.'.pdf');
     }
 
-    // ---- Principal review ----
+    // ---- Provost review ----
 
-    public function review(Request $request)
+    public function provostReview(Request $request)
     {
         $month = $request->query('month', now()->format('Y-m'));
         $slips = Payslip::with('staff')->where('month', $month)
-            ->whereIn('status', ['submitted', 'flagged', 'approved', 'paid'])
+            ->whereIn('status', ['provost_review', 'provost_forwarded', 'proprietor_review', 'approved', 'paid', 'queried'])
             ->get();
 
-        return view('hr.review', compact('slips', 'month'));
+        return view('hr.provost_review', compact('slips', 'month'));
     }
 
-    public function approve(Payslip $payslip)
+    /** Provost forwards a reviewed payslip to the Proprietor for final approval. */
+    public function provostForward(Payslip $payslip)
     {
-        abort_unless(in_array($payslip->status, ['submitted', 'flagged'], true), 403);
-        $payslip->update(['status' => 'approved', 'approved_at' => now(), 'flag_comment' => null]);
+        abort_unless($payslip->status === 'provost_review', 403);
+        $payslip->update([
+            'status'              => 'proprietor_review',
+            'provost_status'      => 'forwarded',
+            'provost_reviewed_at' => now(),
+            'proprietor_status'   => 'pending',
+        ]);
 
-        return back()->with('success', "{$payslip->staff->name}'s payslip approved.");
+        return back()->with('success', "{$payslip->staff->name}'s payslip forwarded to the Proprietor.");
     }
 
-    public function flag(Request $request, Payslip $payslip)
+    /** Provost queries a payslip back to the Bursar for correction. */
+    public function provostQuery(Request $request, Payslip $payslip)
     {
-        $data = $request->validate(['flag_comment' => 'required|string|max:1000']);
-        abort_unless(in_array($payslip->status, ['submitted', 'flagged'], true), 403);
+        $data = $request->validate(['comment' => 'required|string|max:1000']);
+        abort_unless(in_array($payslip->status, ['provost_review', 'provost_forwarded'], true), 403);
 
-        $payslip->update(['status' => 'flagged', 'flag_comment' => $data['flag_comment']]);
+        $payslip->update([
+            'status'          => 'queried',
+            'provost_status'  => 'queried',
+            'provost_comment' => $data['comment'],
+            'flag_comment'    => $data['comment'],
+        ]);
 
-        return back()->with('success', "Payslip flagged back to the Bursar with your note.");
+        return back()->with('success', "Payslip queried back to the Bursar.");
+    }
+
+    /**
+     * Provost relays a proprietor's query back down to the Bursar (after the
+     * proprietor queried the provost).
+     */
+    public function provostRelayToBursar(Payslip $payslip)
+    {
+        abort_unless($payslip->proprietor_status === 'queried', 403);
+        $payslip->update([
+            'status'         => 'queried',
+            'provost_status' => 'queried',
+            'flag_comment'   => $payslip->proprietor_comment,
+        ]);
+
+        return back()->with('success', "Proprietor's query relayed to the Bursar.");
+    }
+
+    // ---- Proprietor final approval ----
+
+    public function proprietorReview(Request $request)
+    {
+        $month = $request->query('month', now()->format('Y-m'));
+        $slips = Payslip::with('staff')->where('month', $month)
+            ->whereIn('status', ['proprietor_review', 'approved', 'paid'])
+            ->get();
+
+        return view('hr.proprietor_review', compact('slips', 'month'));
+    }
+
+    /** Proprietor gives final approval. Approved payslips are locked for everyone. */
+    public function proprietorApprove(Payslip $payslip)
+    {
+        abort_unless($payslip->status === 'proprietor_review', 403);
+        $payslip->update([
+            'status'                 => 'approved',
+            'proprietor_status'      => 'approved',
+            'proprietor_approved_at' => now(),
+            'approved_at'            => now(),
+        ]);
+
+        return back()->with('success', "{$payslip->staff->name}'s payslip approved. It is now locked.");
+    }
+
+    /** Proprietor queries a payslip back to the Provost. */
+    public function proprietorQuery(Request $request, Payslip $payslip)
+    {
+        $data = $request->validate(['comment' => 'required|string|max:1000']);
+        abort_unless($payslip->status === 'proprietor_review', 403);
+
+        $payslip->update([
+            'status'             => 'provost_forwarded',
+            'proprietor_status'  => 'queried',
+            'proprietor_comment' => $data['comment'],
+        ]);
+
+        return back()->with('success', "Payslip queried back to the Provost.");
     }
 }

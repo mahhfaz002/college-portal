@@ -13,13 +13,17 @@ class Payslip extends Model
         'college_id', 'user_id', 'month', 'basic_salary', 'allowances', 'deductions',
         'tax', 'net_salary', 'status', 'flag_comment', 'created_by',
         'submitted_at', 'approved_at', 'paid_at',
+        'provost_status', 'provost_comment', 'provost_reviewed_at',
+        'proprietor_status', 'proprietor_comment', 'proprietor_approved_at',
     ];
 
     protected $casts = [
-        'deductions'   => 'array',
-        'submitted_at' => 'datetime',
-        'approved_at'  => 'datetime',
-        'paid_at'      => 'datetime',
+        'deductions'            => 'array',
+        'submitted_at'          => 'datetime',
+        'approved_at'           => 'datetime',
+        'paid_at'               => 'datetime',
+        'provost_reviewed_at'   => 'datetime',
+        'proprietor_approved_at' => 'datetime',
     ];
 
     public function staff()
