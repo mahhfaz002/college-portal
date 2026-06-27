@@ -3,7 +3,8 @@
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">📝 Exam Officer Dashboard</h2>
             <div class="flex gap-2">
-                <a href="{{ route('exams.papers') }}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700 text-sm">📄 Question Papers</a>
+                <a href="{{ route('results.officer.index') }}" class="bg-amber-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-amber-700 text-sm">Result Management</a>
+                <a href="{{ route('exams.papers') }}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700 text-sm">Question Papers</a>
                 <a href="{{ route('exams.create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 text-sm">+ Create Exam</a>
                 <a href="{{ route('exams.queries') }}" class="bg-gray-700 text-white px-4 py-2 rounded-lg font-bold hover:bg-gray-800 text-sm">Queries ({{ $openQueries }})</a>
             </div>
@@ -28,6 +29,26 @@
                 <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-red-500">
                     <p class="text-xs font-bold text-gray-400 uppercase">Open Queries</p>
                     <h3 class="text-3xl font-black text-gray-800">{{ $openQueries }}</h3>
+                </div>
+            </div>
+
+            {{-- Result Submissions Overview --}}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-gray-700">Result Submissions</h3>
+                    <a href="{{ route('results.officer.index') }}" class="text-sm text-indigo-600 font-bold hover:underline">Manage Results &rarr;</a>
+                </div>
+                <div class="grid sm:grid-cols-2 gap-4">
+                    <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <p class="text-xs font-bold text-blue-500 uppercase">Awaiting Review</p>
+                        <p class="text-2xl font-black text-blue-700">{{ $submittedResults }}</p>
+                        <p class="text-xs text-blue-500">Submitted by lecturers, ready to edit & transmit</p>
+                    </div>
+                    <div class="p-4 bg-green-50 rounded-lg border border-green-200">
+                        <p class="text-xs font-bold text-green-500 uppercase">Transmitted</p>
+                        <p class="text-2xl font-black text-green-700">{{ $transmittedResults }}</p>
+                        <p class="text-xs text-green-500">Finalized and sent to students</p>
+                    </div>
                 </div>
             </div>
 

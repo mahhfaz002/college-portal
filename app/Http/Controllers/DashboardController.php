@@ -125,13 +125,27 @@ class DashboardController extends Controller
     private function teacherDashboard(Request $request)
     {
         $user = auth()->user();
+        $term = setting('current_term', 'First Semester');
+        $session = setting('current_session', '2025/2026');
 
         // The courses (Subjects) assigned to this lecturer — each carries its own
         // programme + level, so its registered students are that exact cohort.
         $courses = $user->subjects()->with('program')->orderBy('name')->get();
 
-        // Exam tasks for the lecturer's assigned courses (author / grade).
+        // Check which courses already have results submitted this semester.
         $subjectIds = $courses->pluck('id');
+        $submittedIds = \App\Models\ResultSubmission::whereIn('subject_id', $subjectIds)
+            ->where('term', $term)->where('session', $session)
+            ->pluck('subject_id')->toArray();
+
+        // Separate submitted vs unsubmitted courses.
+        $unsubmittedCourses = $courses->filter(fn ($c) => !in_array($c->id, $submittedIds));
+        $allSubmitted = $courses->isNotEmpty() && $unsubmittedCourses->isEmpty();
+
+        // HOD/assistant_hod keep their dashboard functions even after submitting
+        $isHod = in_array($user->role, ['hod', 'assistant_hod']);
+
+        // Exam tasks for the lecturer's assigned courses (author / grade).
         $authorExams = collect();
         $gradeExams = collect();
         if ($subjectIds->isNotEmpty()) {
@@ -143,7 +157,10 @@ class DashboardController extends Controller
                 ->filter(fn ($e) => $e->submissions_count > 0)->values();
         }
 
-        return view('dashboards.teacher', compact('courses', 'authorExams', 'gradeExams'));
+        return view('dashboards.teacher', compact(
+            'courses', 'authorExams', 'gradeExams',
+            'submittedIds', 'unsubmittedCourses', 'allSubmitted', 'isHod', 'term', 'session'
+        ));
     }
 
     /**
@@ -323,6 +340,13 @@ class DashboardController extends Controller
         $openQueries = \App\Models\ResultQuery::where('status', 'open')->count();
         $pendingGrading = \App\Models\Exam::where('status', 'grading')->count();
 
+        $term = setting('current_term', 'First Semester');
+        $session = setting('current_session', '2025/2026');
+        $submittedResults = \App\Models\ResultSubmission::where('term', $term)
+            ->where('session', $session)->where('status', 'submitted')->count();
+        $transmittedResults = \App\Models\ResultSubmission::where('term', $term)
+            ->where('session', $session)->where('status', 'transmitted')->count();
+
         // Roster: each student with attendance % and fee-cleared status.
         $roster = Student::orderBy('class_arm')->orderBy('full_name')->get()->map(function ($s) {
             return [
@@ -334,7 +358,8 @@ class DashboardController extends Controller
         $examCycle = \App\Models\ExamCycle::active();
 
         return view('dashboards.exam_officer', compact(
-            'totalStudents', 'subjectsCount', 'exams', 'openQueries', 'pendingGrading', 'roster', 'examCycle'
+            'totalStudents', 'subjectsCount', 'exams', 'openQueries', 'pendingGrading', 'roster', 'examCycle',
+            'submittedResults', 'transmittedResults'
         ));
     }
 

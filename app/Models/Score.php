@@ -19,10 +19,15 @@ class Score extends Model
         'status',
         'exam_id',
         'published_at',
+        'submitted_by',
+        'submitted_at',
+        'transmitted_at',
     ];
 
     protected $casts = [
-        'published_at' => 'datetime',
+        'published_at'  => 'datetime',
+        'submitted_at'  => 'datetime',
+        'transmitted_at' => 'datetime',
     ];
 
     // Connects score back to a student
@@ -35,5 +40,10 @@ class Score extends Model
     public function subject()
     {
         return $this->belongsTo(Subject::class);
+    }
+
+    public function submittedBy()
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
     }
 }

@@ -507,6 +507,32 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::get('/my/course-form/pdf', [\App\Http\Controllers\CourseFormController::class, 'pdf'])->name('student.course-form.pdf');
     });
 
+    // --- Result Lifecycle ---
+
+    // Lecturer result submission (score entry + scanned copy upload).
+    Route::middleware('role:lecturer,hod,assistant_hod')->group(function () {
+        $RS = \App\Http\Controllers\ResultSubmissionController::class;
+        Route::get('/results/submit/{subject}', [$RS, 'create'])->name('results.submit.create');
+        Route::post('/results/submit/{subject}', [$RS, 'store'])->name('results.submit.store');
+    });
+
+    // Exam Officer: result management (view, edit, transmit).
+    Route::middleware('role:exam_officer')->group(function () {
+        $RT = \App\Http\Controllers\ResultTransmissionController::class;
+        Route::get('/results/officer', [$RT, 'index'])->name('results.officer.index');
+        Route::get('/results/officer/{subject}', [$RT, 'show'])->name('results.officer.show');
+        Route::post('/results/officer/{subject}/save', [$RT, 'save'])->name('results.officer.save');
+        Route::post('/results/officer/transmit', [$RT, 'transmit'])->name('results.officer.transmit');
+        Route::get('/results/officer/scan/{submission}', [$RT, 'scan'])->name('results.officer.scan');
+    });
+
+    // Student: pay-to-view results.
+    Route::middleware('role:student')->group(function () {
+        $RV = \App\Http\Controllers\ResultViewingController::class;
+        Route::get('/my/results', [$RV, 'index'])->name('results.student.index');
+        Route::post('/my/results/pay', [$RV, 'pay'])->name('results.student.pay');
+    });
+
     // HOD / Assistant HOD: review and approve registrations.
     Route::middleware('role:hod,assistant_hod')->group(function () use ($AW) {
         Route::get('/hod/registrations', [$AW, 'hodRegistrations'])->name('hod.registrations');
