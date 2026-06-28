@@ -30,6 +30,12 @@ class EnforceReadOnly
         'password.confirm',
         'verification.send',
 
+        // The Provost manages their OWN e-signature (used on transcripts /
+        // statements of result). That's a personal-account action, not a data
+        // edit, so it must be exempt from the read-only rule.
+        'signature.update',
+        'signature.destroy',
+
         // Governance actions explicitly delegated to the Provost / Proprietor as
         // part of the case-escalation and payroll-approval workflows. These are
         // oversight decisions (resolve/approve/query), not data edits.
