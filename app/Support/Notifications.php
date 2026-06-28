@@ -26,7 +26,9 @@ class Notifications
      */
     public static function forUser(?User $user): array
     {
-        if (!$user) {
+        // The platform super-admin oversees all colleges but is deliberately kept
+        // out of every college's notification stream.
+        if (!$user || $user->role === 'superadmin') {
             return ['count' => 0, 'url' => '#', 'label' => ''];
         }
 
@@ -58,7 +60,7 @@ class Notifications
      */
     public static function feedFor(?User $user): array
     {
-        if (!$user) {
+        if (!$user || $user->role === 'superadmin') {
             return [];
         }
 

@@ -154,11 +154,18 @@ class DashboardController extends Controller
         $isHod = in_array($user->role, ['hod', 'assistant_hod']);
 
         // Exam tasks for the lecturer's assigned courses (author / grade).
+        // Authoring tasks exist ONLY for the active exam cycle: once the Exam
+        // Officer cancels Exam Mode (or it has none), no "Set Questions" tasks
+        // are shown — the draft sets from a cancelled cycle are purged on close.
         $authorExams = collect();
         $gradeExams = collect();
+        $activeCycle = \App\Models\ExamCycle::active();
         if ($subjectIds->isNotEmpty()) {
-            $authorExams = \App\Models\Exam::whereIn('subject_id', $subjectIds)
-                ->where('status', 'draft')->with('subject')->get();
+            $authorExams = $activeCycle
+                ? \App\Models\Exam::whereIn('subject_id', $subjectIds)
+                    ->where('status', 'draft')->where('exam_cycle_id', $activeCycle->id)
+                    ->with('subject')->get()
+                : collect();
             $gradeExams = \App\Models\Exam::whereIn('subject_id', $subjectIds)
                 ->whereIn('status', ['released', 'grading'])
                 ->withCount('submissions')->with('subject')->get()

@@ -36,13 +36,39 @@
             @if($tab === 'cases')
             <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
                 <div class="px-6 py-4 bg-gray-50 border-b font-bold text-gray-700">Log a Case</div>
-                <form method="POST" action="{{ route('affairs.cases.store') }}" class="p-6 space-y-4">
+                <form method="POST" action="{{ route('affairs.cases.store') }}" class="p-6 space-y-4" x-data="studentPicker({ multi: true })">
                     @csrf
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-xs font-bold text-gray-500 uppercase">Student Name</label>
-                            <input type="text" name="student_name" placeholder="Student name" class="mt-1 w-full rounded-lg border-gray-300">
+                    {{-- Student search + multi-select --}}
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase">Student(s)</label>
+                        <div class="relative mt-1">
+                            <input type="text" x-model="q" @input.debounce.300ms="search()" placeholder="Type a student's name or reg number…"
+                                   class="w-full rounded-lg border-gray-300" autocomplete="off">
+                            <div x-show="results.length" x-cloak class="absolute z-20 mt-1 w-full bg-white border rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                                <template x-for="r in results" :key="r.id">
+                                    <button type="button" @click="add(r)" class="w-full text-left px-3 py-2 hover:bg-indigo-50 text-sm border-b last:border-0">
+                                        <span class="font-semibold" x-text="r.name"></span>
+                                        <span class="text-gray-400 text-xs" x-text="' · ' + r.reg + (r.department ? ' · ' + r.department : '')"></span>
+                                    </button>
+                                </template>
+                            </div>
                         </div>
+                        <p class="text-xs text-gray-400 mt-1">Search and click to add. You can add more than one student to the same case.</p>
+
+                        {{-- Selected students as chips (with hidden inputs) --}}
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            <template x-for="s in selected" :key="s.id">
+                                <span class="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-full pl-3 pr-1 py-1 text-xs">
+                                    <span><span class="font-bold" x-text="s.name"></span> · <span x-text="s.reg"></span><span x-show="s.department" x-text="' · ' + s.department"></span></span>
+                                    <input type="hidden" name="student_ids[]" :value="s.id">
+                                    <button type="button" @click="remove(s.id)" class="w-5 h-5 rounded-full bg-indigo-200 text-indigo-800 hover:bg-indigo-300">&times;</button>
+                                </span>
+                            </template>
+                            <span x-show="!selected.length" class="text-xs text-gray-400 italic">No student selected yet.</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="text-xs font-bold text-gray-500 uppercase">Category</label>
                             <select name="category" required class="mt-1 w-full rounded-lg border-gray-300">
@@ -53,20 +79,14 @@
                         </div>
                     </div>
                     <div>
-                        <label class="text-xs font-bold text-gray-500 uppercase">Description</label>
+                        <label class="text-xs font-bold text-gray-500 uppercase">Description of the case</label>
                         <textarea name="description" required rows="3" class="mt-1 w-full rounded-lg border-gray-300"></textarea>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-xs font-bold text-gray-500 uppercase">Recommendation</label>
-                            <textarea name="recommendation" rows="2" class="mt-1 w-full rounded-lg border-gray-300"></textarea>
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-gray-500 uppercase">Penalty Type</label>
-                            <input type="text" name="penalty_type" class="mt-1 w-full rounded-lg border-gray-300" placeholder="e.g. Warning, Suspension">
-                        </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase">Recommendation</label>
+                        <textarea name="recommendation" rows="2" class="mt-1 w-full rounded-lg border-gray-300"></textarea>
                     </div>
-                    <button type="submit" class="bg-indigo-600 text-white px-6 py-2.5 rounded-full font-bold hover:bg-indigo-700">Log Case</button>
+                    <button type="submit" :disabled="!selected.length" class="bg-indigo-600 text-white px-6 py-2.5 rounded-full font-bold hover:bg-indigo-700 disabled:opacity-40">Log Case</button>
                 </form>
             </div>
 
@@ -103,9 +123,35 @@
             @if($tab === 'register')
             <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
                 <div class="px-6 py-4 bg-gray-50 border-b font-bold text-gray-700">Register Student</div>
-                <form method="POST" action="{{ route('affairs.register.store') }}" class="p-6 space-y-4">
+                <form method="POST" action="{{ route('affairs.register.store') }}" class="p-6 space-y-4" x-data="studentPicker({ multi: false })">
                     @csrf
-                    <input type="text" name="registration_number" required placeholder="Registration number" class="w-full max-w-md rounded-lg border-gray-300">
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase">Search student</label>
+                        <div class="relative mt-1">
+                            <input type="text" x-model="q" @input.debounce.300ms="search()" placeholder="Type a student's name or reg number…"
+                                   class="w-full max-w-md rounded-lg border-gray-300" autocomplete="off">
+                            <div x-show="results.length" x-cloak class="absolute z-20 mt-1 w-full max-w-md bg-white border rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                                <template x-for="r in results" :key="r.id">
+                                    <button type="button" @click="add(r)" class="w-full text-left px-3 py-2 hover:bg-emerald-50 text-sm border-b last:border-0">
+                                        <span class="font-semibold" x-text="r.name"></span>
+                                        <span class="text-gray-400 text-xs" x-text="' · ' + r.reg + (r.department ? ' · ' + r.department : '')"></span>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Auto-filled details of the selected student --}}
+                    <template x-if="selected.length">
+                        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-sm grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <input type="hidden" name="student_id" :value="selected[0].id">
+                            <div><span class="text-gray-400 text-xs uppercase font-bold block">Full Name</span><span class="font-semibold" x-text="selected[0].name"></span></div>
+                            <div><span class="text-gray-400 text-xs uppercase font-bold block">Department</span><span x-text="selected[0].department || '—'"></span></div>
+                            <div><span class="text-gray-400 text-xs uppercase font-bold block">Course of Study</span><span x-text="selected[0].program || '—'"></span></div>
+                            <div><span class="text-gray-400 text-xs uppercase font-bold block">Level</span><span x-text="selected[0].level ? ('L' + selected[0].level) : '—'"></span></div>
+                        </div>
+                    </template>
+
                     @php $items = ['dob_cert'=>'DOB Certificate','admission_letter'=>'Admission Letter','oath_form'=>'Signed Oath Form','olevel_certs'=>'O-Level Certificates','indigene_letter'=>'Indigene Letter']; @endphp
                     <div class="grid grid-cols-2 gap-2">
                         @foreach($items as $k => $l)
@@ -113,7 +159,7 @@
                         @endforeach
                     </div>
                     <textarea name="notes" rows="2" class="w-full rounded-lg border-gray-300" placeholder="Notes..."></textarea>
-                    <button type="submit" class="bg-emerald-600 text-white px-6 py-2.5 rounded-full font-bold hover:bg-emerald-700">Register</button>
+                    <button type="submit" :disabled="!selected.length" class="bg-emerald-600 text-white px-6 py-2.5 rounded-full font-bold hover:bg-emerald-700 disabled:opacity-40">Register</button>
                 </form>
             </div>
             <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
@@ -163,4 +209,28 @@
             @endif
         </div>
     </div>
+
+    <script>
+        function studentPicker(opts = {}) {
+            return {
+                q: '', results: [], selected: [], multi: opts.multi || false, loading: false,
+                async search() {
+                    if (this.q.trim().length < 2) { this.results = []; return; }
+                    this.loading = true;
+                    try {
+                        const res = await fetch('{{ route('affairs.students.search') }}?q=' + encodeURIComponent(this.q),
+                            { headers: { 'Accept': 'application/json' } });
+                        this.results = res.ok ? await res.json() : [];
+                    } catch (e) { this.results = []; }
+                    this.loading = false;
+                },
+                add(r) {
+                    if (!this.multi) this.selected = [];
+                    if (!this.selected.find(s => s.id === r.id)) this.selected.push(r);
+                    this.q = ''; this.results = [];
+                },
+                remove(id) { this.selected = this.selected.filter(s => s.id !== id); },
+            };
+        }
+    </script>
 </x-app-layout>
