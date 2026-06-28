@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Applicant;
+use App\Models\ChangeOfCourseRequest;
 use App\Models\Exam;
 use App\Models\ExamSubmission;
 use App\Models\Payslip;
@@ -18,57 +19,32 @@ use Illuminate\Support\Facades\Schema;
  */
 class Notifications
 {
+    /**
+     * The nav bell. The badge counts only NEW notifications — feed items newer
+     * than when the user last opened the notifications page — so opening the
+     * page (which stamps notifications_last_read_at) clears the badge to zero.
+     */
     public static function forUser(?User $user): array
     {
         if (!$user) {
             return ['count' => 0, 'url' => '#', 'label' => ''];
         }
 
-        return match ($user->role) {
-            'principal' => self::wrap(
-                Schema::hasTable('payslips') ? Payslip::where('status', 'submitted')->count() : 0,
-                route('payroll.review'), 'payslips awaiting approval'
-            ),
-            'bursar' => self::wrap(
-                Schema::hasTable('payslips') ? Payslip::where('status', 'flagged')->count() : 0,
-                route('payroll.index'), 'payslips flagged for correction'
-            ),
-            'exam_officer' => self::wrap(
-                ResultQuery::where('status', 'open')->count(),
-                route('exams.queries'), 'open result queries'
-            ),
-            'mis' => self::wrap(
-                SupportTicket::where('status', '!=', 'resolved')->count(),
-                route('support.index'), 'open support tickets'
-            ),
-            'admission_officer' => self::wrap(
-                Applicant::where('status', 'pending')->count(),
-                route('admission.admin'), 'pending applications'
-            ),
-            'lecturer' => self::teacherActions($user),
-            'student' => self::studentActions($user),
-            default => ['count' => 0, 'url' => '#', 'label' => ''],
-        };
-    }
-
-    private static function teacherActions(User $user): array
-    {
-        $subjectIds = $user->subjects()->pluck('subjects.id');
-        if ($subjectIds->isEmpty()) {
-            return self::wrap(0, route('dashboard'), '');
+        $lastRead = $user->notifications_last_read_at;
+        $new = 0;
+        foreach (self::feedFor($user) as $item) {
+            $time = $item['time'] ?? null;
+            if ($time instanceof \Illuminate\Support\Carbon || $time instanceof \DateTimeInterface) {
+                if ($lastRead === null || $time > $lastRead) {
+                    $new++;
+                }
+            } elseif ($lastRead === null) {
+                // Undated items are "new" only until the page is first opened.
+                $new++;
+            }
         }
-        $toAuthor = Exam::whereIn('subject_id', $subjectIds)->where('status', 'draft')->count();
-        $toGrade = Exam::whereIn('subject_id', $subjectIds)
-            ->whereIn('status', ['released', 'grading'])
-            ->whereHas('submissions')->count();
 
-        return self::wrap($toAuthor + $toGrade, route('dashboard'), 'exam tasks');
-    }
-
-    private static function studentActions(User $user): array
-    {
-        // Online exam-taking has been removed; students have no exam actions here.
-        return self::wrap(0, route('dashboard'), '');
+        return ['count' => $new, 'url' => route('notifications.index'), 'label' => 'new notifications'];
     }
 
     private static function wrap(int $count, string $url, string $label): array
@@ -94,7 +70,7 @@ class Notifications
             $classArm = $student->class_arm ?? null;
             $query = \App\Models\Announcement::query();
             if (method_exists(\App\Models\Announcement::class, 'scopeVisibleTo')) {
-                $query->visibleTo($user->role, $classArm);
+                $query->visibleTo((string) $user->role, $classArm);
             }
             foreach ($query->latest()->limit(15)->get() as $a) {
                 $items[] = [
@@ -154,7 +130,62 @@ class Notifications
                     }
                 }
                 break;
-            // Student exam-taking removed — no student exam notifications.
+            case 'academic_secretary':
+                if (Schema::hasTable('change_of_course_requests')) {
+                    foreach (ChangeOfCourseRequest::with(['student', 'requestedProgram'])
+                        ->whereIn('status', ['secretary_review', 'new_hod_approved', 'new_hod_rejected', 'current_hod_approved', 'current_hod_rejected'])
+                        ->latest('updated_at')->get() as $c) {
+                        $items[] = ['icon' => '🔁', 'title' => 'Change-of-course needs your action',
+                            'detail' => (optional($c->student)->full_name ?? 'Student').' — '.$c->statusLabel(),
+                            'url' => route('change-of-course.review'), 'time' => $c->updated_at];
+                    }
+                }
+                break;
+            case 'hod':
+            case 'assistant_hod':
+                if (Schema::hasTable('change_of_course_requests') && $user->department_id) {
+                    $deptId = $user->department_id;
+                    $rows = ChangeOfCourseRequest::with(['student', 'requestedProgram'])
+                        ->where(function ($q) use ($deptId) {
+                            $q->where(fn ($w) => $w->where('status', 'new_hod_review')->whereHas('requestedProgram', fn ($p) => $p->where('department_id', $deptId)))
+                              ->orWhere(fn ($w) => $w->where('status', 'current_hod_review')->whereHas('student', fn ($p) => $p->where('department_id', $deptId)));
+                        })->latest('updated_at')->get();
+                    foreach ($rows as $c) {
+                        $items[] = ['icon' => '🔁', 'title' => 'Change-of-course awaiting your review',
+                            'detail' => (optional($c->student)->full_name ?? 'Student').' → '.optional($c->requestedProgram)->name,
+                            'url' => route('change-of-course.hod'), 'time' => $c->updated_at];
+                    }
+                }
+                break;
+            case 'registrar':
+                if (Schema::hasTable('change_of_course_requests')) {
+                    foreach (ChangeOfCourseRequest::with(['student', 'requestedProgram'])
+                        ->where('status', 'registrar_review')->latest('updated_at')->get() as $c) {
+                        $items[] = ['icon' => '🔁', 'title' => 'Change-of-course awaiting final approval',
+                            'detail' => (optional($c->student)->full_name ?? 'Student').' → '.optional($c->requestedProgram)->name,
+                            'url' => route('change-of-course.approvals'), 'time' => $c->updated_at];
+                    }
+                }
+                break;
+            case 'student':
+                if (Schema::hasTable('change_of_course_requests')) {
+                    $me = Student::where('email', $user->email)->first();
+                    if ($me) {
+                        foreach (ChangeOfCourseRequest::with('requestedProgram')
+                            ->where('student_id', $me->id)
+                            ->whereIn('status', ['approved', 'rejected'])
+                            ->latest('decided_at')->get() as $c) {
+                            $items[] = $c->isApproved()
+                                ? ['icon' => '✅', 'title' => 'Change of course approved',
+                                    'detail' => 'You may download your acceptance letter and pay the new registration fee.',
+                                    'url' => route('change-of-course.index'), 'time' => $c->decided_at]
+                                : ['icon' => '⛔', 'title' => 'Change of course rejected',
+                                    'detail' => $c->rejection_reason ?? 'Your application was not approved.',
+                                    'url' => route('change-of-course.index'), 'time' => $c->decided_at];
+                        }
+                    }
+                }
+                break;
         }
 
         // Newest first; undated items sink to the bottom.
