@@ -179,6 +179,11 @@ class ResultTransmissionController extends Controller
                 'published_at'   => $now,
             ]);
 
+        // Carryover auto-correction: a rewrite of a previously-failed course now
+        // replaces that course's original-semester result. Students affected are
+        // notified to check their results.
+        $this->reconcileCarryovers($subjects, $term, $session);
+
         $program = Program::find($request->program_id);
         ActivityLog::record(
             "Transmitted results for {$program->name} L{$request->level} {$request->semester} ({$term}, {$session})",
@@ -186,6 +191,66 @@ class ResultTransmissionController extends Controller
         );
 
         return back()->with('success', "Results transmitted successfully for {$program->name} Level {$request->level} {$request->semester}. Students can now pay to view their results.");
+    }
+
+    /**
+     * After a transmission, merge each rewritten carryover result back into the
+     * student's ORIGINAL failed record for the same course, so the failed grade
+     * is replaced by the new one (pass or fail). A course still showing F stays
+     * a carryover and is auto-registered next corresponding semester by the
+     * course-registration carryover logic. Affected students are notified.
+     *
+     * Matching: the new score and the original both belong to the SAME subject
+     * (the course is re-offered as the same subject across sessions); the older
+     * record carried an F.
+     */
+    private function reconcileCarryovers($subjectIds, string $term, string $session): void
+    {
+        $newScores = Score::whereIn('subject_id', $subjectIds)
+            ->where('term', $term)->where('session', $session)
+            ->whereNotNull('submitted_at')->get();
+
+        $notify = [];
+
+        foreach ($newScores as $new) {
+            // Previously-failed attempt(s) at this same course, in an earlier sitting.
+            $originals = Score::where('student_id', $new->student_id)
+                ->where('subject_id', $new->subject_id)
+                ->where('id', '!=', $new->id)
+                ->where('grade', 'F')
+                ->where('created_at', '<', $new->created_at)
+                ->get();
+
+            if ($originals->isEmpty()) {
+                continue; // a normal first attempt — nothing to reconcile
+            }
+
+            foreach ($originals as $orig) {
+                $orig->update([
+                    'ca_score'     => $new->ca_score,
+                    'exam_score'   => $new->exam_score,
+                    'total'        => $new->total,
+                    'grade'        => $new->grade,
+                    'status'       => 'published',
+                    'published_at' => now(),
+                    'transmitted_at' => now(),
+                ]);
+            }
+
+            // The rewrite's result now lives in the original record — drop the
+            // duplicate current-semester carryover score.
+            $new->delete();
+            $notify[$new->student_id] = true;
+        }
+
+        foreach (array_keys($notify) as $studentId) {
+            $student = Student::find($studentId);
+            if (! $student) {
+                continue;
+            }
+            $linked = \App\Models\User::where('email', $student->email)->first();
+            $linked?->notify(new \App\Notifications\CarryoverResultUpdated());
+        }
     }
 
     public function scan(ResultSubmission $submission)

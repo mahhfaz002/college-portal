@@ -72,7 +72,7 @@ class Notifications
             $classArm = $student->class_arm ?? null;
             $query = \App\Models\Announcement::query();
             if (method_exists(\App\Models\Announcement::class, 'scopeVisibleTo')) {
-                $query->visibleTo((string) $user->role, $classArm);
+                $query->visibleTo((string) $user->role, $classArm, $student);
             }
             foreach ($query->latest()->limit(15)->get() as $a) {
                 $items[] = [
@@ -188,6 +188,19 @@ class Notifications
                     }
                 }
                 break;
+        }
+
+        // Per-user database notifications (e.g. carryover results updated).
+        if (Schema::hasTable('notifications')) {
+            foreach ($user->notifications()->latest()->limit(15)->get() as $n) {
+                $items[] = [
+                    'icon'   => $n->data['icon'] ?? '🔔',
+                    'title'  => $n->data['title'] ?? 'Notification',
+                    'detail' => $n->data['message'] ?? '',
+                    'url'    => $n->data['url'] ?? route('dashboard'),
+                    'time'   => $n->created_at,
+                ];
+            }
         }
 
         // Newest first; undated items sink to the bottom.

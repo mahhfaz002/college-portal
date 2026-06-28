@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Announcement;
+use App\Models\Department;
+use App\Models\Student;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesCollegeFixtures;
@@ -64,5 +66,39 @@ class AnnouncementTargetingTest extends TestCase
         $lecturer = $this->userWithRole('lecturer');
         $this->actingAs($lecturer)->get('/announcements')->assertOk()
             ->assertSee('StaffOnlyNotice')->assertDontSee('StudentsOnlyNotice');
+    }
+
+    public function test_student_affairs_can_target_students_by_department(): void
+    {
+        $deptA = Department::create(['name' => 'Nursing', 'acronym' => 'N', 'section' => 'UG']);
+        $deptB = Department::create(['name' => 'Public Health', 'acronym' => 'P', 'section' => 'UG']);
+
+        // Student Affairs posts (its audience is always students); narrowed to dept A.
+        $this->actingAs($this->userWithRole('student_affairs'))->post('/announcements', [
+            'title' => 'Nursing meeting', 'body' => 'Today at 2pm',
+            'target_department_id' => $deptA->id,
+        ])->assertSessionHasNoErrors();
+
+        $ann = Announcement::firstOrFail();
+        $this->assertSame('students', $ann->audience);
+        $this->assertSame($deptA->id, (int) $ann->target_department_id);
+
+        $inA = $this->studentRecord(['email' => 'na@x.test', 'department_id' => $deptA->id]);
+        $inB = $this->studentRecord(['email' => 'nb@x.test', 'department_id' => $deptB->id]);
+
+        $this->assertTrue(Announcement::visibleTo('student', null, $inA)->where('id', $ann->id)->exists());
+        $this->assertFalse(Announcement::visibleTo('student', null, $inB)->where('id', $ann->id)->exists());
+    }
+
+    public function test_student_affairs_cannot_delete_another_users_announcement(): void
+    {
+        $otherAuthor = $this->userWithRole('mis');
+        $foreign = Announcement::create(['college_id' => $this->college->id, 'user_id' => $otherAuthor->id, 'title' => 'Not mine', 'body' => 'x', 'audience' => 'students', 'is_published' => true]);
+
+        $this->actingAs($this->userWithRole('student_affairs'))
+            ->delete(route('announcements.destroy', $foreign))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('announcements', ['id' => $foreign->id]);
     }
 }
