@@ -194,6 +194,7 @@
                     <x-responsive-nav-link :href="route('hod.resource-persons')" :active="request()->routeIs('hod.resource-persons')">{{ __('Resource Persons') }}</x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('hod.grading')" :active="request()->routeIs('hod.grading')">{{ __('Grading') }}</x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('hod.registrations')" :active="request()->routeIs('hod.registrations')">{{ __('Registrations') }}</x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('change-of-course.hod')" :active="request()->routeIs('change-of-course.hod')">{{ __('Change of Course') }}</x-responsive-nav-link>
                 @endcan
 
                 {{-- Exams oversight (exam officer / MIS) --}}

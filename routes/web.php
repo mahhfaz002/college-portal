@@ -315,15 +315,29 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::delete('/timetable/{plan}', [TimetableController::class, 'destroy'])->name('timetable.destroy');
     });
 
-    // --- Change of Course (student applies → pays → academic secretary → registrar) ---
+    // --- Change of Course (student → academic secretary → new HOD → current HOD → registrar) ---
     $COC = \App\Http\Controllers\ChangeOfCourseController::class;
     Route::middleware('role:student')->group(function () use ($COC) {
         Route::get('/change-of-course', [$COC, 'index'])->name('change-of-course.index');
         Route::post('/change-of-course', [$COC, 'store'])->middleware('throttle:10,1')->name('change-of-course.store');
+        Route::get('/change-of-course/{changeOfCourse}/pay-new-fee', [$COC, 'payNewFee'])->name('change-of-course.pay-new-fee');
     });
+
+    // Acceptance letter — owner student or relevant staff (authorized in controller).
+    Route::get('/change-of-course/{changeOfCourse}/letter', [$COC, 'letter'])->name('change-of-course.letter');
+    // Credentials — Academic Secretary, HODs, Registrar (authorized in controller).
+    Route::get('/change-of-course/{changeOfCourse}/credentials', [$COC, 'credentials'])->name('change-of-course.credentials');
+
     Route::middleware('role:academic_secretary')->group(function () use ($COC) {
         Route::get('/change-of-course/review', [$COC, 'review'])->name('change-of-course.review');
-        Route::post('/change-of-course/{changeOfCourse}/recommend', [$COC, 'recommend'])->name('change-of-course.recommend');
+        Route::post('/change-of-course/{changeOfCourse}/forward-new-hod', [$COC, 'forwardToNewHod'])->name('change-of-course.forward-new-hod');
+        Route::post('/change-of-course/{changeOfCourse}/relay-current-hod', [$COC, 'relayToCurrentHod'])->name('change-of-course.relay-current-hod');
+        Route::post('/change-of-course/{changeOfCourse}/forward-registrar', [$COC, 'forwardToRegistrar'])->name('change-of-course.forward-registrar');
+        Route::post('/change-of-course/{changeOfCourse}/reject-student', [$COC, 'rejectToStudent'])->name('change-of-course.reject-student');
+    });
+    Route::middleware('role:hod,assistant_hod')->group(function () use ($COC) {
+        Route::get('/change-of-course/hod', [$COC, 'hodQueue'])->name('change-of-course.hod');
+        Route::post('/change-of-course/{changeOfCourse}/hod-decide', [$COC, 'hodDecide'])->name('change-of-course.hod-decide');
     });
     Route::middleware('role:registrar')->group(function () use ($COC) {
         Route::get('/change-of-course/approvals', [$COC, 'approvals'])->name('change-of-course.approvals');

@@ -113,6 +113,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'notifications_last_read_at' => 'datetime',
         'password' => 'hashed',
         'must_change_password' => 'boolean',
     ];

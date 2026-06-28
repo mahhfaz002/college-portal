@@ -16,6 +16,14 @@ class StudentFinanceController extends Controller
     {
         $student = Student::where('email', auth()->user()->email)->firstOrFail();
 
+        // If a change of course was approved, make sure its new-course registration
+        // invoice exists so it shows up here as a payable order automatically.
+        if (\Illuminate\Support\Facades\Schema::hasTable('change_of_course_requests')) {
+            \App\Models\ChangeOfCourseRequest::where('student_id', $student->id)
+                ->where('status', 'approved')->whereNull('new_fee_paid_at')->get()
+                ->each(fn ($cocr) => \App\Http\Controllers\ChangeOfCourseController::ensureNewRegistrationInvoice($cocr));
+        }
+
         $invoices = Invoice::where('student_id', $student->id)->latest()->get();
         $payments = Payment::where('student_id', $student->id)->latest()->get();
 
