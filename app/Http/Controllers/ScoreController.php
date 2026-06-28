@@ -62,6 +62,10 @@ class ScoreController extends Controller
             'scores'        => 'required|array',
             'scores.*.ca'   => "nullable|numeric|min:0|max:$caMax",
             'scores.*.exam' => "nullable|numeric|min:0|max:$examMax",
+            // Optional: attaching the scanned result copy FINALISES and submits
+            // the results (same as the Submit Results screen). Without it, marks
+            // are just saved so the lecturer can keep working on them.
+            'scan'          => 'nullable|file|mimes:jpeg,jpg|max:5120',
         ]);
 
         // Lecturers may only enter scores for courses assigned to them.
@@ -72,6 +76,20 @@ class ScoreController extends Controller
 
         $term = setting('current_term', 'First Semester');
         $session = setting('current_session', '2025/2026');
+        $subjectId = $validated['subject_id'];
+
+        $finalising = $request->hasFile('scan');
+
+        // Already submitted? Block any further change to those locked results.
+        $existingSubmission = \App\Models\ResultSubmission::where('subject_id', $subjectId)
+            ->where('term', $term)->where('session', $session)->first();
+        if ($existingSubmission) {
+            return back()->with('error', 'Results for this course have already been submitted and are locked.');
+        }
+
+        $scanPath = $finalising
+            ? $request->file('scan')->store('documents/result-scans', config('filesystems.documents'))
+            : null;
 
         $updatedStudentIds = [];
 
@@ -79,23 +97,56 @@ class ScoreController extends Controller
             $hasCa = isset($data['ca']) && $data['ca'] !== '';
             $hasExam = isset($data['exam']) && $data['exam'] !== '';
             if ($hasCa || $hasExam) {
+                $ca = (int) ($data['ca'] ?? 0);
+                $exam = (int) ($data['exam'] ?? 0);
+                $total = $ca + $exam;
+
                 Score::updateOrCreate(
                     [
                         'student_id' => $studentId,
-                        'subject_id' => $validated['subject_id'],
+                        'subject_id' => $subjectId,
                         'term'       => $term,
                         'session'    => $session,
                     ],
-                    [
-                        'ca_score'   => $data['ca'] ?? 0,
-                        'exam_score' => $data['exam'] ?? 0,
+                    $finalising ? [
+                        'ca_score'     => $ca,
+                        'exam_score'   => $exam,
+                        'total'        => $total,
+                        'grade'        => grade_for($total)['grade'],
+                        'status'       => 'submitted',
+                        'submitted_by' => $user->id,
+                        'submitted_at' => now(),
+                    ] : [
+                        'ca_score'   => $ca,
+                        'exam_score' => $exam,
                     ]
                 );
                 $updatedStudentIds[] = $studentId;
             }
         }
 
-        // Notify linked student accounts that results were updated.
+        $subjectName = Subject::find($subjectId)?->name ?? 'subject';
+
+        if ($finalising) {
+            \App\Models\ResultSubmission::create([
+                'college_id'             => current_college_id(),
+                'subject_id'             => $subjectId,
+                'user_id'                => $user->id,
+                'term'                   => $term,
+                'session'                => $session,
+                'scan_path'              => $scanPath,
+                'submitted_at'           => now(),
+                'physical_copy_deadline' => now()->addHours(72),
+                'status'                 => 'submitted',
+            ]);
+
+            ActivityLog::record("Submitted results for {$subjectName} ({$term}, {$session})", 'results.submit');
+
+            return redirect()->route('dashboard')
+                ->with('success', 'Results submitted with the scanned copy. Please deliver the physical copy to the Exam Officer within 72 hours.');
+        }
+
+        // Iterative save — notify linked student accounts that results changed.
         if (!empty($updatedStudentIds)) {
             $students = Student::whereIn('id', $updatedStudentIds)->get();
             foreach ($students as $student) {
@@ -104,9 +155,8 @@ class ScoreController extends Controller
             }
         }
 
-        $subjectName = Subject::find($validated['subject_id'])?->name ?? 'subject';
         ActivityLog::record("Entered scores for {$subjectName}", 'scores.store');
 
-        return redirect()->route('dashboard')->with('success', "Scores for {$subjectName} updated successfully!");
+        return redirect()->route('dashboard')->with('success', "Scores for {$subjectName} saved. Attach the scanned result copy when you're ready to submit.");
     }
 }

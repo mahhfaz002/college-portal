@@ -225,6 +225,9 @@
                 @can('manage_announcements')
                     <x-responsive-nav-link :href="route('announcements.index')" :active="request()->routeIs('announcements.*')">{{ __('Announcements') }}</x-responsive-nav-link>
                 @endcan
+                @can('manage_affairs')
+                    <x-responsive-nav-link :href="route('affairs.unions.index')" :active="request()->routeIs('affairs.unions.*')">{{ __('Unions & Organizations') }}</x-responsive-nav-link>
+                @endcan
 
                 @if(in_array($role, ['proprietor', 'provost', 'mis', 'office_secretary']))
                     <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">{{ __('Inventory') }}</x-responsive-nav-link>

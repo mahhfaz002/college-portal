@@ -360,6 +360,8 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
     // --- Student Affairs ---
     Route::middleware('role:student_affairs')->group(function () {
         $SA = \App\Http\Controllers\StudentAffairsController::class;
+        // College-scoped student typeahead for the case + register forms.
+        Route::get('/affairs/students/search', [$SA, 'searchStudents'])->name('affairs.students.search');
         Route::post('/affairs/cases', [$SA, 'store'])->name('affairs.cases.store');
         Route::post('/affairs/cases/{case}/resolve', [$SA, 'resolve'])->name('affairs.cases.resolve');
         Route::post('/affairs/cases/{case}/submit', [$SA, 'submitToRegistrar'])->name('affairs.cases.submit');
@@ -369,6 +371,16 @@ Route::middleware(['auth', 'verified', 'force.password.change', 'platform.fee', 
         Route::post('/affairs/register', [$SA, 'registerStudent'])->name('affairs.register.store');
         Route::put('/affairs/register/{entry}', [$SA, 'editRegister'])->name('affairs.register.edit');
         Route::delete('/affairs/register/{entry}', [$SA, 'destroyRegister'])->name('affairs.register.destroy');
+
+        // Unions, groups & organisations.
+        $UN = \App\Http\Controllers\StudentUnionController::class;
+        Route::get('/affairs/unions', [$UN, 'index'])->name('affairs.unions.index');
+        Route::get('/affairs/unions/create', [$UN, 'create'])->name('affairs.unions.create');
+        Route::post('/affairs/unions', [$UN, 'store'])->name('affairs.unions.store');
+        Route::get('/affairs/unions/{union}/edit', [$UN, 'edit'])->name('affairs.unions.edit');
+        Route::put('/affairs/unions/{union}', [$UN, 'update'])->name('affairs.unions.update');
+        Route::post('/affairs/unions/{union}/suspend', [$UN, 'suspend'])->name('affairs.unions.suspend');
+        Route::delete('/affairs/unions/{union}', [$UN, 'destroy'])->name('affairs.unions.destroy');
     });
 
     // Case escalation: notify student (Student Affairs + Registrar).

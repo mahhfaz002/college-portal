@@ -62,24 +62,61 @@ class StudentAffairsController extends Controller
         ));
     }
 
+    /**
+     * Typeahead search across THIS college's students (the global CollegeScope
+     * keeps it strictly within the logged-in user's college — no leakage).
+     */
+    public function searchStudents(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+
+        $students = Student::with(['program', 'department'])
+            ->where(function ($w) use ($q) {
+                $w->where('full_name', 'like', "%{$q}%")
+                  ->orWhere('registration_number', 'like', "%{$q}%")
+                  ->orWhere('admission_number', 'like', "%{$q}%");
+            })
+            ->orderBy('full_name')->limit(20)->get();
+
+        return response()->json($students->map(fn ($s) => [
+            'id'         => $s->id,
+            'name'       => $s->full_name,
+            'reg'        => $s->registration_number ?? $s->admission_number ?? '—',
+            'department' => optional($s->department)->name,
+            'program'    => optional($s->program)->name,
+            'level'      => $s->level,
+        ]));
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([
-            'student_id'      => 'nullable|exists:students,id',
-            'student_name'    => 'nullable|string|max:150',
-            'category'        => 'required|in:disciplinary,welfare,complaint',
-            'description'     => 'required|string|max:2000',
-            'recommendation'  => 'nullable|string|max:2000',
-            'penalty_type'    => 'nullable|string|max:255',
+            'student_ids'    => 'required|array|min:1',
+            'student_ids.*'  => 'integer',
+            'category'       => 'required|in:disciplinary,welfare,complaint',
+            'description'    => 'required|string|max:2000',
+            'recommendation' => 'nullable|string|max:2000',
         ]);
 
-        if (!empty($data['student_id'])) {
-            $data['student_name'] = optional(Student::find($data['student_id']))->full_name;
-        }
-        $data['college_id'] = current_college_id();
-        $data['logged_by']  = auth()->id();
-        $data['status']     = 'open';
-        StudentAffairsCase::create($data);
+        // Resolve through the college-scoped query so only this college's
+        // students are ever attached to a case (drops any foreign id).
+        $students = Student::whereIn('id', $data['student_ids'])->get();
+        abort_if($students->isEmpty(), 422, 'Select at least one valid student.');
+
+        StudentAffairsCase::create([
+            'college_id'     => current_college_id(),
+            'student_id'     => $students->first()->id,                 // primary (back-compat)
+            'student_name'   => $students->pluck('full_name')->implode(', '),
+            'student_ids'    => $students->pluck('id')->values()->all(),
+            'category'       => $data['category'],
+            'description'    => $data['description'],
+            'recommendation' => $data['recommendation'] ?? null,
+            'logged_by'      => auth()->id(),
+            'status'         => 'open',
+        ]);
 
         return back()->with('success', 'Case logged.');
     }
@@ -98,14 +135,15 @@ class StudentAffairsController extends Controller
     public function registerStudent(Request $request)
     {
         $data = $request->validate([
-            'registration_number' => 'required|string',
-            'checklist'           => 'required|array',
-            'notes'               => 'nullable|string|max:2000',
+            'student_id' => 'required|integer',
+            'checklist'  => 'required|array',
+            'notes'      => 'nullable|string|max:2000',
         ]);
 
-        $student = Student::where('registration_number', $data['registration_number'])->first();
+        // College-scoped lookup → a student from another college resolves to null.
+        $student = Student::find($data['student_id']);
         if (!$student) {
-            return back()->with('error', 'Student not found with that registration number.');
+            return back()->with('error', 'Student not found in your college.');
         }
 
         StudentAffairsRegister::updateOrCreate(

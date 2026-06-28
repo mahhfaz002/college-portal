@@ -33,7 +33,7 @@
                 <div class="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg text-sm">No courses are assigned to you yet. Ask the Academic Secretary or your HOD to assign your courses.</div>
             @endif
 
-            <form action="{{ route('scores.store') }}" method="POST" class="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-200">
+            <form action="{{ route('scores.store') }}" method="POST" enctype="multipart/form-data" class="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-200">
                 @csrf
 
                 <input type="hidden" name="subject_id" value="{{ optional($selectedSubject)->id }}">
@@ -81,9 +81,20 @@
                         </tbody>
                     </table>
 
-                    <div class="mt-8">
+                    {{-- Scanned result copy — attaching it FINALISES & submits the
+                         results (same requirement as the Submit Results screen). --}}
+                    <div class="mt-8 border-t pt-6">
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Scanned result copy <span class="text-gray-400 font-normal">(optional)</span></label>
+                        <input type="file" name="scan" accept="image/jpeg,image/jpg"
+                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+                        <p class="text-xs text-gray-500 mt-1">
+                            JPG only, max 5MB. <strong>Attaching the scan submits and locks the results</strong> for this course (and starts the 72-hour physical-copy window). Leave empty to just save the marks and come back later.
+                        </p>
+                    </div>
+
+                    <div class="mt-6">
                         <button type="submit" @disabled($students->isEmpty() || !$selectedSubject) class="w-full bg-indigo-600 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-indigo-700 shadow-lg transition disabled:opacity-40">
-                            💾 Upload Course Scores
+                            💾 Save / Submit Course Scores
                         </button>
                     </div>
                 </div>

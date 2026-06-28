@@ -51,10 +51,37 @@ class ExamModeController extends Controller
         return back()->with('success', "Exam Mode activated. Countdown to {$start->format('d M Y g:ia')} is now live on every dashboard.");
     }
 
+    /**
+     * Cancel / close Exam Mode. Closing the cycle stops the countdown AND clears
+     * every lecturer's in-progress "Set Questions" work for this cycle: the
+     * unsubmitted draft question sets (and their questions) are deleted so they
+     * vanish from lecturer dashboards and can no longer be edited. Already
+     * SUBMITTED/approved papers are kept — they are finished work.
+     */
     public function close(ExamCycle $examCycle)
     {
         $examCycle->update(['status' => 'closed']);
 
-        return back()->with('success', 'Exam Mode closed.');
+        // Purge unsubmitted authoring data for this cycle.
+        $draftExamIds = \App\Models\Exam::where('exam_cycle_id', $examCycle->id)
+            ->where('status', 'draft')->pluck('id');
+
+        $cleared = $draftExamIds->count();
+        if ($cleared) {
+            \App\Models\ExamQuestion::whereIn('exam_id', $draftExamIds)->delete();
+            \App\Models\Exam::whereIn('id', $draftExamIds)->delete();
+        }
+
+        Announcement::create([
+            'user_id'      => auth()->id(),
+            'title'        => "Exam Mode cancelled — {$examCycle->title}",
+            'body'         => 'Exam Mode has been cancelled. Question setting is now closed and any unsubmitted draft questions have been cleared. Please wait for the next Exam Mode announcement.',
+            'audience'     => 'all',
+            'is_published' => true,
+        ]);
+
+        ActivityLog::record("Cancelled Exam Mode '{$examCycle->title}' (cleared {$cleared} draft set(s))", 'exam.mode.cancel');
+
+        return back()->with('success', "Exam Mode cancelled. Question setting is closed and {$cleared} unsubmitted draft set(s) were cleared.");
     }
 }
