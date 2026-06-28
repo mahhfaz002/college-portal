@@ -15,3 +15,11 @@ Artisan::command('inspire', function () {
 \Illuminate\Support\Facades\Schedule::command('report:daily')
     ->dailyAt('07:00')
     ->timezone('Africa/Lagos');
+
+// Retention cleanup: clear temporary/incomplete data (unpaid applications,
+// abandoned change-of-course requests, cancelled invoices) past the 48h window.
+// Runs hourly so nothing lingers more than ~1h past the retention threshold.
+\Illuminate\Support\Facades\Schedule::command('data:prune-temporary')
+    ->hourly()
+    ->withoutOverlapping()
+    ->timezone('Africa/Lagos');
