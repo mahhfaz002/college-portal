@@ -65,6 +65,17 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Sends Log::error()/critical()/alert()/emergency() to Sentry as issues so
+        // the self-healing pipeline can triage them (Sentry -> /api/webhooks/sentry
+        // -> labeled GitHub issue -> auto-fix). Inert until 'sentry' is added to
+        // LOG_STACK (e.g. LOG_STACK=single,sentry) and SENTRY_LARAVEL_DSN is set.
+        // Captures error and above only; file verbosity stays controlled by LOG_LEVEL.
+        'sentry' => [
+            'driver' => 'sentry',
+            'level' => 'error',
+            'bubble' => true,
+        ],
+
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),
