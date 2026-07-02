@@ -50,6 +50,16 @@ class User extends Authenticatable implements MustVerifyEmail
         'signature_path',
     ];
 
+    /**
+     * Email is the account's unique identity — the login "username". Normalise it
+     * to trimmed lowercase so the users.email UNIQUE index guarantees exactly one
+     * account per address regardless of casing, and so login always matches.
+     */
+    public function setEmailAttribute($value): void
+    {
+        $this->attributes['email'] = is_string($value) ? strtolower(trim($value)) : $value;
+    }
+
     public function departmentModel()
     {
         return $this->belongsTo(Department::class, 'department_id');

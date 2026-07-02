@@ -20,6 +20,18 @@ class LoginRequest extends FormRequest
     }
 
     /**
+     * Normalise the email to trimmed lowercase before validation so login
+     * matches the account's canonical (lowercased) identity and the throttle
+     * key can't be sidestepped by varying the casing.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('email')) {
+            $this->merge(['email' => strtolower(trim((string) $this->input('email')))]);
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>

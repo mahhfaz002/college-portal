@@ -110,7 +110,11 @@ class GatewayPaymentController extends Controller
         }
 
         if ($this->paystack->verify($invoice)) {
-            return $this->afterPaid($invoice);
+            // A verified callback is the ONLY place we may bind a session to the
+            // invoice owner: the reference is an unguessable secret confirmed
+            // server-to-server against Paystack, so the caller provably completed
+            // this payment.
+            return $this->afterPaid($invoice, establishSession: true);
         }
 
         return redirect()->route('home')->with('error', 'Payment was not completed. Please try again.');
@@ -129,7 +133,9 @@ class GatewayPaymentController extends Controller
             $this->paystack->markPaid($invoice, 'SANDBOX-'.Str::upper(Str::random(8)), 'sandbox');
         }
 
-        return $this->afterPaid($invoice);
+        // Sandbox stands in for a completed gateway payment (non-prod only), so it
+        // may establish the session exactly like a verified callback.
+        return $this->afterPaid($invoice, establishSession: true);
     }
 
     /**
@@ -291,19 +297,31 @@ class GatewayPaymentController extends Controller
     /**
      * Post-payment routing for the browser flow: run fulfilment, then log the
      * payer in (where applicable) and redirect with a friendly message.
+     *
+     * $establishSession MUST be true only for a provably-completed payment — a
+     * signature/reference-verified callback or the (non-prod) sandbox. It is
+     * false for the PUBLIC, id-addressable checkout/initialize routes: those may
+     * be hit by anyone enumerating invoice ids, so binding a session to the
+     * invoice owner there would be an account-takeover IDOR.
      */
-    private function afterPaid(Invoice $invoice)
+    private function afterPaid(Invoice $invoice, bool $establishSession = false)
     {
         $this->fulfill($invoice);
         $applicant = $invoice->applicant_id ? Applicant::withoutGlobalScopes()->find($invoice->applicant_id) : null;
 
         if ($invoice->purpose === 'platform_registration' && $invoice->user_id) {
+            if (! $establishSession) {
+                return $this->alreadyPaid();
+            }
             Auth::loginUsingId($invoice->user_id);
             return redirect()->route('dashboard')->with('success',
                 'Platform registration fee paid. Welcome — your student account is now active.');
         }
 
         if ($invoice->purpose === 'application_fee' && $applicant) {
+            if (! $establishSession) {
+                return $this->alreadyPaid();
+            }
             if ($applicant->user_id) {
                 Auth::loginUsingId($applicant->user_id);
             }
@@ -344,6 +362,23 @@ class GatewayPaymentController extends Controller
         }
 
         return redirect()->route('home')->with('success', 'Payment confirmed.');
+    }
+
+    /**
+     * An already-paid invoice was re-hit via the PUBLIC checkout/initialize
+     * routes. Never establish a session here (that would let a guest enumerate
+     * invoice ids and log in as the payer). Send an authenticated owner onward;
+     * route everyone else to the login screen.
+     */
+    private function alreadyPaid()
+    {
+        if (Auth::check()) {
+            return redirect()->route('dashboard')
+                ->with('success', 'This payment has already been completed.');
+        }
+
+        return redirect()->route('login')
+            ->with('status', 'This payment has already been completed. Please log in to continue.');
     }
 
     /**

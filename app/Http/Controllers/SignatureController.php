@@ -109,13 +109,15 @@ class SignatureController extends Controller
     public function show(\App\Models\User $user)
     {
         abort_unless($user->signature_path, 404);
-        // Only same-college staff (or the owner) may fetch a signature image.
+        // A signature PNG is a document-forgery vector (it is embedded on
+        // admission letters, transcripts and results). Only the OWNER, or the
+        // same-college leadership who render those official documents, may fetch
+        // it — never ordinary staff or students.
         $viewer = auth()->user();
-        abort_unless(
-            $viewer->id === $user->id
-            || ($viewer->college_id && $viewer->college_id === $user->college_id),
-            403
-        );
+        $sameCollegeLeadership = $viewer->college_id
+            && $viewer->college_id === $user->college_id
+            && $viewer->hasRole('registrar', 'provost', 'proprietor', 'mis');
+        abort_unless($viewer->id === $user->id || $sameCollegeLeadership, 403);
 
         $disk = config('filesystems.documents', 'local');
         abort_unless(Storage::disk($disk)->exists($user->signature_path), 404);
