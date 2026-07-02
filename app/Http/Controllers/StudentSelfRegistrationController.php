@@ -73,7 +73,7 @@ class StudentSelfRegistrationController extends Controller
             'address'             => 'required|string|max:255',
             'phone'               => 'required|string|max:50',
             'email'               => 'required|email|max:255|unique:users,email',
-            'password'            => 'required|string|min:6|confirmed',
+            'password'            => 'required|string|min:8|confirmed',
             'passport'            => 'required|file|mimes:jpg,jpeg,png|max:2048',
         ]);
 

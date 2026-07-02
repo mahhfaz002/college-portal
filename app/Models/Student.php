@@ -29,6 +29,16 @@ class Student extends Model
         'applicant_id',
     ];
 
+    /**
+     * Keep the student record's email in the same normalised (trimmed lowercase)
+     * form as the matching User login, so the email-based ownership checks
+     * (results, fees, documents) always resolve.
+     */
+    public function setEmailAttribute($value): void
+    {
+        $this->attributes['email'] = is_string($value) ? strtolower(trim($value)) : $value;
+    }
+
     public function department()
     {
         return $this->belongsTo(Department::class);

@@ -74,7 +74,7 @@ class UserController extends Controller
             'department_id'     => 'nullable|string|max:60',
             'department_other'  => 'nullable|string|max:150',
             'employed_year'     => 'nullable|string|max:9',
-            'password'          => 'nullable|string|min:6',
+            'password'          => 'nullable|string|min:8',
             'passport'          => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
@@ -150,6 +150,8 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
+        $this->ensureManageable($user);
+
         return view('staff.edit', [
             'staff' => $user,
             'roles' => self::STAFF_ROLES,
@@ -162,6 +164,8 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
+        $this->ensureManageable($user);
+
         $validated = $request->validate([
             'first_name'        => 'required|string|max:255',
             'surname'           => 'required|string|max:255',
@@ -195,6 +199,8 @@ class UserController extends Controller
      */
     public function updateAssignments(Request $request, User $user)
     {
+        $this->ensureManageable($user);
+
         $validated = $request->validate([
             'class_ids'     => 'nullable|array',
             'class_ids.*'   => 'integer|exists:classes,id',
@@ -222,6 +228,7 @@ class UserController extends Controller
         if ($user->id === auth()->id()) {
             return back()->with('error', 'You cannot delete your own account.');
         }
+        $this->ensureManageable($user);
 
         $name = $user->name;
         $user->delete();
@@ -241,6 +248,21 @@ class UserController extends Controller
     // ----------------------------------------------------------------
     // Helpers
     // ----------------------------------------------------------------
+
+    /**
+     * Staff management here covers ORDINARY staff only. Leadership accounts
+     * (proprietor, provost, bursar, registrar, mis, …) and student/applicant
+     * logins are provisioned by the super-admin and must never be edited,
+     * re-rolled, reassigned or deleted by a college's staff manager.
+     */
+    private function ensureManageable(User $user): void
+    {
+        abort_unless(
+            in_array($user->role, self::STAFF_ROLES, true),
+            403,
+            'This account type cannot be managed here.'
+        );
+    }
 
     private function syncAssignments(User $user, Request $request): void
     {
