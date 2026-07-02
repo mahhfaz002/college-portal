@@ -146,18 +146,9 @@ class ChangeOfCourseController extends Controller
         $registrar = User::withoutGlobalScopes()
             ->where('college_id', $collegeId)->where('role', 'registrar')
             ->whereNotNull('signature_path')->first();
-        if (! $registrar) {
-            return null;
-        }
-        $disk = config('filesystems.documents', 'local');
-        try {
-            if (\Illuminate\Support\Facades\Storage::disk($disk)->exists($registrar->signature_path)) {
-                return 'data:image/png;base64,'.base64_encode(\Illuminate\Support\Facades\Storage::disk($disk)->get($registrar->signature_path));
-            }
-        } catch (\Throwable $e) {
-            // Non-fatal — fall back to the printed signature line.
-        }
-        return null;
+
+        // Stored in the DB now (the model also falls back to a legacy disk file).
+        return $registrar?->signatureDataUri();
     }
 
     /** Raise (or reuse) the new-course registration-fee invoice and go to pay. */

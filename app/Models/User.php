@@ -70,6 +70,43 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(ActivityLog::class);
     }
 
+    public function signatureRecord()
+    {
+        return $this->hasOne(UserSignature::class);
+    }
+
+    /** Whether this user has an e-signature on file (DB or legacy disk). */
+    public function hasSignature(): bool
+    {
+        return $this->signatureRecord()->exists()
+            || ($this->signature_path && $this->signature_path !== 'db');
+    }
+
+    /**
+     * The user's signature as a base64 data URI, ready to embed in a document
+     * or stream. Prefers the database copy; falls back to a legacy file on the
+     * documents disk for signatures saved before the DB migration.
+     */
+    public function signatureDataUri(): ?string
+    {
+        if ($rec = $this->signatureRecord) {
+            return $rec->data;
+        }
+
+        if ($this->signature_path && $this->signature_path !== 'db') {
+            $disk = config('filesystems.documents', 'local');
+            try {
+                if (\Illuminate\Support\Facades\Storage::disk($disk)->exists($this->signature_path)) {
+                    return 'data:image/png;base64,'.base64_encode(\Illuminate\Support\Facades\Storage::disk($disk)->get($this->signature_path));
+                }
+            } catch (\Throwable $e) {
+                // ignore — no signature available
+            }
+        }
+
+        return null;
+    }
+
     /**
      * Classes this staff member is assigned to (many-to-many).
      */

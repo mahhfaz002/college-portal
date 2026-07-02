@@ -239,21 +239,8 @@ class AdmissionWorkflowController extends Controller
             ->whereNotNull('signature_path')
             ->first();
 
-        if (!$registrar) {
-            return null;
-        }
-
-        $disk = config('filesystems.documents', 'local');
-        try {
-            if (\Illuminate\Support\Facades\Storage::disk($disk)->exists($registrar->signature_path)) {
-                $bytes = \Illuminate\Support\Facades\Storage::disk($disk)->get($registrar->signature_path);
-                return 'data:image/png;base64,'.base64_encode($bytes);
-            }
-        } catch (\Throwable $e) {
-            // Non-fatal: fall back to the printed signature line.
-        }
-
-        return null;
+        // Stored in the DB now (the model also falls back to a legacy disk file).
+        return $registrar?->signatureDataUri();
     }
 
     /** Blank admission acceptance form to print, sign and re-upload. */
